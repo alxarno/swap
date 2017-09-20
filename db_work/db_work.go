@@ -3,6 +3,7 @@ package spatium_db_work
 import (
 	_ "github.com/mattn/go-sqlite3"
 	"database/sql"
+	"crypto/sha256"
 	"os"
 	"fmt"
 	models "github.com/AlexArno/spatium/models"
@@ -33,6 +34,20 @@ func GetUser(login string, pass string)(*models.User, error){
 		return nil, err
 	}
 	return user,nil
+}
+
+func CreateUser(login string, pass string, u_name string)(error){
+	if !activeConnIsReal{
+		OpenDB()
+	}
+	statement, err := activeConn.Prepare("INSERT INTO people (login, pass, u_name) VALUES (?, ?, ?)")
+	if err != nil {
+		return err
+	}
+	h := sha256.New()
+	h.Write([]byte(pass))
+	statement.Exec(login, h.Sum(nil), u_name)
+	return err
 }
 
 func createDB_structs(database *sql.DB){
