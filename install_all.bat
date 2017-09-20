@@ -4,7 +4,9 @@ cd ..
 cd user
 go install
 cd ..
+go install
 cd ..
+go install
 cd ..
 cd models
 go install

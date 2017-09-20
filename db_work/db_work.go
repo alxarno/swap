@@ -18,22 +18,37 @@ func GetInfo() string{
 	return "Info"
 }
 
-func GetUser(login string, pass string)(*models.User, error){
+func GetUser(s_type string, data map[string]string)(*models.User, error){
 	user := new(models.User)
 	if !activeConnIsReal{
 		OpenDB()
 	}
-	rows, err := activeConn.Prepare("SELECT id, login, pass, u_name FROM people WHERE (login=?) AND (pass=?)")
-	if err != nil {
-		panic(nil)
+	if s_type == "login"{
+		rows, err := activeConn.Prepare("SELECT id, login, pass, u_name FROM people WHERE (login=?) AND (pass=?)")
+		if err != nil {
+			panic(nil)
+		}
+		query := rows.QueryRow(data["login"],data["pass"])
+		err = query.Scan(&user.ID, &user.Login, &user.Pass, &user.Name)
+		defer rows.Close()
+		if err != nil {
+			return nil, err
+		}
+		return user,nil
+	}else{
+		rows, err := activeConn.Prepare("SELECT id, login, pass, u_name FROM people WHERE id=?")
+		if err != nil {
+			panic(nil)
+		}
+		query := rows.QueryRow(data["id"])
+		err = query.Scan(&user.ID, &user.Login, &user.Pass, &user.Name)
+		defer rows.Close()
+		if err != nil {
+			return nil, err
+		}
+		return user,nil
 	}
-	defer rows.Close()
 
-	err = rows.QueryRow(login, pass).Scan(&user.ID, &user.Login, &user.Pass, &user.Name)
-	if err != nil {
-		return nil, err
-	}
-	return user,nil
 }
 
 func CreateUser(login string, pass string, u_name string)(error){
