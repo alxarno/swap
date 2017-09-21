@@ -8,8 +8,6 @@ import (
 	db_work "github.com/AlexArno/spatium/db_work"
 	"github.com/robbert229/jwt"
 	"github.com/AlexArno/spatium/models"
-
-	"strconv"
 )
 
 type userGetToken struct{
@@ -40,9 +38,9 @@ func TestUserToken(secret string, token_line string)(*models.User,  string){
 		return nil, "Token's id is undefined"
 	}
 	//We need id in string, because sql is necessary
-	fl_id :=id.(float64)
-	id_int64 := int64(fl_id)
-	u_id:= strconv.FormatInt(id_int64, 10)
+	fl_id :=id.(string)
+	//id_int64 := int64(fl_id)
+	//u_id:= strconv.FormatInt(id_int64, 10)
 
 	u_time,err :=claims.Get("time")
 	if err != nil{
@@ -58,7 +56,7 @@ func TestUserToken(secret string, token_line string)(*models.User,  string){
 			return nil, "Token's time is low"
 		}
 	}
-	now_user, err:= db_work.GetUser("id" , map[string]string{"id": u_id})
+	now_user, err:= db_work.GetUser("id" , map[string]string{"id": fl_id})
 	if err!=nil{
 		return nil, "Failed find user with token's id"
 	}

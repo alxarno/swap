@@ -28,7 +28,11 @@ func GetUser(s_type string, data map[string]string)(*models.User, error){
 		if err != nil {
 			panic(nil)
 		}
-		query := rows.QueryRow(data["login"],data["pass"])
+		//make hash of user's password
+		h := sha256.New()
+		h.Write([]byte(data["pass"]))
+		query := rows.QueryRow(data["login"], h.Sum(nil))
+
 		err = query.Scan(&user.ID, &user.Login, &user.Pass, &user.Name)
 		defer rows.Close()
 		if err != nil {
@@ -36,12 +40,16 @@ func GetUser(s_type string, data map[string]string)(*models.User, error){
 		}
 		return user,nil
 	}else{
-		rows, err := activeConn.Prepare("SELECT id, login, pass, u_name FROM people WHERE id=?")
+		rows, err := activeConn.Prepare("SELECT id, login, u_name FROM people WHERE id=?")
 		if err != nil {
 			panic(nil)
 		}
 		query := rows.QueryRow(data["id"])
-		err = query.Scan(&user.ID, &user.Login, &user.Pass, &user.Name)
+		fmt.Println(data["id"])
+		err = query.Scan(&user.ID, &user.Login, &user.Name)
+		if err == sql.ErrNoRows{
+			return nil, err
+		}
 		defer rows.Close()
 		if err != nil {
 			return nil, err
@@ -51,25 +59,48 @@ func GetUser(s_type string, data map[string]string)(*models.User, error){
 
 }
 
-func CreateUser(login string, pass string, u_name string)(error){
+func CreateUser(login string, pass string, u_name string)(string, string, error){
 	if !activeConnIsReal{
 		OpenDB()
 	}
+	//test for equals logins
+	var id_now string
+	rows, err := activeConn.Prepare("SELECT id FROM people WHERE login=?")
+	if err != nil {
+		panic(nil)
+	}
+	query := rows.QueryRow(login).Scan(&id_now)
+	defer rows.Close()
+	if query != sql.ErrNoRows{
+		return "","Login is busy",err
+	}
+
 	statement, err := activeConn.Prepare("INSERT INTO people (login, pass, u_name) VALUES (?, ?, ?)")
 	if err != nil {
-		return err
+		return "","DB failed query",err
 	}
+	//make hash of user's password
 	h := sha256.New()
 	h.Write([]byte(pass))
 	statement.Exec(login, h.Sum(nil), u_name)
-	return err
+	rows, err = activeConn.Prepare("SELECT id FROM people WHERE login=?")
+	if err != nil {
+		panic(nil)
+	}
+	query = rows.QueryRow(login).Scan(&id_now)
+	if query == sql.ErrNoRows{
+		return "","Some is fail",err
+	}
+	return id_now,"Success", nil
 }
 
 func createDB_structs(database *sql.DB){
 	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, login TEXT, pass TEXT, u_name TEXT)")
 	statement.Exec()
-	statement, _ = database.Prepare("INSERT INTO people (login, pass, u_name) VALUES (?, ?, ?)")
-	statement.Exec("pussy", "1111","Alex")
+	_, fin, err := CreateUser("god","1111", "Alex")
+	if err!= nil{
+		fmt.Println(fin)
+	}
 }
 
 func OpenDB(){
@@ -94,6 +125,3 @@ func OpenDB(){
 	activeConnIsReal=true
 }
 
-func main(){
-	fmt.Println("DB is here")
-}

@@ -8,10 +8,16 @@ import (
 	"github.com/robbert229/jwt"
 	"time"
 	methods "github.com/AlexArno/spatium/src/api/methods"
+	"strconv"
 )
 type ProveConnection struct{
 	Login string
 	Pass string
+}
+type CreateNewUser struct{
+	Login string
+	Pass string
+	Name string
 }
 type userGetToken struct{
 	Token string
@@ -33,6 +39,23 @@ func sendAnswerError(e_type string, w http.ResponseWriter){
 	fmt.Fprintf(w, string(finish))
 }
 
+func sendToken(id string, w http.ResponseWriter){
+	algorithm :=  jwt.HmacSha256(secret)
+	claims := jwt.NewClaim()
+	claims.Set("id", id)
+	claims.Set("time", time.Now().AddDate(0,0,30).Unix())
+	token, err := algorithm.Encode(claims)
+	if err!=nil{
+		sendAnswerError("Token is failed", w)
+		fmt.Println(err)
+		return
+	}
+	var x = make(map[string]string)
+	x["token"]=token
+	x["result"]="Success"
+	finish, _:=json.Marshal(x)
+	fmt.Fprintf(w, string(finish))
+}
 
 
 func getJson(target interface{}, r*http.Request) error {
@@ -41,7 +64,6 @@ func getJson(target interface{}, r*http.Request) error {
 }
 
 func enter( w http.ResponseWriter, r *http.Request){
-
 	var data *ProveConnection
 	decoder:= json.NewDecoder(r.Body)
 	defer r.Body.Close()
@@ -64,20 +86,9 @@ func enter( w http.ResponseWriter, r *http.Request){
 		sendAnswerError("User is undefined", w)
 		return
 	}
-	algorithm :=  jwt.HmacSha256(secret)
-	claims := jwt.NewClaim()
-	claims.Set("id", now_user.ID)
-	claims.Set("time", time.Now().AddDate(0,0,30).Unix())
-	token, err := algorithm.Encode(claims)
-	if err!=nil{
-		sendAnswerError("Token is failed", w)
-		fmt.Println(err)
-		return
-	}
-	var x = make(map[string]string)
-	x["token"]=token
-	finish, _:=json.Marshal(x)
-	fmt.Fprintf(w, string(finish))
+	id_int64 := int64(now_user.ID)
+	u_id:= strconv.FormatInt(id_int64, 10)
+	sendToken(u_id, w)
 }
 
 func proveToken(w http.ResponseWriter, r *http.Request){
@@ -94,6 +105,7 @@ func proveToken(w http.ResponseWriter, r *http.Request){
 	tokenIsTrue, err_str := methods.TestUserToken(secret, data.Token)
 	if len(err_str) != 0 {
 		methods.SendAnswerError(err_str, w)
+		return 
 	}
 	if tokenIsTrue != nil{
 		var x = make(map[string]string)
@@ -103,12 +115,33 @@ func proveToken(w http.ResponseWriter, r *http.Request){
 	}
 }
 
+func createUser(w http.ResponseWriter, r *http.Request){
+	var data *ProveConnection
+	err:=getJson(&data,r)
+	if err != nil {
+		sendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	if data.Login == "" || data.Pass == ""{
+		sendAnswerError("Haven't all fields (Login,Pass)", w)
+		return
+	}
+	id,err_string, err := db_work.CreateUser(data.Login, data.Pass, data.Login)
+	if err != nil || id==""{
+			sendAnswerError(err_string,w)
+			return
+	}
+	sendToken(id, w)
+}
+
 func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 	//fmt.Println(var1+"Hello")
 	switch var1 {
 		case "enter":
 			enter(w, r)
-	case "testToken":
-		proveToken(w, r)
+		case "testToken":
+			proveToken(w, r)
+		case "create":
+			createUser(w, r)
 	}
 }
