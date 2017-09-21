@@ -4,6 +4,9 @@ cd ..
 cd user
 go install
 cd ..
+cd methods
+go install
+cd ..
 go install
 cd ..
 go install

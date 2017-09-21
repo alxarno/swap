@@ -7,13 +7,19 @@ import (
 	db_work "github.com/AlexArno/spatium/db_work"
 	"github.com/robbert229/jwt"
 	"time"
+	methods "github.com/AlexArno/spatium/src/api/methods"
 )
 type ProveConnection struct{
 	Login string
 	Pass string
 }
 type userGetToken struct{
-	line string
+	Token string
+}
+
+type TokenData struct{
+	Id int
+	Time int
 }
 
 var (
@@ -26,6 +32,8 @@ func sendAnswerError(e_type string, w http.ResponseWriter){
 	finish, _:=json.Marshal(answer)
 	fmt.Fprintf(w, string(finish))
 }
+
+
 
 func getJson(target interface{}, r*http.Request) error {
 	defer r.Body.Close()
@@ -58,8 +66,8 @@ func enter( w http.ResponseWriter, r *http.Request){
 	}
 	algorithm :=  jwt.HmacSha256(secret)
 	claims := jwt.NewClaim()
-	claims.Set("id", &now_user.ID)
-	claims.Set("time", time.Now().Local().Add(time.Hour*24*30).Unix())
+	claims.Set("id", now_user.ID)
+	claims.Set("time", time.Now().AddDate(0,0,30).Unix())
 	token, err := algorithm.Encode(claims)
 	if err!=nil{
 		sendAnswerError("Token is failed", w)
@@ -73,40 +81,34 @@ func enter( w http.ResponseWriter, r *http.Request){
 }
 
 func proveToken(w http.ResponseWriter, r *http.Request){
-	algorithm :=  jwt.HmacSha256(secret)
-
-	token := new(userGetToken)
-	getJson(token, r)
-	claims, err := algorithm.Decode(token.line)
+	var data *userGetToken
+	err:=getJson(&data,r)
 	if err != nil {
-		sendAnswerError("Token is failed", w)
+		sendAnswerError("Failed decode r.Body", w)
 		return
 	}
-	id,err :=claims.Get("id")
-	fmt.Println(id)
-	if err != nil{
-		fmt.Println(err)
-	}
-	now_user, err:= db_work.GetUser("id" , map[string]string{"id": "1"})
-	if err!=nil{
-		sendAnswerError("User is undefined", w)
+	if data == nil{
+		sendAnswerError("Haven't all fields (Token)", w)
 		return
 	}
-	if now_user == nil{
-		sendAnswerError("User is undefined", w)
-		return
+	tokenIsTrue, err_str := methods.TestUserToken(secret, data.Token)
+	if len(err_str) != 0 {
+		methods.SendAnswerError(err_str, w)
 	}
-	var finish = make(map[string]string)
-	finish["result"]="Success"
-	x, _:=json.Marshal(finish)
-	fmt.Fprintf(w, string(x))
+	if tokenIsTrue != nil{
+		var x = make(map[string]string)
+		x["result"]="Success"
+		finish, _:=json.Marshal(x)
+		fmt.Fprintf(w, string(finish))
+	}
 }
 
 func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
-	fmt.Println(var1+"Hello")
+	//fmt.Println(var1+"Hello")
 	switch var1 {
 		case "enter":
-			fmt.Println("Switch works")
 			enter(w, r)
+	case "testToken":
+		proveToken(w, r)
 	}
 }
