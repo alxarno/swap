@@ -16,6 +16,11 @@ type createChat struct{
 	Name string
 }
 
+type getMessagesData struct{
+	Token string
+	ID float64
+}
+
 func create(w http.ResponseWriter, r *http.Request){
 	var data *createChat
 	err:=methods.GetJson(&data, r)
@@ -41,10 +46,38 @@ func create(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, string(finish))
 }
 
+func getMessages(w http.ResponseWriter, r *http.Request){
+	var data *getMessagesData
+	err:=methods.GetJson(&data, r)
+	fmt.Println(data)
+	if err != nil {
+		methods.SendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	user, err:=methods.TestUserToken(secret, data.Token)
+	if err != nil{
+		methods.SendAnswerError("Failed decode token", w)
+		return
+	}
+	err = db_work.CheckUserINChat(user.ID, data.ID)
+	if err != nil{
+		methods.SendAnswerError("User isn't in chat", w)
+		return
+	}
+	messages,err:=db_work.GetMessages(data.ID)
+	if err != nil{
+		methods.SendAnswerError("Fail get data from db", w)
+		return
+	}
+	finish, _:=json.Marshal(messages)
+	fmt.Fprintf(w, string(finish))
+}
+
 func MainChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 	switch var1 {
 	case "create":
 		create(w,r)
-
+	case "getMessages":
+		getMessages(w,r)
 	}
 }

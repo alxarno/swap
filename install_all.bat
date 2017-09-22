@@ -10,6 +10,9 @@ cd ..
 go install
 cd ..
 go install
+cd messages
+go install
+cd ..
 cd ..
 cd models
 go install

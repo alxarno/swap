@@ -9,6 +9,8 @@ import (
 	models "github.com/AlexArno/spatium/models"
 	"time"
 	"errors"
+	"encoding/json"
+	"strconv"
 )
 var (
 	activeConn *sql.DB
@@ -148,24 +150,124 @@ func CreateChat(name string, author_id string)(string,  error){
 
 }
 
-func GetMyChats(user_id float64)([]map[string]string, error){
-	var chats_ids []map[string]string
+func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
+	var chats_ids []*models.UserChatInfo
+	var middle []map[string]string
 	rows, err := activeConn.Query("SELECT chats.id, chats.name FROM people_in_chats INNER JOIN chats ON people_in_chats.chat_id = chats.id WHERE user_id=?", user_id)
 	if err != nil {
+		fmt.Println("Outside")
 		return nil,err
 	}
 	defer rows.Close()
 	for rows.Next(){
-		var id,  name string
+		var id, name string
 		if err := rows.Scan(&id,  &name); err != nil {
 			return nil,err
 		}
-		chats_ids = append(chats_ids, map[string]string{"id": id, "name": name})
+		middle=append(middle, map[string]string{"id": id, "name": name})
+		//message, err := activeConn.Prepare("SELECT  TOP(1) people.u_name, messages.content FROM messages INNER JOIN people ON messages.user_id = people.id WHERE chat_id=? ORDER BY time DESC")
+		//if err != nil {
+		//	fmt.Println("Inside")
+		//	return nil,err
+		//}
+		//query := message.QueryRow(id)
+		//err = query.Scan(&author_name, &content)
+		//if err != nil {
+		//	return nil,err
+		//}
+		//defer message.Close()
+		//f64_id, err := strconv.ParseFloat(id, 64)
+		//if err != nil {
+		//	return nil,err
+		//}
+		//chats_ids = append(chats_ids, &models.UserChatInfo{f64_id,name,[]string{}, author_name,content,0})
+	}
+	for _,i := range middle{
+		var author_name, content string
+		message, err := activeConn.Prepare("SELECT  TOP(1) people.u_name, messages.content FROM messages INNER JOIN people ON messages.user_id = people.id WHERE chat_id=? ORDER BY time DESC")
+		if err != nil {
+			fmt.Println("Inside")
+			return nil,err
+		}
+		query := message.QueryRow(i["id"])
+		err = query.Scan(&author_name, &content)
+		if err != nil {
+			return nil,err
+		}
+		defer message.Close()
+		//chats_ids
 	}
 	if err := rows.Err(); err != nil {
 		return nil,err
 	}
 	return chats_ids, nil
+}
+
+func AddMessage(user_id float64, chat_id float64, content string)(error){
+	if !activeConnIsReal{
+		OpenDB()
+	}
+	// Is user in chat?
+	err := CheckUserINChat(user_id, chat_id)
+	if err != nil{
+		return err
+	}
+//	Create message
+	statement, err := activeConn.Prepare("INSERT INTO messages (user_id, chat_id, content, time) VALUES (?, ?, ?, ?)")
+	if err != nil {
+		return errors.New("DB failed query")
+	}
+	//make hash of user's password
+	_, err = statement.Exec(user_id, chat_id,content, time.Now().Unix())
+	if err != nil {
+		return errors.New("Failed exec statement")
+	}
+	return nil
+}
+
+func CheckUserINChat(user_id float64, chat_id float64)(error){
+	var id_now string
+	rows, err := activeConn.Prepare("SELECT chat_id FROM people_in_chats WHERE (user_id=?) AND (chat_id=?)")
+	if err != nil {
+		panic(nil)
+	}
+	query := rows.QueryRow(user_id, chat_id).Scan(&id_now)
+	defer rows.Close()
+	if query == sql.ErrNoRows{
+		return errors.New("User aren't in chat")
+	}
+	return nil
+}
+
+func GetMessages(chat_id float64)([]models.NewMessageToUser, error){
+	var messages []models.NewMessageToUser
+	rows, err := activeConn.Query("SELECT messages.user_id, messages.content, messages.chat_id,   people.u_name  FROM messages INNER JOIN people ON messages.user_id = people.id WHERE messages.chat_id=?", chat_id)
+	if err != nil {
+		return nil,err
+	}
+	defer rows.Close()
+	for rows.Next(){
+		var id, content, u_name, c_id string
+		if err := rows.Scan(&id,  &content,&c_id, &u_name); err != nil {
+			return nil,err
+		}
+		//decode content
+		var r_content *models.MessageContent
+		err = json.Unmarshal([]byte(content), &r_content)
+		if err != nil{
+			return nil,err
+		}
+		f64_c_id, err := strconv.ParseFloat(c_id, 64)
+		if err != nil {
+			return nil,err
+		}
+		f64_id, err := strconv.ParseFloat(id, 64)
+		if err != nil {
+			return nil,err
+		}
+		messages = append(messages, models.NewMessageToUser{&f64_c_id,r_content,&f64_id,&u_name})
+	}
+	return messages, nil
 }
 
 func createDB_structs(database *sql.DB) {
@@ -180,6 +282,10 @@ func createDB_structs(database *sql.DB) {
 	//Create people in chat structs
 
 	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS people_in_chats ( user_id INTEGER, chat_id INTEGER)")
+	statement.Exec()
+
+	//Create messages structs
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, user_id INTEGER, chat_id INTEGER, content TEXT, time INTEGER)")
 	statement.Exec()
 
 	//Create chat structs

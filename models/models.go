@@ -30,6 +30,20 @@ type User struct {
 	Login string
 	Pass string
 }
+
+type NewMessageToUser struct{
+	Chat_Id *float64
+	Content *MessageContent
+	Author_id *float64
+	Author_Name *string
+}
+
+type MessageContent struct{
+	Message *string
+	Documents *[]string
+	Type *string
+}
+
 func GetModels() string{
 	return "Info"
 }

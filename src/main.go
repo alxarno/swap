@@ -10,6 +10,7 @@ import (
 	db_work "github.com/AlexArno/spatium/db_work"
 	models "github.com/AlexArno/spatium/models"
 	api "github.com/AlexArno/spatium/src/api"
+	messages_work "github.com/AlexArno/spatium/src/messages"
 	"github.com/gorilla/mux"
 )
 //type Chat struct{
@@ -52,11 +53,11 @@ type ErrorAnswer struct{
 }
 
 
-type client chan<-models.Message
+type client chan<-models.NewMessageToUser
 var (
 	chats []*models.Chat
 	messagesBlock []*models.MessageBlock
-	messages = make(chan models.Message)
+	messages = make(chan models.NewMessageToUser)
 	entering = make(chan client)
 	leaving = make(chan client)
 )
@@ -67,7 +68,7 @@ func broadcaster(){
 	for{
 		select {
 			case msg:=<-messages:
-				for cli:= range clients{
+				for cli := range clients{
 					cli<-msg
 				}
 			case cli:=<-entering:
@@ -80,7 +81,7 @@ func broadcaster(){
 }
 
 
-func writerUser(ws *websocket.Conn, ch<-chan models.Message){
+func writerUser(ws *websocket.Conn, ch<-chan  models.NewMessageToUser){
 	for msg:=range ch{
 		now_msg, err := json.Marshal(msg)
 		if err != nil {
@@ -95,10 +96,9 @@ func writerUser(ws *websocket.Conn, ch<-chan models.Message){
 
 }
 
-
 func SocketListener(ws *websocket.Conn) {
 	var err error
-	ch:= make(chan  models.Message)
+	ch:= make(chan  models.NewMessageToUser)
 	go writerUser(ws, ch)
 	entering<-ch
 	for {
@@ -109,28 +109,35 @@ func SocketListener(ws *websocket.Conn) {
 			break
 		}
 
+		send, err := messages_work.NewMessage(&reply)
+		if err != nil{
+			fmt.Println("Decode message")
+			break
+		}
+
+
 		//parse user request message and send them to saver
-		byt := []byte(reply)
-		var dat map[string]interface{}
-		if err := json.Unmarshal(byt, &dat);err != nil{
-			panic(err)
-		}
-		chat_id := dat["chat_id"].(float64)
-		now_msg := models.Message{dat["Addr_author"].(string), dat["Content"].(string), dat["Type"].(string), chat_id}
-		for v,r := range messagesBlock{
-			if float64(r.Chat_Id) == chat_id{
-				messagesBlock[v].Messages = append(messagesBlock[v].Messages, now_msg)
-			}
-		}
+		//byt := []byte(reply)
+		//var dat map[string]interface{}
+		//if err := json.Unmarshal(byt, &dat);err != nil{
+		//	panic(err)
+		//}
+		//chat_id := dat["chat_id"].(float64)
+		//now_msg := models.Message{dat["Addr_author"].(string), dat["Content"].(string), dat["Type"].(string), chat_id}
+		//for v,r := range messagesBlock{
+		//	if float64(r.Chat_Id) == chat_id{
+		//		messagesBlock[v].Messages = append(messagesBlock[v].Messages, now_msg)
+		//	}
+		//}
 		for v,r := range chats{
-			if float64(r.ID) == chat_id{
-				chats[v].LastSender = now_msg.Addr_author
-				chats[v].LastMessage = now_msg.Content
+			if float64(r.ID) == *send.Chat_Id{
+				chats[v].LastSender = *send.Author_Name
+				chats[v].LastMessage = *send.Content.Message
 			}
 		}
 		//fmt.Println(chat_id)
 		//fmt.Println("Received back from client: " + reply)
-		messages<-now_msg
+		messages<-*send
 	}
 	leaving<-ch
 	ws.Close()
@@ -226,9 +233,9 @@ func ApiRouter(w http.ResponseWriter, r *http.Request){
 
 
 func main(){
-	//for i := 1; i < 3; i++ {
-	//	createMainChat(float64(i))
-	//}
+	for i := 1; i < 3; i++ {
+		createMainChat(float64(i))
+	}
 	go broadcaster()
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.Handle("/ws", websocket.Handler(SocketListener))
