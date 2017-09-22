@@ -226,9 +226,9 @@ func ApiRouter(w http.ResponseWriter, r *http.Request){
 
 
 func main(){
-	for i := 1; i < 3; i++ {
-		createMainChat(float64(i))
-	}
+	//for i := 1; i < 3; i++ {
+	//	createMainChat(float64(i))
+	//}
 	go broadcaster()
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.Handle("/ws", websocket.Handler(SocketListener))

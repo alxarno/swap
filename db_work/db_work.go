@@ -7,6 +7,8 @@ import (
 	"os"
 	"fmt"
 	models "github.com/AlexArno/spatium/models"
+	"time"
+	"errors"
 )
 var (
 	activeConn *sql.DB
@@ -94,14 +96,104 @@ func CreateUser(login string, pass string, u_name string)(string, string, error)
 	return id_now,"Success", nil
 }
 
-func createDB_structs(database *sql.DB){
+func InsertUserInChat(user_id string, chat_id int64)( error){
+	if !activeConnIsReal{
+		OpenDB()
+	}
+	var id_now string
+	rows, err := activeConn.Prepare("SELECT chat_id FROM people_in_chats WHERE (user_id=?) AND (chat_id=?)")
+	if err != nil {
+		panic(nil)
+	}
+	query := rows.QueryRow(user_id, chat_id).Scan(&id_now)
+	defer rows.Close()
+	if query != sql.ErrNoRows{
+		return errors.New("User already in chat")
+	}
+	statement, err := activeConn.Prepare("INSERT INTO people_in_chats (user_id, chat_id) VALUES (?, ?)")
+	if err != nil {
+		return errors.New("DB failed query")
+	}
+	//make hash of user's password
+	statement.Exec(user_id, chat_id)
+	statement, err = activeConn.Prepare("UPDATE chats SET lastmodify=? WHERE id=?")
+	if err != nil {
+		return errors.New("DB failed query")
+	}
+	//make hash of user's password
+	statement.Exec(time.Now().Unix(), chat_id)
+	return nil
+}
+
+func CreateChat(name string, author_id string)(string,  error){
+	if !activeConnIsReal{
+		OpenDB()
+	}
+	statement, err := activeConn.Prepare("INSERT INTO chats (name,  author_id,moders_ids, lastmodify) VALUES (?, ?, ?, ?)")
+	if err != nil {
+		return "",errors.New("Failed permanent statement")
+	}
+	//make hash of user's password
+	res, err := statement.Exec(name,  author_id,"[]", time.Now().Unix())
+	if err != nil {
+		return "",errors.New("Failed exec statement")
+	}
+	id, _ := res.LastInsertId()
+	err = InsertUserInChat(author_id, id)
+	if err != nil {
+		return "",err
+		//fmt.Println(fin)
+	}
+	return string(id), nil
+
+}
+
+func GetMyChats(user_id float64)([]map[string]string, error){
+	var chats_ids []map[string]string
+	rows, err := activeConn.Query("SELECT chats.id, chats.name FROM people_in_chats INNER JOIN chats ON people_in_chats.chat_id = chats.id WHERE user_id=?", user_id)
+	if err != nil {
+		return nil,err
+	}
+	defer rows.Close()
+	for rows.Next(){
+		var id,  name string
+		if err := rows.Scan(&id,  &name); err != nil {
+			return nil,err
+		}
+		chats_ids = append(chats_ids, map[string]string{"id": id, "name": name})
+	}
+	if err := rows.Err(); err != nil {
+		return nil,err
+	}
+	return chats_ids, nil
+}
+
+func createDB_structs(database *sql.DB) {
+	//Create user structs
 	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, login TEXT, pass TEXT, u_name TEXT)")
 	statement.Exec()
-	_, fin, err := CreateUser("god","1111", "Alex")
-	if err!= nil{
+	user_id, fin, err := CreateUser("god", "1111", "Alex")
+	if err != nil {
 		fmt.Println(fin)
+		return
 	}
-}
+	//Create people in chat structs
+
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS people_in_chats ( user_id INTEGER, chat_id INTEGER)")
+	statement.Exec()
+
+	//Create chat structs
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, name TEXT,  author_id INTEGER , moders_ids TEXT, lastmodify INTEGER)")
+	statement.Exec()
+	_, err = CreateChat("globalChat",  user_id)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+
+
+	}
+
 
 func OpenDB(){
 	newDB := false

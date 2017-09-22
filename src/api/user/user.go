@@ -9,6 +9,7 @@ import (
 	"time"
 	methods "github.com/AlexArno/spatium/src/api/methods"
 	"strconv"
+
 )
 type ProveConnection struct{
 	Login string
@@ -57,6 +58,19 @@ func sendToken(id string, w http.ResponseWriter){
 	fmt.Fprintf(w, string(finish))
 }
 
+//func decodeToken(r *http.Request)(*models.User, error){
+//	var data *userGetToken
+//	err:=getJson(&data,r)
+//	if err != nil {
+//		return nil,err
+//	}
+//	tokenIsTrue, err_str := methods.TestUserToken(secret, data.Token)
+//	if len(err_str) != 0 {
+//		err := errors.New(err_str)
+//		return nil,err
+//	}
+//	return tokenIsTrue, nil
+//}
 
 func getJson(target interface{}, r*http.Request) error {
 	defer r.Body.Close()
@@ -102,10 +116,10 @@ func proveToken(w http.ResponseWriter, r *http.Request){
 		sendAnswerError("Haven't all fields (Token)", w)
 		return
 	}
-	tokenIsTrue, err_str := methods.TestUserToken(secret, data.Token)
-	if len(err_str) != 0 {
-		methods.SendAnswerError(err_str, w)
-		return 
+	tokenIsTrue, err := methods.TestUserToken(secret, data.Token)
+	if err != nil {
+		methods.SendAnswerError(err.Error(), w)
+		return
 	}
 	if tokenIsTrue != nil{
 		var x = make(map[string]string)
@@ -134,6 +148,23 @@ func createUser(w http.ResponseWriter, r *http.Request){
 	sendToken(id, w)
 }
 
+func getMyChats(w http.ResponseWriter, r *http.Request){
+	user, err:=methods.DecodeToken(secret, r)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	chats,err := db_work.GetMyChats(user.ID)
+	if err!= nil{
+		fmt.Println(err)
+		sendAnswerError("Some failed",w)
+		return
+	}
+	fmt.Println(chats)
+	finish, _:=json.Marshal(chats)
+	fmt.Fprintf(w, string(finish))
+}
+
 func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 	//fmt.Println(var1+"Hello")
 	switch var1 {
@@ -143,5 +174,7 @@ func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 			proveToken(w, r)
 		case "create":
 			createUser(w, r)
+		case "getMyChats":
+			getMyChats(w, r)
 	}
 }
