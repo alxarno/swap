@@ -83,6 +83,11 @@ func broadcaster(){
 
 func writerUser(ws *websocket.Conn, ch<-chan  models.NewMessageToUser){
 	for msg:=range ch{
+		//now_content, err := json.Marshal(msg.Content)
+		//if err != nil {
+		//	fmt.Println("Fail Marshaling in function wruteUser :69")
+		//	return
+		//}
 		now_msg, err := json.Marshal(msg)
 		if err != nil {
 			fmt.Println("Fail Marshaling in function wruteUser :69")
@@ -105,13 +110,13 @@ func SocketListener(ws *websocket.Conn) {
 		var reply string
 
 		if err = websocket.Message.Receive(ws, &reply); err != nil {
-			fmt.Println("Can't receive")
+			fmt.Println("Can't receive", err)
 			break
 		}
 
 		send, err := messages_work.NewMessage(&reply)
 		if err != nil{
-			fmt.Println("Decode message")
+			fmt.Println("Decode message", err)
 			break
 		}
 
@@ -137,7 +142,7 @@ func SocketListener(ws *websocket.Conn) {
 		}
 		//fmt.Println(chat_id)
 		//fmt.Println("Received back from client: " + reply)
-		messages<-*send
+		messages<-send
 	}
 	leaving<-ch
 	ws.Close()
@@ -151,17 +156,17 @@ func createMainChat(id float64){
 	messagesBlock = append(messagesBlock, &messageBloc1)
 	chats = append(chats, &chat1)
 }
-
-func getChats(w http.ResponseWriter, r *http.Request){
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	var usersChats []*models.UserChatInfo
-	for _,r := range  chats{
-		usersChats = append(usersChats, &models.UserChatInfo{r.ID,r.Name,r.Addr_users,r.LastSender, r.LastMessage,0})
-	}
-	data, _ := json.Marshal(usersChats)
-	fmt.Fprintf(w, string(data))
-}
+//
+//func getChats(w http.ResponseWriter, r *http.Request){
+//	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+//	w.Header().Set("Access-Control-Allow-Origin", "*")
+//	var usersChats []*models.UserChatInfo
+//	for _,r := range  chats{
+//		usersChats = append(usersChats, &models.UserChatInfo{r.ID,r.Name,r.Addr_users,r.LastSender, r.LastMessage,0})
+//	}
+//	data, _ := json.Marshal(usersChats)
+//	fmt.Fprintf(w, string(data))
+//}
 
 func proveConnect(w http.ResponseWriter, r *http.Request){
 	//w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -241,7 +246,7 @@ func main(){
 	myRouter.Handle("/ws", websocket.Handler(SocketListener))
 	myRouter.HandleFunc("/proveConnect", proveConnect)
 	myRouter.HandleFunc("/testDb", testDb)
-	myRouter.HandleFunc("/getChats", getChats)
+	//myRouter.HandleFunc("/getChats", getChats)
 	myRouter.HandleFunc("/getMessages", getMessages)
 	myRouter.HandleFunc("/api/{key}/{var1}", ApiRouter)
 	//if err := myRouter.ListenAndServe(":1234", nil); err != nil {

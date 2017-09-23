@@ -20,49 +20,49 @@ type NewMessageFormUser struct{
 
 
 
-func NewMessage(user_quest *string)(*models.NewMessageToUser, error){
-	var data *NewMessageFormUser
+func NewMessage(user_quest *string)(models.NewMessageToUser, error){
+	var send models.NewMessageToUser
+	var data NewMessageFormUser
 	message := []byte(*user_quest)
 	err := json.Unmarshal(message, &data)
 	if err != nil{
-		return nil,err
+		return send,err
 	}
 	if data.Chat_Id == nil {
-		return nil, errors.New("Chat_Id is missing or null!")
+		return send, errors.New("Chat_Id is missing or null!")
 	}
 	if data.Token == nil {
-		return nil, errors.New("Token is missing or null!")
+		return send, errors.New("Token is missing or null!")
 	}
 	if data.Content  == nil {
-		return nil, errors.New("Content is missing or null!")
+		return send, errors.New("Content is missing or null!")
 	}
 	if data.Content.Message  == nil {
-		return nil, errors.New("Content.Message is missing or null!")
+		return send, errors.New("Content.Message is missing or null!")
 	}
 	if data.Content.Documents  == nil {
-		return nil, errors.New("Content.Documents is missing or null!")
+		return send, errors.New("Content.Documents is missing or null!")
 	}
 	if data.Content.Type  == nil {
-		return nil, errors.New("Content.Type is missing or null!")
+		return send, errors.New("Content.Type is missing or null!")
 	}
 	token := *data.Token
 	user,err := methods.TestUserToken(secret, token)
 	if err != nil{
-		return nil, err
+		return send, err
 	}
 	content,err:= json.Marshal(*data.Content)
 	if err!=nil{
-		return  nil,err
+		return  send,err
 	}
 	err= db_work.AddMessage(user.ID, *data.Chat_Id, string(content))
 	if err != nil{
-		return nil,err
+		return send,err
 	}
-	var send *models.NewMessageToUser
 	send.Author_id = &user.ID
 	send.Author_Name=&user.Name
 	send.Chat_Id = data.Chat_Id
 	send.Content = data.Content
-	return send,nil
+	return send, nil
 
 }

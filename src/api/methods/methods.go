@@ -17,6 +17,8 @@ type userGetToken struct{
 	Token string
 }
 
+
+
 func DecodeToken(secret string, r *http.Request)(*models.User, error){
 	var data *userGetToken
 	err:=GetJson(&data,r)

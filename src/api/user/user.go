@@ -149,6 +149,7 @@ func createUser(w http.ResponseWriter, r *http.Request){
 }
 
 func getMyChats(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	user, err:=methods.DecodeToken(secret, r)
 	if err != nil{
 		sendAnswerError(err.Error(), w)
@@ -165,6 +166,34 @@ func getMyChats(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, string(finish))
 }
 
+func getMyData(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	user, err:=methods.DecodeToken(secret, r)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	if user == nil{
+		sendAnswerError("User is undefined", w)
+		return
+	}
+	//fmt.Println(*user)
+	//r_user := *user
+	//chats,err := db_work.GetMyChats(user.ID)
+	//if err!= nil{
+	//	fmt.Println(err)
+	//	sendAnswerError("Some failed",w)
+	//	return
+	//}
+	//s_id := strconv.FormatFloat(user.ID, 'f', 2, 64)
+	//id_int64 := int64(user.ID)
+	//u_id := strconv.FormatInt(id_int64, 10)
+	data := make(map[string]interface{})
+	data["ID"] = user.ID
+	finish, _:=json.Marshal(data)
+	fmt.Fprintf(w, string(finish))
+}
+
 func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 	//fmt.Println(var1+"Hello")
 	switch var1 {
@@ -176,5 +205,7 @@ func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 			createUser(w, r)
 		case "getMyChats":
 			getMyChats(w, r)
+		case "myData":
+			getMyData(w, r)
 	}
 }

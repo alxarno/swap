@@ -69,6 +69,11 @@ func getMessages(w http.ResponseWriter, r *http.Request){
 		methods.SendAnswerError("Fail get data from db", w)
 		return
 	}
+	if messages == nil{
+		finish, _:=json.Marshal([]string{})
+		fmt.Fprintf(w, string(finish))
+		return
+	}
 	finish, _:=json.Marshal(messages)
 	fmt.Fprintf(w, string(finish))
 }

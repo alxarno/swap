@@ -146,6 +146,22 @@ func CreateChat(name string, author_id string)(string,  error){
 		return "",err
 		//fmt.Println(fin)
 	}
+	mess_mss := "Я создал этот чат"
+	docs := []string{}
+	m_type := "a_msg"
+	mess := models.MessageContent{&mess_mss, &docs, &m_type}
+	data ,err := json.Marshal(mess)
+	if err != nil{
+		return "", err
+	}
+	f_id,err := strconv.ParseFloat(author_id, 64)
+	if err != nil{
+		return "", err
+	}
+	err = AddMessage(f_id, float64(id), string(data))
+	if err != nil{
+		return "", err
+	}
 	return string(id), nil
 
 }
@@ -165,35 +181,33 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 			return nil,err
 		}
 		middle=append(middle, map[string]string{"id": id, "name": name})
-		//message, err := activeConn.Prepare("SELECT  TOP(1) people.u_name, messages.content FROM messages INNER JOIN people ON messages.user_id = people.id WHERE chat_id=? ORDER BY time DESC")
-		//if err != nil {
-		//	fmt.Println("Inside")
-		//	return nil,err
-		//}
-		//query := message.QueryRow(id)
-		//err = query.Scan(&author_name, &content)
-		//if err != nil {
-		//	return nil,err
-		//}
-		//defer message.Close()
-		//f64_id, err := strconv.ParseFloat(id, 64)
-		//if err != nil {
-		//	return nil,err
-		//}
-		//chats_ids = append(chats_ids, &models.UserChatInfo{f64_id,name,[]string{}, author_name,content,0})
+
 	}
 	for _,i := range middle{
 		var author_name, content string
-		message, err := activeConn.Prepare("SELECT  TOP(1) people.u_name, messages.content FROM messages INNER JOIN people ON messages.user_id = people.id WHERE chat_id=? ORDER BY time DESC")
+		message, err := activeConn.Prepare("SELECT  messages.content, people.u_name FROM messages INNER JOIN people ON messages.user_id = people.id WHERE chat_id=? ORDER BY time DESC")
 		if err != nil {
 			fmt.Println("Inside")
 			return nil,err
 		}
 		query := message.QueryRow(i["id"])
-		err = query.Scan(&author_name, &content)
-		if err != nil {
-			return nil,err
+
+		err = query.Scan(&content, &author_name)
+		if err == sql.ErrNoRows{
+			//return nil, err
+			content = ""
+			author_name = ""
 		}
+		f_id,err := strconv.ParseFloat(i["id"], 64)
+		if err != nil {
+			return nil, err
+		}
+		var m_content models.MessageContent
+		err = json.Unmarshal([]byte(content), &m_content)
+		if err!=nil{
+			return nil, err
+		}
+		chats_ids=append(chats_ids, &models.UserChatInfo{f_id,i["name"], []string{}, author_name, &m_content,0 })
 		defer message.Close()
 		//chats_ids
 	}
@@ -218,7 +232,7 @@ func AddMessage(user_id float64, chat_id float64, content string)(error){
 		return errors.New("DB failed query")
 	}
 	//make hash of user's password
-	_, err = statement.Exec(user_id, chat_id,content, time.Now().Unix())
+	_, err = statement.Exec(user_id, chat_id, content, time.Now().Unix())
 	if err != nil {
 		return errors.New("Failed exec statement")
 	}
