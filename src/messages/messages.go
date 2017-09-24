@@ -8,9 +8,7 @@ import (
 	"github.com/AlexArno/spatium/models"
 )
 var secret = "321312421"
-func Hello() string{
-	return "Hello"
-}
+
 
 type NewMessageFormUser struct{
 	Chat_Id *float64

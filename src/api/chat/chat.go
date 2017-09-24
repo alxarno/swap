@@ -49,7 +49,7 @@ func create(w http.ResponseWriter, r *http.Request){
 func getMessages(w http.ResponseWriter, r *http.Request){
 	var data *getMessagesData
 	err:=methods.GetJson(&data, r)
-	fmt.Println(data)
+	//fmt.Println(data)
 	if err != nil {
 		methods.SendAnswerError("Failed decode r.Body", w)
 		return

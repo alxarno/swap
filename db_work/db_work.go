@@ -89,7 +89,7 @@ func CreateUser(login string, pass string, u_name string)(string, string, error)
 	statement.Exec(login, h.Sum(nil), u_name)
 	rows, err = activeConn.Prepare("SELECT id FROM people WHERE login=?")
 	if err != nil {
-		panic(nil)
+		return "","DB failed query",err
 	}
 	query = rows.QueryRow(login).Scan(&id_now)
 	if query == sql.ErrNoRows{
@@ -169,18 +169,22 @@ func CreateChat(name string, author_id string)(string,  error){
 func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 	var chats_ids []*models.UserChatInfo
 	var middle []map[string]string
-	rows, err := activeConn.Query("SELECT chats.id, chats.name FROM people_in_chats INNER JOIN chats ON people_in_chats.chat_id = chats.id WHERE user_id=?", user_id)
+	rows, err := activeConn.Query("SELECT chats.id, chats.name, chats.author_id, chats.moders_ids FROM people_in_chats INNER JOIN chats ON people_in_chats.chat_id = chats.id WHERE user_id=?", user_id)
 	if err != nil {
-		fmt.Println("Outside")
+		fmt.Println("Outside", err)
 		return nil,err
 	}
 	defer rows.Close()
 	for rows.Next(){
-		var id, name string
-		if err := rows.Scan(&id,  &name); err != nil {
+		var id, name, un_moders string
+		var author_id string
+		//var moders []string
+		if err := rows.Scan(&id,  &name, &author_id, &un_moders); err != nil {
+			fmt.Println("scan 1")
 			return nil,err
 		}
-		middle=append(middle, map[string]string{"id": id, "name": name})
+		middle=append(middle, map[string]string{"id": id, "name": name, "author": author_id, "moders": un_moders})
+
 
 	}
 	for _,i := range middle{
@@ -202,12 +206,24 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 		if err != nil {
 			return nil, err
 		}
-		var m_content models.MessageContent
-		err = json.Unmarshal([]byte(content), &m_content)
-		if err!=nil{
+		f_a_id,err := strconv.ParseFloat(i["author"], 64)
+		if err != nil {
+			fmt.Println("f_a_id")
 			return nil, err
 		}
-		chats_ids=append(chats_ids, &models.UserChatInfo{f_id,i["name"], []string{}, author_name, &m_content,0 })
+		var m_content models.MessageContent
+		var moders []float64
+		err = json.Unmarshal([]byte(i["moders"]), &moders)
+		if err!=nil{
+			fmt.Println("moders")
+			return nil, err
+		}
+		err = json.Unmarshal([]byte(content), &m_content)
+		if err!=nil{
+			fmt.Println("content")
+			return nil, err
+		}
+		chats_ids=append(chats_ids, &models.UserChatInfo{f_id,i["name"], author_name, f_a_id, moders,&m_content,0 })
 		defer message.Close()
 		//chats_ids
 	}
@@ -302,8 +318,12 @@ func createDB_structs(database *sql.DB) {
 	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, user_id INTEGER, chat_id INTEGER, content TEXT, time INTEGER)")
 	statement.Exec()
 
+	//Create files structs
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, author_id INTEGER, chat_id INTEGER, filename TEXT, path Text, time INTEGER, uses INTEGER )")
+	statement.Exec()
+
 	//Create chat structs
-	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, name TEXT,  author_id INTEGER , moders_ids TEXT, lastmodify INTEGER)")
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, name TEXT,  author_id INTEGER , moders_ids TEXT, type TEXT,  lastmodify INTEGER)")
 	statement.Exec()
 	_, err = CreateChat("globalChat",  user_id)
 	if err != nil {

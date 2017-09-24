@@ -1,7 +1,7 @@
 package user
 
 import (
-	"fmt"
+	//"fmt"
 	"net/http"
 	"encoding/json"
 	db_work "github.com/AlexArno/spatium/db_work"
@@ -10,6 +10,10 @@ import (
 	methods "github.com/AlexArno/spatium/src/api/methods"
 	"strconv"
 
+	"fmt"
+
+	"os"
+	"io"
 )
 type ProveConnection struct{
 	Login string
@@ -48,7 +52,7 @@ func sendToken(id string, w http.ResponseWriter){
 	token, err := algorithm.Encode(claims)
 	if err!=nil{
 		sendAnswerError("Token is failed", w)
-		fmt.Println(err)
+		//fmt.Println(err)
 		return
 	}
 	var x = make(map[string]string)
@@ -58,24 +62,51 @@ func sendToken(id string, w http.ResponseWriter){
 	fmt.Fprintf(w, string(finish))
 }
 
-//func decodeToken(r *http.Request)(*models.User, error){
-//	var data *userGetToken
-//	err:=getJson(&data,r)
-//	if err != nil {
-//		return nil,err
-//	}
-//	tokenIsTrue, err_str := methods.TestUserToken(secret, data.Token)
-//	if len(err_str) != 0 {
-//		err := errors.New(err_str)
-//		return nil,err
-//	}
-//	return tokenIsTrue, nil
-//}
 
 func getJson(target interface{}, r*http.Request) error {
 	defer r.Body.Close()
 	return json.NewDecoder(r.Body).Decode(target)
 }
+
+func uploadFile(w http.ResponseWriter, r *http.Request){
+	//w.Header().Set("Access-Control-Allow-Origin", "*")
+	r.ParseMultipartForm(104857600)
+	fmt.Println(r.FormValue("token"))
+	file, handler, err := r.FormFile("uploadfile")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer file.Close()
+	fmt.Fprintf(w, "%v", handler.Header)
+	f, err := os.OpenFile("./public/files/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer f.Close()
+	io.Copy(f, file)
+	//if r.Method != "GET" {
+	//	r.ParseMultipartForm(32 << 20)
+	//	token := r.FormValue("token")
+	//	fmt.Println(token)
+	//	file, handler, err := r.FormFile("uploadfile")
+	//	if err != nil {
+	//		fmt.Println("first", err)
+	//		return
+	//	}
+	//	defer file.Close()
+	//	fmt.Fprintf(w, "%v", handler.Header)
+	//	f, err := os.OpenFile("./public/files/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	//	if err != nil {
+	//		fmt.Println("second", err)
+	//		return
+	//	}
+	//	defer f.Close()
+	//	io.Copy(f, file)
+	//}
+}
+
 
 func enter( w http.ResponseWriter, r *http.Request){
 	var data *ProveConnection
@@ -86,7 +117,7 @@ func enter( w http.ResponseWriter, r *http.Request){
 		sendAnswerError("Failed decode r.Body", w)
 		return
 	}
-	fmt.Println(data)
+	//fmt.Println(data)
 	if data == nil{
 		sendAnswerError("Haven't all fields (login, pass)", w)
 		return
@@ -157,11 +188,9 @@ func getMyChats(w http.ResponseWriter, r *http.Request){
 	}
 	chats,err := db_work.GetMyChats(user.ID)
 	if err!= nil{
-		fmt.Println(err)
 		sendAnswerError("Some failed",w)
 		return
 	}
-	fmt.Println(chats)
 	finish, _:=json.Marshal(chats)
 	fmt.Fprintf(w, string(finish))
 }
@@ -177,17 +206,7 @@ func getMyData(w http.ResponseWriter, r *http.Request){
 		sendAnswerError("User is undefined", w)
 		return
 	}
-	//fmt.Println(*user)
-	//r_user := *user
-	//chats,err := db_work.GetMyChats(user.ID)
-	//if err!= nil{
-	//	fmt.Println(err)
-	//	sendAnswerError("Some failed",w)
-	//	return
-	//}
-	//s_id := strconv.FormatFloat(user.ID, 'f', 2, 64)
-	//id_int64 := int64(user.ID)
-	//u_id := strconv.FormatInt(id_int64, 10)
+
 	data := make(map[string]interface{})
 	data["ID"] = user.ID
 	finish, _:=json.Marshal(data)
@@ -197,15 +216,17 @@ func getMyData(w http.ResponseWriter, r *http.Request){
 func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 	//fmt.Println(var1+"Hello")
 	switch var1 {
-		case "enter":
-			enter(w, r)
-		case "testToken":
-			proveToken(w, r)
-		case "create":
-			createUser(w, r)
-		case "getMyChats":
-			getMyChats(w, r)
-		case "myData":
-			getMyData(w, r)
+	case "enter":
+		enter(w, r)
+	case "testToken":
+		proveToken(w, r)
+	case "create":
+		createUser(w, r)
+	case "getMyChats":
+		getMyChats(w, r)
+	case "myData":
+		getMyData(w, r)
+	case "uploadFile":
+		uploadFile(w,r)
 	}
 }

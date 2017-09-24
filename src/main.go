@@ -6,39 +6,14 @@ import (
 	"log"
 	"golang.org/x/net/websocket"
 	"encoding/json"
-	"strconv"
+	//"strconv"
 	db_work "github.com/AlexArno/spatium/db_work"
 	models "github.com/AlexArno/spatium/models"
 	api "github.com/AlexArno/spatium/src/api"
 	messages_work "github.com/AlexArno/spatium/src/messages"
 	"github.com/gorilla/mux"
 )
-//type Chat struct{
-//	ID float64
-//	Name string
-//	Addr_users []string
-//	MessageBlockId float64
-//	LastSender, LastMessage string
-//}
-//type MessageBlock struct {
-//	Chat_Id  float64
-//	Messages []Message
-//}
-//type Message struct {
-//	Addr_author string
-//	Content string
-//	Type string
-//	Chat_Id float64
-//}
 
-// struct for user talk
-//type UserChatInfo struct{
-//	ID float64
-//	Name string
-//	Addr_users []string
-//	LastSender, LastMessage string
-//	View int
-//}
 type ProveConnection struct{
 	Login string
 	Pass string
@@ -83,11 +58,7 @@ func broadcaster(){
 
 func writerUser(ws *websocket.Conn, ch<-chan  models.NewMessageToUser){
 	for msg:=range ch{
-		//now_content, err := json.Marshal(msg.Content)
-		//if err != nil {
-		//	fmt.Println("Fail Marshaling in function wruteUser :69")
-		//	return
-		//}
+
 		now_msg, err := json.Marshal(msg)
 		if err != nil {
 			fmt.Println("Fail Marshaling in function wruteUser :69")
@@ -120,53 +91,18 @@ func SocketListener(ws *websocket.Conn) {
 			break
 		}
 
-
-		//parse user request message and send them to saver
-		//byt := []byte(reply)
-		//var dat map[string]interface{}
-		//if err := json.Unmarshal(byt, &dat);err != nil{
-		//	panic(err)
-		//}
-		//chat_id := dat["chat_id"].(float64)
-		//now_msg := models.Message{dat["Addr_author"].(string), dat["Content"].(string), dat["Type"].(string), chat_id}
-		//for v,r := range messagesBlock{
-		//	if float64(r.Chat_Id) == chat_id{
-		//		messagesBlock[v].Messages = append(messagesBlock[v].Messages, now_msg)
-		//	}
-		//}
 		for v,r := range chats{
 			if float64(r.ID) == *send.Chat_Id{
 				chats[v].LastSender = *send.Author_Name
 				chats[v].LastMessage = *send.Content.Message
 			}
 		}
-		//fmt.Println(chat_id)
-		//fmt.Println("Received back from client: " + reply)
+
 		messages<-send
 	}
 	leaving<-ch
 	ws.Close()
 }
-
-func createMainChat(id float64){
-	//msg:=json.Marshal([]map{"type":"a_msg", "content": "God: i'm create this"})
-	//msg:=`{"type":"a_msg", "content": "God: i'm create this"}`
-	messageBloc1:= models.MessageBlock{id,[]models.Message{{"127.0.0.1:1234", "God: Im create this chat "+strconv.Itoa(int(id)), "a_msg", id}}}
-	chat1 := models.Chat{id,strconv.Itoa(int(id)),[]string{"127.0.0.1:1234"}, id, "God", "i'm create chat"}
-	messagesBlock = append(messagesBlock, &messageBloc1)
-	chats = append(chats, &chat1)
-}
-//
-//func getChats(w http.ResponseWriter, r *http.Request){
-//	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-//	w.Header().Set("Access-Control-Allow-Origin", "*")
-//	var usersChats []*models.UserChatInfo
-//	for _,r := range  chats{
-//		usersChats = append(usersChats, &models.UserChatInfo{r.ID,r.Name,r.Addr_users,r.LastSender, r.LastMessage,0})
-//	}
-//	data, _ := json.Marshal(usersChats)
-//	fmt.Fprintf(w, string(data))
-//}
 
 func proveConnect(w http.ResponseWriter, r *http.Request){
 	//w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -177,13 +113,13 @@ func proveConnect(w http.ResponseWriter, r *http.Request){
 	if err != nil {
 		log.Println(err)
 	}
-	fmt.Println(data)
-	user,err:=db_work.GetUser("login" , map[string]string{"login":data.Login, "pass":data.Pass})
+	//fmt.Println(data)
+	_,err =db_work.GetUser("login" , map[string]string{"login":data.Login, "pass":data.Pass})
 	if err!=nil{
 		fmt.Fprintf(w, "Error")
 		return
 	}
-	fmt.Println(user.ID)
+	//fmt.Println(user.ID)
 	//fmt.Println(&data.Login)
 	//fmt.Println(&data.Pass)
 	fmt.Fprintf(w, "Connect")
@@ -197,7 +133,7 @@ func getMessages(w http.ResponseWriter, r *http.Request){
 	if err != nil {
 		log.Println(err)
 	}
-	fmt.Println(data.Chat_Id, data.Author)
+	//fmt.Println(data.Chat_Id, data.Author)
 	//fmt.Print(params.Get("Author"))
 	id := data.Chat_Id
 	for _,r := range messagesBlock{
@@ -238,9 +174,6 @@ func ApiRouter(w http.ResponseWriter, r *http.Request){
 
 
 func main(){
-	for i := 1; i < 3; i++ {
-		createMainChat(float64(i))
-	}
 	go broadcaster()
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.Handle("/ws", websocket.Handler(SocketListener))

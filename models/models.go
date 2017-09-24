@@ -20,8 +20,10 @@ type Message struct {
 type UserChatInfo struct{
 	ID float64
 	Name string
-	Addr_users []string
+	//Addr_users []string
 	LastSender string
+	Admin_id float64
+	Moders_ids []float64
 	LastMessage *MessageContent
 	View int
 }
