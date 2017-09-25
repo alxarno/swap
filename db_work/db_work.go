@@ -290,6 +290,22 @@ func GetFileInformation(file_id string)(map[string]string, error){
 	return final, nil
 }
 
+func GetFileProve(user_id float64, file_id string)(string, error){
+	//var file_id string
+	var path string
+	//var uses int
+	rows, err := activeConn.Prepare("SELECT files.path FROM files INNER JOIN people_in_chats ON people_in_chats.chat_id = files.chat_id WHERE (people_in_chats.user_id=?) and (files.id =?)")
+	if err != nil {
+		panic(nil)
+	}
+	query := rows.QueryRow(user_id, file_id).Scan( &path)
+	if query == sql.ErrNoRows{
+		return "", errors.New("You are haven't rights for this file")
+	}
+	return path, nil
+
+}
+
 func GetMessages(chat_id float64)([]models.NewMessageToUser, error){
 	var messages []models.NewMessageToUser
 	rows, err := activeConn.Query("SELECT messages.user_id, messages.content, messages.chat_id,   people.u_name  FROM messages INNER JOIN people ON messages.user_id = people.id WHERE messages.chat_id=?", chat_id)
