@@ -141,6 +141,34 @@ func deleteFile(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, string(finish))
 }
 
+
+func getFile(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	var data *struct{Token string; FileId string}
+	decoder:= json.NewDecoder(r.Body)
+	defer r.Body.Close()
+	err := decoder.Decode(&data)
+	if err != nil {
+		fmt.Println(err)
+		sendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	user, err:=methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	path, err := db_work.GetFileProve(user.ID, data.FileId)
+	if err!=nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	file := "./public/files/"+path
+	http.ServeFile(w, r, file)
+	//w.started = true
+	return
+}
+
 func enter( w http.ResponseWriter, r *http.Request){
 	var data *ProveConnection
 	decoder:= json.NewDecoder(r.Body)
@@ -263,5 +291,7 @@ func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 		uploadFile(w,r)
 	case "deleteFile":
 		deleteFile(w, r)
+	case "getFile":
+		getFile(w,r)
 	}
 }

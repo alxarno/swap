@@ -174,6 +174,7 @@ func ApiRouter(w http.ResponseWriter, r *http.Request){
 
 
 func main(){
+	db_work.OpenDB()
 	go broadcaster()
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.Handle("/ws", websocket.Handler(SocketListener))
