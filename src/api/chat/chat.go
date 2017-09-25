@@ -66,6 +66,7 @@ func getMessages(w http.ResponseWriter, r *http.Request){
 	}
 	messages,err:=db_work.GetMessages(data.ID)
 	if err != nil{
+		fmt.Println(err.Error())
 		methods.SendAnswerError("Fail get data from db", w)
 		return
 	}

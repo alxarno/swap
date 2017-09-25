@@ -19,4 +19,5 @@ go install
 cd ..
 cd db_work
 go install
-
+cd ..
+go run src/main.go
