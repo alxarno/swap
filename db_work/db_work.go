@@ -269,6 +269,27 @@ func CheckUserINChat(user_id float64, chat_id float64)(error){
 	return nil
 }
 
+func GetFileInformation(file_id string)(map[string]string, error){
+	final := make(map[string]string)
+	//var getFileBD struct{filename string; path string; uses int}
+	var filename string
+	var path string
+	var uses int
+	rows, err := activeConn.Prepare("SELECT filename, path, uses FROM files  WHERE id=?")
+	if err != nil {
+		panic(nil)
+	}
+	query := rows.QueryRow(file_id).Scan(&filename, &path, &uses)
+	defer rows.Close()
+	if query == sql.ErrNoRows{
+		return final,errors.New("File is undefine")
+	}
+	final["name"] = filename
+	final["path"] = path
+	final["file_id"] = file_id
+	return final, nil
+}
+
 func GetMessages(chat_id float64)([]models.NewMessageToUser, error){
 	var messages []models.NewMessageToUser
 	rows, err := activeConn.Query("SELECT messages.user_id, messages.content, messages.chat_id,   people.u_name  FROM messages INNER JOIN people ON messages.user_id = people.id WHERE messages.chat_id=?", chat_id)
@@ -282,10 +303,24 @@ func GetMessages(chat_id float64)([]models.NewMessageToUser, error){
 			return nil,err
 		}
 		//decode content
-		var r_content *models.MessageContent
+		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		var r_content models.MessageContent
+		var f_content models.MessageContentToUser
 		err = json.Unmarshal([]byte(content), &r_content)
 		if err != nil{
 			return nil,err
+		}
+		f_content.Message = r_content.Message
+		f_content.Type = r_content.Type
+		documents:=*r_content.Documents
+		//fmt.Println(documents)
+		for i := 0;i<len(documents);i++{
+			//id := *r_content.Documents
+			parse_doc, err := GetFileInformation(documents[i])
+			if err != nil{
+				return nil,err
+			}
+			f_content.Documents = append(f_content.Documents, parse_doc)
 		}
 		f64_c_id, err := strconv.ParseFloat(c_id, 64)
 		if err != nil {
@@ -295,9 +330,55 @@ func GetMessages(chat_id float64)([]models.NewMessageToUser, error){
 		if err != nil {
 			return nil,err
 		}
-		messages = append(messages, models.NewMessageToUser{&f64_c_id,r_content,&f64_id,&u_name})
+		messages = append(messages, models.NewMessageToUser{&f64_c_id,f_content,&f64_id,&u_name})
 	}
 	return messages, nil
+}
+
+func CreateFile(filename string, size int64, user_id float64, chat_id string)(int64, string, error){
+	if !activeConnIsReal{
+		OpenDB()
+	}
+	now_time := strconv.FormatInt(time.Now().Unix(),10)
+	f_size :=strconv.FormatInt(size,10)
+	path := now_time+f_size+filename
+
+	statement, err := activeConn.Prepare("INSERT INTO files (author_id, chat_id, filename, path, time, uses) VALUES (?, ?, ?, ?, ?, ?)")
+	if err != nil {
+		return -1,"",errors.New("Fail insert file")
+	}
+	res,err := statement.Exec(user_id, chat_id, filename ,path, now_time, 0)
+	if err != nil {
+		return -1,"",errors.New("Fail exec BD")
+	}
+	id, _ := res.LastInsertId()
+	return id,path, nil
+}
+
+func DeleteFile(user_id float64, file_id string)(string, error){
+	if !activeConnIsReal{
+		OpenDB()
+	}
+	var path string
+	message, err := activeConn.Prepare("SELECT path FROM files where (id=?) ")
+	if err != nil {
+		return "", err
+	}
+	query := message.QueryRow(file_id)
+
+	err = query.Scan(&path)
+	if err == sql.ErrNoRows{
+		return "", err
+	}
+	stmt, err := activeConn.Prepare("delete from files where (id=?) and (uses = 0) and (author_id=?)")
+	if err != nil{
+		return "",errors.New("Fail prepare delete file")
+	}
+	_, err = stmt.Exec(file_id, user_id)
+	if err != nil{
+		return "",errors.New("Fail exec delete file")
+	}
+	return  path, nil
 }
 
 func createDB_structs(database *sql.DB) {

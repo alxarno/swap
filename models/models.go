@@ -27,6 +27,11 @@ type UserChatInfo struct{
 	LastMessage *MessageContent
 	View int
 }
+type MessageContent struct{
+	Message *string
+	Documents *[]string
+	Type *string
+}
 type User struct {
 	ID float64
 	Name string
@@ -36,16 +41,18 @@ type User struct {
 
 type NewMessageToUser struct{
 	Chat_Id *float64
-	Content *MessageContent
+	Content MessageContentToUser
 	Author_id *float64
 	Author_Name *string
 }
 
-type MessageContent struct{
+type MessageContentToUser struct{
 	Message *string
-	Documents *[]string
+	Documents []interface{}
 	Type *string
 }
+
+
 
 func GetModels() string{
 	return "Info"

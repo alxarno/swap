@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/AlexArno/spatium/models"
+	"fmt"
 )
 var secret = "321312421"
 
@@ -57,10 +58,15 @@ func NewMessage(user_quest *string)(models.NewMessageToUser, error){
 	if err != nil{
 		return send,err
 	}
+	newContent,err := methods.ProcessMessageFromUserToUser( data.Content)
+	if err != nil{
+		return  send,err
+	}
+	fmt.Println(newContent)
 	send.Author_id = &user.ID
 	send.Author_Name=&user.Name
 	send.Chat_Id = data.Chat_Id
-	send.Content = data.Content
+	send.Content = newContent
 	return send, nil
 
 }

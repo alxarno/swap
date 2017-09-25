@@ -9,9 +9,7 @@ import (
 	"time"
 	methods "github.com/AlexArno/spatium/src/api/methods"
 	"strconv"
-
 	"fmt"
-
 	"os"
 	"io"
 )
@@ -71,42 +69,77 @@ func getJson(target interface{}, r*http.Request) error {
 func uploadFile(w http.ResponseWriter, r *http.Request){
 	//w.Header().Set("Access-Control-Allow-Origin", "*")
 	r.ParseMultipartForm(104857600)
-	fmt.Println(r.FormValue("token"))
+	token := r.FormValue("token")
+	chat_id :=  r.FormValue("chat_id")
+	user, err:=methods.OnlyDecodeToken(secret, token)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
 	file, handler, err := r.FormFile("uploadfile")
 	if err != nil {
+		sendAnswerError(err.Error(), w)
 		fmt.Println(err)
 		return
 	}
 	defer file.Close()
-	fmt.Fprintf(w, "%v", handler.Header)
-	f, err := os.OpenFile("./public/files/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+
+	id, path, err := db_work.CreateFile(handler.Filename, handler.Size,user.ID, chat_id)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		fmt.Println(err)
+		return
+	}
+	f, err := os.OpenFile("./public/files/"+path, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
+		sendAnswerError(err.Error(), w)
 		fmt.Println(err)
 		return
 	}
 	defer f.Close()
 	io.Copy(f, file)
-	//if r.Method != "GET" {
-	//	r.ParseMultipartForm(32 << 20)
-	//	token := r.FormValue("token")
-	//	fmt.Println(token)
-	//	file, handler, err := r.FormFile("uploadfile")
-	//	if err != nil {
-	//		fmt.Println("first", err)
-	//		return
-	//	}
-	//	defer file.Close()
-	//	fmt.Fprintf(w, "%v", handler.Header)
-	//	f, err := os.OpenFile("./public/files/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-	//	if err != nil {
-	//		fmt.Println("second", err)
-	//		return
-	//	}
-	//	defer f.Close()
-	//	io.Copy(f, file)
-	//}
+	var x = make(map[string]string)
+	x["result"]="Success"
+	x["FileId"]= strconv.FormatInt(id,10)
+	finish, _:=json.Marshal(x)
+	fmt.Fprintf(w, string(finish))
+
 }
 
+func deleteFile(w http.ResponseWriter, r *http.Request){
+	var data *struct{Token string; FileId string}
+	decoder:= json.NewDecoder(r.Body)
+	defer r.Body.Close()
+	err := decoder.Decode(&data)
+	if err != nil {
+		sendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	user, err:=methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	path, err := db_work.DeleteFile(user.ID, data.FileId)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	fmt.Println(path)
+	if path == ""{
+		sendAnswerError("Path is undefined", w)
+		return
+	}
+	err = os.Remove("./public/files/"+path)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	var x = make(map[string]string)
+	x["result"]="Success"
+	finish, _:=json.Marshal(x)
+	fmt.Fprintf(w, string(finish))
+}
 
 func enter( w http.ResponseWriter, r *http.Request){
 	var data *ProveConnection
@@ -228,5 +261,7 @@ func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 		getMyData(w, r)
 	case "uploadFile":
 		uploadFile(w,r)
+	case "deleteFile":
+		deleteFile(w, r)
 	}
 }

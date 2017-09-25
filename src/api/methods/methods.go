@@ -17,7 +17,13 @@ type userGetToken struct{
 	Token string
 }
 
-
+func OnlyDecodeToken(secret string, token string)(*models.User, error){
+	tokenIsTrue, err := TestUserToken(secret, token)
+	if err != nil {
+		return nil,err
+	}
+	return tokenIsTrue, nil
+}
 
 func DecodeToken(secret string, r *http.Request)(*models.User, error){
 	var data *userGetToken
@@ -83,4 +89,21 @@ func TestUserToken(secret string, token_line string)(*models.User,  error){
 		return nil,  errors.New("User with token's id isn't found")
 	}
 	return now_user, nil
+}
+
+func ProcessMessageFromUserToUser(message *models.MessageContent)(models.MessageContentToUser, error){
+	fmt.Println(message)
+	final := models.MessageContentToUser{}
+	final.Type = message.Type
+	final.Message = message.Message
+	docs:= *message.Documents
+	for i := 0;i<len(docs);i++{
+		//id := *r_content.Documents
+		parse_doc, err := db_work.GetFileInformation(docs[i])
+		if err != nil{
+			return final,err
+		}
+		final.Documents = append(final.Documents, parse_doc)
+	}
+	return final, nil
 }
