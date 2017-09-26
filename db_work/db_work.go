@@ -275,17 +275,19 @@ func GetFileInformation(file_id string)(map[string]string, error){
 	var filename string
 	var path string
 	var uses int
-	rows, err := activeConn.Prepare("SELECT filename, path, uses FROM files  WHERE id=?")
+	var ratio_size string
+	rows, err := activeConn.Prepare("SELECT filename, path, uses, ratio_size  FROM files  WHERE id=?")
 	if err != nil {
 		panic(nil)
 	}
-	query := rows.QueryRow(file_id).Scan(&filename, &path, &uses)
+	query := rows.QueryRow(file_id).Scan(&filename, &path, &uses, &ratio_size)
 	defer rows.Close()
 	if query == sql.ErrNoRows{
 		return final,errors.New("File is undefine")
 	}
 	final["name"] = filename
 	final["path"] = path
+	final["ratio_size"] = ratio_size
 	final["file_id"] = file_id
 	return final, nil
 }
@@ -308,14 +310,15 @@ func GetFileProve(user_id float64, file_id string)(string, error){
 
 func GetMessages(chat_id float64)([]models.NewMessageToUser, error){
 	var messages []models.NewMessageToUser
-	rows, err := activeConn.Query("SELECT messages.user_id, messages.content, messages.chat_id,   people.u_name  FROM messages INNER JOIN people ON messages.user_id = people.id WHERE messages.chat_id=?", chat_id)
+	rows, err := activeConn.Query("SELECT messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time  FROM messages INNER JOIN people ON messages.user_id = people.id WHERE messages.chat_id=?", chat_id)
 	if err != nil {
 		return nil,err
 	}
 	defer rows.Close()
 	for rows.Next(){
 		var id, content, u_name, c_id string
-		if err := rows.Scan(&id,  &content,&c_id, &u_name); err != nil {
+		var m_time int64
+		if err := rows.Scan(&id,  &content,&c_id, &u_name, &m_time); err != nil {
 			return nil,err
 		}
 		//decode content
@@ -346,12 +349,12 @@ func GetMessages(chat_id float64)([]models.NewMessageToUser, error){
 		if err != nil {
 			return nil,err
 		}
-		messages = append(messages, models.NewMessageToUser{&f64_c_id,f_content,&f64_id,&u_name})
+		messages = append(messages, models.NewMessageToUser{&f64_c_id,f_content,&f64_id,&u_name, &m_time})
 	}
 	return messages, nil
 }
 
-func CreateFile(filename string, size int64, user_id float64, chat_id string)(int64, string, error){
+func CreateFile(filename string, size int64, user_id float64, chat_id string, ratio_size string)(int64, string, error){
 	if !activeConnIsReal{
 		OpenDB()
 	}
@@ -359,11 +362,11 @@ func CreateFile(filename string, size int64, user_id float64, chat_id string)(in
 	f_size :=strconv.FormatInt(size,10)
 	path := now_time+f_size+filename
 
-	statement, err := activeConn.Prepare("INSERT INTO files (author_id, chat_id, filename, path, time, uses) VALUES (?, ?, ?, ?, ?, ?)")
+	statement, err := activeConn.Prepare("INSERT INTO files (author_id, chat_id, filename, path, time, uses, ratio_size) VALUES (?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		return -1,"",errors.New("Fail insert file")
 	}
-	res,err := statement.Exec(user_id, chat_id, filename ,path, now_time, 0)
+	res,err := statement.Exec(user_id, chat_id, filename ,path, now_time, 0, ratio_size)
 	if err != nil {
 		return -1,"",errors.New("Fail exec BD")
 	}
@@ -416,7 +419,7 @@ func createDB_structs(database *sql.DB) {
 	statement.Exec()
 
 	//Create files structs
-	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, author_id INTEGER, chat_id INTEGER, filename TEXT, path Text, time INTEGER, uses INTEGER )")
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, author_id INTEGER, chat_id INTEGER, filename TEXT, path Text, time INTEGER, uses INTEGER, ratio_size TEXT)")
 	statement.Exec()
 
 	//Create chat structs

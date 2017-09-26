@@ -66,9 +66,50 @@ func getJson(target interface{}, r*http.Request) error {
 	return json.NewDecoder(r.Body).Decode(target)
 }
 
+func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	var data *struct{Token string; FileId string}
+	decoder:= json.NewDecoder(r.Body)
+	defer r.Body.Close()
+	err := decoder.Decode(&data)
+	if err != nil {
+		fmt.Println(err)
+		sendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	user, err:=methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	path, err := db_work.GetFileProve(user.ID, data.FileId)
+	if err!=nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	algorithm :=  jwt.HmacSha256(secret)
+	claims := jwt.NewClaim()
+	claims.Set("path", path)
+	claims.Set("user_id", user.ID)
+	claims.Set("time", time.Now().Unix()+60)
+	link, err := algorithm.Encode(claims)
+	if err!=nil{
+		fmt.Fprintf(w, "Faile encode link")
+		//fmt.Println(err)
+		return
+	}
+	var x = make(map[string]string)
+	x["link"]=link
+	x["result"]="Success"
+	finish, _:=json.Marshal(x)
+	fmt.Fprintf(w, string(finish))
+}
+
 func uploadFile(w http.ResponseWriter, r *http.Request){
 	//w.Header().Set("Access-Control-Allow-Origin", "*")
 	r.ParseMultipartForm(104857600)
+	ratio_size := r.FormValue("ratio_size")
+	//fmt.Println(i_type)
 	token := r.FormValue("token")
 	chat_id :=  r.FormValue("chat_id")
 	user, err:=methods.OnlyDecodeToken(secret, token)
@@ -84,7 +125,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request){
 	}
 	defer file.Close()
 
-	id, path, err := db_work.CreateFile(handler.Filename, handler.Size,user.ID, chat_id)
+	id, path, err := db_work.CreateFile(handler.Filename, handler.Size,user.ID, chat_id, ratio_size)
 	if err != nil{
 		sendAnswerError(err.Error(), w)
 		fmt.Println(err)
@@ -96,8 +137,10 @@ func uploadFile(w http.ResponseWriter, r *http.Request){
 		fmt.Println(err)
 		return
 	}
+
 	defer f.Close()
 	io.Copy(f, file)
+
 	var x = make(map[string]string)
 	x["result"]="Success"
 	x["FileId"]= strconv.FormatInt(id,10)
@@ -140,7 +183,6 @@ func deleteFile(w http.ResponseWriter, r *http.Request){
 	finish, _:=json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
 }
-
 
 func getFile(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -274,6 +316,8 @@ func getMyData(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, string(finish))
 }
 
+
+
 func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 	//fmt.Println(var1+"Hello")
 	switch var1 {
@@ -293,5 +337,7 @@ func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 		deleteFile(w, r)
 	case "getFile":
 		getFile(w,r)
+	case "getFileLink":
+		getDisposableFileLink(w,r)
 	}
 }
