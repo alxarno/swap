@@ -7,11 +7,16 @@ import (
 	"golang.org/x/net/websocket"
 	"encoding/json"
 	//"strconv"
+	"github.com/robbert229/jwt"
 	db_work "github.com/AlexArno/spatium/db_work"
 	models "github.com/AlexArno/spatium/models"
 	api "github.com/AlexArno/spatium/src/api"
 	messages_work "github.com/AlexArno/spatium/src/messages"
 	"github.com/gorilla/mux"
+	"time"
+)
+var (
+	secret = "321312421"
 )
 
 type ProveConnection struct{
@@ -54,7 +59,6 @@ func broadcaster(){
 		}
 	}
 }
-
 
 func writerUser(ws *websocket.Conn, ch<-chan  models.NewMessageToUser){
 	for msg:=range ch{
@@ -172,6 +176,29 @@ func ApiRouter(w http.ResponseWriter, r *http.Request){
 	api.MainApiRouter(vars["key"], vars["var1"], w, r)
 }
 
+func downloadFile(w http.ResponseWriter, r *http.Request){
+	vars:=mux.Vars(r)
+	algorithm :=  jwt.HmacSha256(secret)
+	claims, err := algorithm.Decode(vars["link"])
+	if err != nil {
+		w.Write([]byte("Fail decode link"))
+	}
+	n_time,err :=claims.Get("time")
+	if err != nil{
+		w.Write([]byte("Fail get time"))
+	}
+	path, err:= claims.Get("path")
+	if err != nil{
+		w.Write([]byte("Fail get path"))
+	}
+	s_path := path.(string)
+	i_time := n_time.(float64)
+	if  int64(i_time)<time.Now().Unix(){
+		w.Write([]byte("Link is unavailable"))
+	}
+	file := "./public/files/"+s_path
+	http.ServeFile(w,r,file)
+}
 
 func main(){
 	db_work.OpenDB()
@@ -183,6 +210,7 @@ func main(){
 	//myRouter.HandleFunc("/getChats", getChats)
 	myRouter.HandleFunc("/getMessages", getMessages)
 	myRouter.HandleFunc("/api/{key}/{var1}", ApiRouter)
+	myRouter.HandleFunc("/getFile/{link}/{name}", downloadFile)
 	//if err := myRouter.ListenAndServe(":1234", nil); err != nil {
 	//	log.Fatal("ListenAndServe:", err)
 	//}

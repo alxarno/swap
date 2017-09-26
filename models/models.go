@@ -44,6 +44,7 @@ type NewMessageToUser struct{
 	Content MessageContentToUser
 	Author_id *float64
 	Author_Name *string
+	Time *int64
 }
 
 type MessageContentToUser struct{
