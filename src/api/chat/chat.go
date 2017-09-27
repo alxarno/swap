@@ -79,11 +79,60 @@ func getMessages(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, string(finish))
 }
 
+func addUsers(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	var data struct{Token string; Ids []string; ChatId string}
+	err:=methods.GetJson(&data, r)
+	if err != nil {
+		methods.SendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	fmt.Println(data)
+
+	i_chat_add, err := strconv.ParseInt(data.ChatId, 10, 64)
+	if err != nil {
+		fmt.Println(err)
+		methods.SendAnswerError("Failed retype chat_id", w)
+		return
+	}
+	failesAdd := []string{}
+	successAdd := []string{}
+	for i:=0;i<len(data.Ids);i++{
+		err:= db_work.InsertUserInChat(data.Ids[i], i_chat_add)
+		if err!=nil{
+			fmt.Println(err)
+			//methods.SendAnswerError("Fail add in chat "+data.Ids[i], w)
+			failesAdd= append(failesAdd, data.Ids[i])
+		}else{
+			successAdd = append(successAdd, data.Ids[i])
+		}
+	}
+	if len(successAdd) != len(data.Ids){
+		//return
+		var final = make(map[string]interface{})
+		final["result"] = "Error"
+		final["failed"] = failesAdd
+		//final[""]
+		finish, _:=json.Marshal(final)
+		fmt.Fprintf(w, string(finish))
+		return
+	}
+	var final = make(map[string]interface{})
+	final["result"] = "Success"
+	final["success"] = successAdd
+	//final[""]
+	finish, _:=json.Marshal(final)
+	fmt.Fprintf(w, string(finish))
+
+}
+
 func MainChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 	switch var1 {
 	case "create":
 		create(w,r)
 	case "getMessages":
 		getMessages(w,r)
+	case "addUsersInChat":
+		addUsers(w,r)
 	}
 }

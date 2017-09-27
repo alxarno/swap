@@ -105,7 +105,8 @@ func InsertUserInChat(user_id string, chat_id int64)( error){
 	var id_now string
 	rows, err := activeConn.Prepare("SELECT chat_id FROM people_in_chats WHERE (user_id=?) AND (chat_id=?)")
 	if err != nil {
-		panic(nil)
+		return errors.New("Cant prove user isnt in chat")
+		//panic(nil)
 	}
 	query := rows.QueryRow(user_id, chat_id).Scan(&id_now)
 	defer rows.Close()
@@ -434,7 +435,65 @@ func createDB_structs(database *sql.DB) {
 
 	}
 
+func FindUserByName(name string, chat_id string)([]map[string]string,error){
+	var middle []map[string]string
+	var logins []string
+	var names []string
+	//get logins and names how already in chat
+	rows, err := activeConn.Query("SELECT  people.u_name, people.login FROM people INNER JOIN people_in_chats ON people_in_chats.user_id = people.id WHERE people_in_chats.chat_id=?", chat_id)
+	if err != nil {
+		fmt.Println("scan 1")
+		return nil,err
+	}
+	defer rows.Close()
+	for rows.Next(){
+		var name, login string
+		if err := rows.Scan(&name,  &login); err != nil {
+			fmt.Println("scan 2")
+			return nil,err
+		}
+		logins=append(logins,login)
+		names= append(names, name)
+	}
+	query_logins:=""
+	query_names:=""
+	for i := 0; i < len(logins); i++ {
+		if i>=1{
+			query_logins+=","
+		}
+		query_logins += logins[i]
+	}
+	for i := 0; i < len(names); i++ {
+		if i>=1{
+			query_names += ","
+		}
+		query_names += "'"+names[i]+"'"
+	}
+	fmt.Println(query_names)
+	fmt.Println(query_logins)
+	//"SELECT  messages.content, people.u_name FROM messages INNER JOIN people ON messages.user_id = people.id WHERE chat_id=? ORDER BY time DESC"
+	rows, err = activeConn.Query("SELECT id , u_name, login FROM people  WHERE  u_name NOT IN " +
+		"(SELECT  people.u_name FROM people INNER JOIN people_in_chats ON people_in_chats.user_id = people.id WHERE people_in_chats.chat_id=?) and u_name LIKE (?)",chat_id, "%"+name+"%")
+	if err != nil {
+		fmt.Println("scan 3")
+		return nil,err
+	}
+	defer rows.Close()
+	for rows.Next(){
+		var id, name, login string
+		if err := rows.Scan(&id, &name,  &login); err != nil {
+			fmt.Println("scan 4")
+			return nil,err
+		}
+		middle=append(middle, map[string]string{"id": id,"name": name, "login": login})
+	}
+	if len(middle) == 0{
+		middle = []map[string]string{}
+	}
+	return middle, nil
+}
 
+//func AddUsersInChat
 func OpenDB(){
 	newDB := false
 	_, err := os.Open("app.db")

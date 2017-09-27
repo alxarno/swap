@@ -14,9 +14,11 @@ import (
 	messages_work "github.com/AlexArno/spatium/src/messages"
 	"github.com/gorilla/mux"
 	"time"
-)
+	engine "github.com/AlexArno/spatium/src/message_engine"
+	)
 var (
 	secret = "321312421"
+	//Nmessages =engine.Messages
 )
 
 type ProveConnection struct{
@@ -202,9 +204,11 @@ func downloadFile(w http.ResponseWriter, r *http.Request){
 
 func main(){
 	db_work.OpenDB()
-	go broadcaster()
+	//go broadcaster()
+	engine.StartCoreMessenger()
+
 	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.Handle("/ws", websocket.Handler(SocketListener))
+	myRouter.Handle("/ws", websocket.Handler(engine.SocketListener))
 	myRouter.HandleFunc("/proveConnect", proveConnect)
 	myRouter.HandleFunc("/testDb", testDb)
 	//myRouter.HandleFunc("/getChats", getChats)

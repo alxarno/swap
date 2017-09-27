@@ -316,7 +316,29 @@ func getMyData(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, string(finish))
 }
 
+func getUsersForAdd(w http.ResponseWriter, r *http.Request){
+	var data *struct{Token string; Chatid string; Name string}
+	decoder:= json.NewDecoder(r.Body)
+	defer r.Body.Close()
+	err := decoder.Decode(&data)
+	if err != nil {
+		fmt.Println(err)
+		sendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	users ,err:= db_work.FindUserByName(data.Name, data.Chatid)
+	if err!=nil{
+		fmt.Println(err)
+		sendAnswerError("Failed find user", w)
+		return
+	}
+	f_data := make(map[string]interface{})
+	f_data["result"] = "Success"
+	f_data["users"] = users
+	finish, _:=json.Marshal(f_data)
+	fmt.Fprintf(w, string(finish))
 
+}
 
 func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 	//fmt.Println(var1+"Hello")
@@ -339,5 +361,7 @@ func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 		getFile(w,r)
 	case "getFileLink":
 		getDisposableFileLink(w,r)
+	case "getUsersForAdd":
+		getUsersForAdd(w,r)
 	}
 }
