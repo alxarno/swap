@@ -13,6 +13,9 @@ go install
 cd messages
 go install
 cd ..
+cd message_engine
+go install
+cd ..
 cd ..
 cd models
 go install
