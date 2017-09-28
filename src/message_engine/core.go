@@ -16,7 +16,7 @@ package message_engine
 //
 //
 import(
-	//db_work "github.com/AlexArno/spatium/db_work"
+	db_work "github.com/AlexArno/spatium/db_work"
 	//methods "github.com/AlexArno/spatium/src/api/methods"
 	models "github.com/AlexArno/spatium/models"
 	"golang.org/x/net/websocket"
@@ -29,6 +29,7 @@ import(
 type ConnectionSpatium struct {
 	UserId float64
 	MessChan chan models.NewMessageToUser
+	SystemMessChan chan string
 	Authoriz bool
 }
 
@@ -44,6 +45,16 @@ var(
 	send_messages = make(chan models.NewMessageToUser)
 )
 
+func writerUserSys(ws *websocket.Conn,  sys_ch<-chan string){
+	for sysMsg := range sys_ch{
+		if err := websocket.Message.Send(ws, string(sysMsg)); err != nil {
+			fmt.Println("Can't send")
+			fmt.Println(err)
+			break
+		}
+	}
+}
+
 func writerUser(ws *websocket.Conn, ch <-chan models.NewMessageToUser){
 	for msg := range ch{
 		now_msg, err := json.Marshal(msg)
@@ -57,7 +68,6 @@ func writerUser(ws *websocket.Conn, ch <-chan models.NewMessageToUser){
 			break
 		}
 	}
-
 }
 
 
@@ -69,7 +79,7 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium){
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(data)
+	//fmt.Println(data)
 	if data["type"] == "system"{
 		action, err := SystemMsg(msg)
 		if err!=nil{
@@ -78,11 +88,21 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium){
 		if action["Action"] == "Authoriz"{
 			token := action["Payload"].(string)
 			user, err:=methods.OnlyDecodeToken(secret, token)
-				if err!=nil{
-					fmt.Println(err)
-					return
-				}
-			connect.UserId = user.ID
+			var answer = make(map[string]interface{})
+			if err!=nil{
+				fmt.Println(err)
+				answer["type_a"]="system"
+				answer["result"]="Error"
+				answer["action"]="authoriz"
+				answer["type"]=err.Error()
+			}else{
+				connect.UserId = user.ID
+				answer["type_a"]="system"
+				answer["result"]="Success"
+				answer["action"]="authoriz"
+			}
+			finish, _:=json.Marshal(answer)
+			connect.SystemMessChan<-string(finish)
 			//fmt.Println(connect.UserId)
 		}
 
@@ -93,16 +113,35 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium){
 		}
 		send_messages<-*messageToUser
 	}
+}
 
+func SendNotificationAddUserInChat(user_id float64)(error){
+	var message = make(map[string]interface{})
+	message["type_a"] = "system"
+	message["action"] = "add_in_chat"
+	finish, _:=json.Marshal(message)
+	for _,v :=range users{
+		if v.UserId == user_id{
+			v.SystemMessChan<-string(finish)
+		}
+	}
+	return nil
+}
+
+func SendMessage( msg models.NewMessageToUser){
+	send_messages<-msg
 }
 
 
 func SocketListener(ws *websocket.Conn) {
 	var err error
 	ch:= make(chan  models.NewMessageToUser)
+	sysch:=make(chan string)
 	user:= &ConnectionSpatium{}
 	user.MessChan = ch
+	user.SystemMessChan = sysch
 	go writerUser(ws, user.MessChan)
+	go writerUserSys(ws, user.SystemMessChan)
 
 	//go writerUser(ws, user.MessChan)
 	entering<-user
@@ -126,8 +165,17 @@ func broadcaster(){
 	for{
 		select {
 		case msg:=<-send_messages:
+			chats_users,err:= db_work.GetChatsUsers(*msg.Chat_Id)
+			if err!=nil{
+				fmt.Println(err)
+				continue
+			}
 			for _,user  := range users{
-				user.MessChan<-msg
+				for _,v := range chats_users{
+					if v == user.UserId{
+						user.MessChan<-msg
+					}
+				}
 			}
 		case cli:=<-entering:
 			users = append(users, cli)
