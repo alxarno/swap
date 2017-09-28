@@ -6,6 +6,7 @@ import (
 	"github.com/AlexArno/spatium/models"
 	"github.com/AlexArno/spatium/src/api/methods"
 	messages_work "github.com/AlexArno/spatium/src/messages"
+	"time"
 )
 var (
 	secret = "321312421"
@@ -45,6 +46,8 @@ func UserMsg(msg string)(*models.NewMessageToUser, error){
 	if err !=nil{
 		return nil,err
 	}
+	now_time :=  time.Now().Unix()
+	message.Time =  &now_time
 	return &message,nil
 	//if err := json.Unmarshal([]byte(msg), &user_msg); err != nil {
 	//	//panic(err)

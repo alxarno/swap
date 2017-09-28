@@ -4,9 +4,12 @@ import (
 	"net/http"
 	methods "github.com/AlexArno/spatium/src/api/methods"
 	db_work "github.com/AlexArno/spatium/db_work"
+	engine "github.com/AlexArno/spatium/src/message_engine"
 	"strconv"
 	"encoding/json"
 	"fmt"
+	"github.com/AlexArno/spatium/models"
+	"time"
 )
 var secret = "321312421"
 
@@ -64,7 +67,7 @@ func getMessages(w http.ResponseWriter, r *http.Request){
 		methods.SendAnswerError("User isn't in chat", w)
 		return
 	}
-	messages,err:=db_work.GetMessages(data.ID)
+	messages,err:=db_work.GetMessages(user.ID,data.ID)
 	if err != nil{
 		fmt.Println(err.Error())
 		methods.SendAnswerError("Fail get data from db", w)
@@ -87,7 +90,25 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 		methods.SendAnswerError("Failed decode r.Body", w)
 		return
 	}
-	fmt.Println(data)
+	//fmt.Println(data)
+	user,err := methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil {
+		fmt.Println(err)
+		methods.SendAnswerError("Failed decode token", w)
+		return
+	}
+	// Because we need it
+	f64_caht_id,err := strconv.ParseFloat(data.ChatId, 64)
+	if err != nil{
+		fmt.Println("FAIL DECODE Ids")
+		return
+	}
+
+	err = db_work.CheckUserINChat(user.ID, f64_caht_id)
+	if err != nil{
+		return
+	}
+
 
 	i_chat_add, err := strconv.ParseInt(data.ChatId, 10, 64)
 	if err != nil {
@@ -107,6 +128,7 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 			successAdd = append(successAdd, data.Ids[i])
 		}
 	}
+	//If count success added users not equal all need add user we send error to user
 	if len(successAdd) != len(data.Ids){
 		//return
 		var final = make(map[string]interface{})
@@ -123,9 +145,112 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 	//final[""]
 	finish, _:=json.Marshal(final)
 	fmt.Fprintf(w, string(finish))
+	//Send notification and messages to users and chats
+	for _,v := range data.Ids{
+		id,err := strconv.ParseFloat(v, 64)
+		if err != nil{
+			fmt.Println("FAIL DECODE Ids")
+		}
+		add_user_info,err := db_work.GetUser("id", map[string]string{"id": v})
+		if err != nil{
+			fmt.Println("FAIL GET data by id")
+		}
+		docs:= make([]interface{},0)
+		msg_content:= "пригласил "+add_user_info.Name
+		str:= "a_msg"
+		message:= models.MessageContentToUser{&msg_content, docs, &str}
+		s_message,err :=json.Marshal(message)
+		if err != nil{
+			fmt.Println("FAIL MARSHAL MessageContentToUser")
+		}
+		now_time:=time.Now().Unix()
+		db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
+		send_message:= models.NewMessageToUser{&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+		engine.SendMessage(send_message)
+		engine.SendNotificationAddUserInChat(id)
+	}
 
 }
 
+func getUsers(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	var data struct{Token string; ChatId string}
+	err:=methods.GetJson(&data, r)
+	if err != nil {
+		methods.SendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	//fmt.Println(data)
+	user,err := methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil {
+		fmt.Println(err)
+		methods.SendAnswerError("Failed decode token", w)
+		return
+	}
+	f64_caht_id,err := strconv.ParseFloat(data.ChatId, 64)
+	if err != nil{
+		fmt.Println("FAIL DECODE CHAT ID")
+		return
+	}
+	err= db_work.CheckUserINChat(user.ID, f64_caht_id)
+	if err!=nil{
+		fmt.Println("FAIL GetChatsUsers")
+		methods.SendAnswerError("You aren't have rights for this action", w)
+		return
+	}
+
+	users,err:=db_work.GetChatUsersInfo(f64_caht_id)
+	if err != nil{
+		fmt.Println("FAIL GetChatsUsers")
+		return
+	}
+	//finish, _:=json.Marshal(users)
+	fmt.Fprintf(w, string(users))
+	return
+}
+
+func deleteUsers(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	var data struct{Token string; Ids []string; ChatId string}
+	err:=methods.GetJson(&data, r)
+	if err != nil {
+		methods.SendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	//fmt.Println(data)
+	user,err := methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil {
+		fmt.Println(err)
+		methods.SendAnswerError("Failed decode token", w)
+		return
+	}
+
+	// Because we need it
+	f64_caht_id,err := strconv.ParseFloat(data.ChatId, 64)
+	if err != nil{
+		fmt.Println("FAIL DECODE Ids")
+		return
+	}
+	err= db_work.CheckUserRightsInChat(user.ID, f64_caht_id)
+	if err !=nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+
+
+	err = db_work.CheckUserINChat(user.ID, f64_caht_id)
+	if err != nil{
+		return
+	}
+
+
+	//i_chat_add, err := strconv.ParseInt(data.ChatId, 10, 64)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	methods.SendAnswerError("Failed retype chat_id", w)
+	//	return
+	//}
+}
 func MainChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 	switch var1 {
 	case "create":
@@ -134,5 +259,7 @@ func MainChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 		getMessages(w,r)
 	case "addUsersInChat":
 		addUsers(w,r)
+	case "getUsers":
+		getUsers(w,r)
 	}
 }

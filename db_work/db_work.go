@@ -113,18 +113,19 @@ func InsertUserInChat(user_id string, chat_id int64)( error){
 	if query != sql.ErrNoRows{
 		return errors.New("User already in chat")
 	}
-	statement, err := activeConn.Prepare("INSERT INTO people_in_chats (user_id, chat_id) VALUES (?, ?)")
+	statement, err := activeConn.Prepare("INSERT INTO people_in_chats (user_id, chat_id, blocked, start) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		return errors.New("DB failed query")
 	}
 	//make hash of user's password
-	statement.Exec(user_id, chat_id)
+	statement.Exec(user_id, chat_id, 0, time.Now().Unix()-1)
 	statement, err = activeConn.Prepare("UPDATE chats SET lastmodify=? WHERE id=?")
 	if err != nil {
 		return errors.New("DB failed query")
 	}
 	//make hash of user's password
 	statement.Exec(time.Now().Unix(), chat_id)
+
 	return nil
 }
 
@@ -309,9 +310,21 @@ func GetFileProve(user_id float64, file_id string)(string, error){
 
 }
 
-func GetMessages(chat_id float64)([]models.NewMessageToUser, error){
+func GetMessages(user_id float64, chat_id float64)([]models.NewMessageToUser, error){
+	var id_now string
+	var start string
+	rows_user_in_chat, err := activeConn.Prepare("SELECT chat_id, start FROM people_in_chats WHERE (user_id=?) AND (chat_id=?)")
+	if err != nil {
+		return nil, errors.New("Cant prove user isnt in chat")
+		//panic(nil)
+	}
+	query := rows_user_in_chat.QueryRow(user_id, chat_id).Scan(&id_now, &start)
+	defer rows_user_in_chat.Close()
+	if query == sql.ErrNoRows{
+		return nil, errors.New("User isn't in chat")
+	}
 	var messages []models.NewMessageToUser
-	rows, err := activeConn.Query("SELECT messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time  FROM messages INNER JOIN people ON messages.user_id = people.id WHERE messages.chat_id=?", chat_id)
+	rows, err := activeConn.Query("SELECT messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time  FROM messages INNER JOIN people ON messages.user_id = people.id WHERE (messages.chat_id=?) and (messages.time>?)", chat_id, start)
 	if err != nil {
 		return nil,err
 	}
@@ -412,7 +425,7 @@ func createDB_structs(database *sql.DB) {
 	}
 	//Create people in chat structs
 
-	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS people_in_chats ( user_id INTEGER, chat_id INTEGER)")
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS people_in_chats ( user_id INTEGER, chat_id INTEGER, blocked INTEGER DEFAULT 0, start INTEGER DEFAULT 0, delete_a INTEGER DEFAULT 0, deltime INTEGER DEFAULT 0)")
 	statement.Exec()
 
 	//Create messages structs
@@ -424,7 +437,7 @@ func createDB_structs(database *sql.DB) {
 	statement.Exec()
 
 	//Create chat structs
-	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, name TEXT,  author_id INTEGER , moders_ids TEXT, type TEXT,  lastmodify INTEGER)")
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, name TEXT,  author_id INTEGER , moders_ids TEXT, type INTEGER DEFAULT 0,  lastmodify INTEGER)")
 	statement.Exec()
 	_, err = CreateChat("globalChat",  user_id)
 	if err != nil {
@@ -493,7 +506,127 @@ func FindUserByName(name string, chat_id string)([]map[string]string,error){
 	return middle, nil
 }
 
+func GetUsersChatsIds(user_id float64)([]string,error){
+	var ids []string
+	rows, err := activeConn.Query("SELECT chats.id FROM people_in_chats INNER JOIN chats ON people_in_chats.chat_id = chats.id WHERE user_id=?", user_id)
+	if err != nil {
+		fmt.Println("Outside", err)
+		return nil,err
+	}
+	defer rows.Close()
+	for rows.Next(){
+		var id string
+		//var moders []string
+		if err := rows.Scan(&id); err != nil {
+			fmt.Println("scan 1")
+			return nil,err
+		}
+		ids=append(ids, id)
+	}
+	return  ids, nil
+}
+
+
+func GetChatsUsers(chat_id float64)([]float64,error){
+	var ids []float64
+	rows, err := activeConn.Query("SELECT user_id FROM people_in_chats  WHERE chat_id=?", chat_id)
+	if err != nil {
+		fmt.Println("Outside", err)
+		return nil,err
+	}
+	defer rows.Close()
+	for rows.Next(){
+		var id float64
+		//var moders []string
+		if err := rows.Scan(&id); err != nil {
+			fmt.Println("scan 1")
+			return nil,err
+		}
+		ids=append(ids, id)
+	}
+	return  ids, nil
+}
+
+
+func GetChatUsersInfo(chat_id float64)(string, error ){
+	type userInfo struct {
+		Id int
+		Login string
+		Name string
+		Blocked int
+	}
+
+	users:=make([]userInfo,0)
+	rows, err := activeConn.Query("SELECT people.id, people.login, people.u_name, people_in_chats.blocked FROM people_in_chats INNER JOIN people ON people_in_chats.user_id = people.id WHERE people_in_chats.chat_id=?", chat_id)
+	if err != nil {
+		fmt.Println("Outside", err)
+		return "",err
+	}
+	defer rows.Close()
+	for rows.Next(){
+		var login string
+		var name string
+		var blocked int
+		var id int
+		//var moders []string
+		if err := rows.Scan(&id, &login, &name, &blocked); err != nil {
+			fmt.Println("scan 1")
+			return "",err
+		}
+		user :=userInfo{id,login, name, blocked}
+		users=append(users, user)
+	}
+	finish, _:=json.Marshal(users)
+	return  string(finish), nil
+}
 //func AddUsersInChat
+
+func CheckUserRightsInChat(user_id float64, chat_id float64)(error){
+	err:=CheckUserINChat(user_id, chat_id)
+	if err!=nil{
+		return err
+	}
+	final := false
+	var moders_ids = []float64{}
+	var moder_ids_s  string
+	var admin_id float64
+	rows, err := activeConn.Query("SELECT author_id, moders_ids FROM chats WHERE id=?", chat_id)
+	if err != nil {
+		fmt.Println("Outside", err)
+		return err
+	}
+	defer rows.Close()
+	err = rows.Scan(&admin_id, &moder_ids_s)
+	err = json.Unmarshal([]byte(moder_ids_s), &moders_ids)
+	if err != nil {
+		//panic(err)
+	}
+	for _,v:= range moders_ids{
+		if v==user_id{
+			final=true
+		}
+	}
+	if admin_id == user_id{
+		final = true
+	}
+	if final==true{
+		return nil
+	}
+	return errors.New("You haven't rights for this action")
+
+	//for rows.Next(){
+	//	var id, name, un_moders string
+	//	var author_id string
+	//	//var moders []string
+	//	if err := rows.Scan(&id,  &name, &author_id, &un_moders); err != nil {
+	//		fmt.Println("scan 1")
+	//		return err
+	//	}
+	//	middle=append(middle, map[string]string{"id": id, "name": name, "author": author_id, "moders": un_moders})
+	//
+	//
+	//}
+}
 func OpenDB(){
 	newDB := false
 	_, err := os.Open("app.db")
