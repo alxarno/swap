@@ -43,6 +43,7 @@ var(
 	leaving = make(chan *ConnectionSpatium)
 
 	send_messages = make(chan models.NewMessageToUser)
+	force_send_messages = make(chan models.ForceMsgToUser)
 )
 
 func writerUserSys(ws *websocket.Conn,  sys_ch<-chan string){
@@ -132,6 +133,10 @@ func SendMessage( msg models.NewMessageToUser){
 	send_messages<-msg
 }
 
+func SendForceMessage( msg models.ForceMsgToUser){
+	force_send_messages<-msg
+}
+
 
 func SocketListener(ws *websocket.Conn) {
 	var err error
@@ -175,6 +180,12 @@ func broadcaster(){
 					if v == user.UserId{
 						user.MessChan<-msg
 					}
+				}
+			}
+		case msg:=<-force_send_messages:
+			for _,user  := range users{
+				if user.UserId == msg.User_id{
+					user.MessChan<-msg.Msg
 				}
 			}
 		case cli:=<-entering:
