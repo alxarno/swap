@@ -26,6 +26,7 @@ type UserChatInfo struct{
 	Moders_ids []float64
 	LastMessage *MessageContent
 	View int
+	Delete int64
 }
 type MessageContent struct{
 	Message *string
@@ -52,7 +53,7 @@ type MessageContentToUser struct{
 	Documents []interface{}
 	Type *string
 }
-
+type ForceMsgToUser struct{User_id float64; Msg NewMessageToUser}
 
 
 func GetModels() string{

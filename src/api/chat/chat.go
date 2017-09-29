@@ -211,7 +211,7 @@ func getUsers(w http.ResponseWriter, r *http.Request){
 
 func deleteUsers(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	var data struct{Token string; Ids []string; ChatId string}
+	var data struct{Token string; Ids []float64; ChatId string}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
 		methods.SendAnswerError("Failed decode r.Body", w)
@@ -237,20 +237,49 @@ func deleteUsers(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-
-	err = db_work.CheckUserINChat(user.ID, f64_caht_id)
-	if err != nil{
+	err = db_work.CheckUserRightsInChat(user.ID, f64_caht_id)
+	if err!=nil{
+		methods.SendAnswerError(err.Error(), w)
 		return
 	}
 
+	err = db_work.DeleteUsersInChat(data.Ids, data.ChatId)
+	if err!=nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+	for _,v:=range data.Ids{
+		s_id := strconv.FormatFloat(v,'f',0,64)
+		add_user_info,err := db_work.GetUser("id", map[string]string{"id": s_id})
+		if err != nil{
+			fmt.Println("FAIL GET data by id")
+		}
+		docs:= make([]interface{},0)
+		msg_content:= "удалил "+add_user_info.Name
+		str:= "a_msg"
+		message:= models.MessageContentToUser{&msg_content, docs, &str}
+		s_message,err :=json.Marshal(message)
+		if err != nil{
+			fmt.Println("FAIL MARSHAL MessageContentToUser")
+		}
+		now_time:=time.Now().Unix()
+		db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
+		send_message:=models.NewMessageToUser{&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+		force_msg:=models.ForceMsgToUser{v,send_message}
+		engine.SendForceMessage(force_msg)
+		engine.SendMessage(send_message)
+		engine.SendNotificationAddUserInChat(v)
+	}
+	finish:= make(map[string]string)
+	finish["result"] = "Success"
+	final, err := json.Marshal(finish)
+	fmt.Fprintf(w, string(final))
 
-	//i_chat_add, err := strconv.ParseInt(data.ChatId, 10, 64)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	methods.SendAnswerError("Failed retype chat_id", w)
-	//	return
-	//}
+
+
 }
+
+
 func MainChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 	switch var1 {
 	case "create":
@@ -261,5 +290,7 @@ func MainChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 		addUsers(w,r)
 	case "getUsers":
 		getUsers(w,r)
+	case "deleteUsers":
+		deleteUsers(w,r)
 	}
 }
