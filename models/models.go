@@ -25,6 +25,7 @@ type UserChatInfo struct{
 	Admin_id float64
 	Moders_ids []float64
 	LastMessage *MessageContent
+	LastMessageTime int64
 	View int
 	Delete int64
 }

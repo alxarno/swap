@@ -12,6 +12,12 @@ import (
 	"fmt"
 	"os"
 	"io"
+	_ "image/jpeg"
+	"image/png"
+	_"github.com/nfnt/resize"
+	//"image/jpeg"
+	"github.com/nfnt/resize"
+	"image/jpeg"
 )
 type ProveConnection struct{
 	Login string
@@ -108,9 +114,14 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
 func uploadFile(w http.ResponseWriter, r *http.Request){
 	//w.Header().Set("Access-Control-Allow-Origin", "*")
 	r.ParseMultipartForm(104857600)
-	ratio_size := r.FormValue("ratio_size")
+	ratio_size,err := strconv.ParseFloat(r.FormValue("ratio_size"),64)
+	if err !=nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
 	//fmt.Println(i_type)
 	token := r.FormValue("token")
+	i_type := r.FormValue("type")
 	chat_id :=  r.FormValue("chat_id")
 	user, err:=methods.OnlyDecodeToken(secret, token)
 	if err != nil{
@@ -123,9 +134,10 @@ func uploadFile(w http.ResponseWriter, r *http.Request){
 		fmt.Println(err)
 		return
 	}
+
 	defer file.Close()
 
-	id, path, err := db_work.CreateFile(handler.Filename, handler.Size,user.ID, chat_id, ratio_size)
+	id, path, err := db_work.CreateFile(handler.Filename, handler.Size,user.ID, chat_id, r.FormValue("ratio_size"))
 	if err != nil{
 		sendAnswerError(err.Error(), w)
 		fmt.Println(err)
@@ -141,11 +153,66 @@ func uploadFile(w http.ResponseWriter, r *http.Request){
 	defer f.Close()
 	io.Copy(f, file)
 
+	if i_type == "png"{
+		file, err := os.Open("./public/files/"+path)
+		defer file.Close()
+		image, err := png.Decode(file)
+		if err != nil {
+			sendAnswerError(err.Error(), w)
+			fmt.Println(err)
+			return
+		}
+		g := image.Bounds()
+		height := g.Dy()
+		width := g.Dx()
+		fmt.Println("Width = ", width)
+		fmt.Println("Height = ", height)
+		fmt.Println("Ratio size = ", ratio_size)
+		if width > 250 || height>180{
+			width:= 180* ratio_size
+			newImage := resize.Resize(uint(width), 180, image, resize.Lanczos3)
+			out, err := os.Create("./public/files/min/"+path)
+			if err != nil {
+				sendAnswerError(err.Error(), w)
+				fmt.Println(err)
+			}
+			defer out.Close()
+			png.Encode(out, newImage)
+		}
+	}
+	if i_type == "jpeg"{
+		file, err := os.Open("./public/files/"+path)
+		defer file.Close()
+		image, err := jpeg.Decode(file)
+		if err != nil {
+			sendAnswerError(err.Error(), w)
+			fmt.Println(err)
+			return
+		}
+		g := image.Bounds()
+		height := g.Dy()
+		width := g.Dx()
+		fmt.Println("Width = ", width)
+		fmt.Println("Height = ", height)
+		fmt.Println("Ratio size = ", ratio_size)
+		if width > 250 || height>180{
+			width:= 180* ratio_size
+			newImage := resize.Resize(uint(width), 180, image, resize.Lanczos3)
+			out, err := os.Create("./public/files/min/"+path)
+			if err != nil {
+				sendAnswerError(err.Error(), w)
+				fmt.Println(err)
+			}
+			defer out.Close()
+			jpeg.Encode(out, newImage,nil)
+		}
+	}
 	var x = make(map[string]string)
 	x["result"]="Success"
 	x["FileId"]= strconv.FormatInt(id,10)
 	finish, _:=json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
+
 
 }
 
@@ -178,6 +245,11 @@ func deleteFile(w http.ResponseWriter, r *http.Request){
 		sendAnswerError(err.Error(), w)
 		return
 	}
+	err = os.Remove("./public/files/min/"+path)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
 	var x = make(map[string]string)
 	x["result"]="Success"
 	finish, _:=json.Marshal(x)
@@ -186,7 +258,7 @@ func deleteFile(w http.ResponseWriter, r *http.Request){
 
 func getFile(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	var data *struct{Token string; FileId string}
+	var data *struct{Token string; FileId string; Min int}
 	decoder:= json.NewDecoder(r.Body)
 	defer r.Body.Close()
 	err := decoder.Decode(&data)
@@ -206,6 +278,9 @@ func getFile(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	file := "./public/files/"+path
+	if data.Min == 1{
+		file =	"./public/files/min/"+path
+	}
 	http.ServeFile(w, r, file)
 	//w.started = true
 	return
