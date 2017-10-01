@@ -129,6 +129,8 @@ func SendNotificationAddUserInChat(user_id float64)(error){
 	return nil
 }
 
+
+
 func SendMessage( msg models.NewMessageToUser){
 	send_messages<-msg
 }
