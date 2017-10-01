@@ -279,6 +279,40 @@ func deleteUsers(w http.ResponseWriter, r *http.Request){
 
 }
 
+func comeBackUser(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	var data struct{Token string; Ids []float64; ChatId string}
+	err:=methods.GetJson(&data, r)
+	if err != nil {
+		methods.SendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	//fmt.Println(data)
+	user,err := methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil {
+		fmt.Println(err)
+		methods.SendAnswerError("Failed decode token", w)
+		return
+	}
+
+	// Because we need it
+	f64_caht_id,err := strconv.ParseFloat(data.ChatId, 64)
+	if err != nil{
+		fmt.Println("FAIL DECODE Ids")
+		return
+	}
+	err= db_work.CheckUserRightsInChat(user.ID, f64_caht_id)
+	if err !=nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+
+	err = db_work.CheckUserRightsInChat(user.ID, f64_caht_id)
+	if err!=nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+}
 
 func MainChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 	switch var1 {

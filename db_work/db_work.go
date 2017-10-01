@@ -114,12 +114,16 @@ func InsertUserInChat(user_id string, chat_id int64)( error){
 	if query != sql.ErrNoRows{
 		return errors.New("User already in chat")
 	}
-	statement, err := activeConn.Prepare("INSERT INTO people_in_chats (user_id, chat_id, blocked, start) VALUES (?, ?, ?, ?)")
+	statement, err := activeConn.Prepare("INSERT INTO people_in_chats (user_id, chat_id, blocked, start, deltimes) VALUES (?, ?, ?, ?,?)")
 	if err != nil {
 		return errors.New("DB failed query")
 	}
 	//make hash of user's password
-	statement.Exec(user_id, chat_id, 0, time.Now().Unix()-1)
+
+	deltime:= [1][1]int64{}
+	deltime[0][0] = 0
+	s_deltime,_:= json.Marshal(deltime)
+	statement.Exec(user_id, chat_id, 0, time.Now().Unix()-1,string(s_deltime))
 	statement, err = activeConn.Prepare("UPDATE chats SET lastmodify=? WHERE id=?")
 	if err != nil {
 		return errors.New("DB failed query")
@@ -193,12 +197,12 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 
 	}
 	for _,i := range middle{
-		var author_name, content string
+		var author_name, content, msg_time string
 		i_delete,_ := strconv.ParseInt(i["delete"],10,64)
 		//deltime, _:= strconv.ParseInt(i["deltime"],10,64)
-		message, err := activeConn.Query("SELECT  messages.content, people.u_name FROM messages INNER JOIN people ON messages.user_id = people.id WHERE chat_id=? ORDER BY time DESC", i["id"])
+		message, err := activeConn.Query("SELECT  messages.content, people.u_name, messages.time  FROM messages INNER JOIN people ON messages.user_id = people.id WHERE chat_id=? ORDER BY time DESC", i["id"])
 		if i_delete  == 1{
-			message, err = activeConn.Query("SELECT  messages.content, people.u_name FROM messages INNER JOIN people ON messages.user_id = people.id WHERE (chat_id=?) and (messages.time<?) ORDER BY time DESC", i["id"], i["deltime"])
+			message, err = activeConn.Query("SELECT  messages.content, people.u_name, messages.time FROM messages INNER JOIN people ON messages.user_id = people.id WHERE (chat_id=?) and (messages.time<?) ORDER BY time DESC", i["id"], i["deltime"])
 		}
 		if err != nil {
 			fmt.Println("Inside")
@@ -206,13 +210,18 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 		}
 		//query := message.QueryRow(i["id"])
 		message.Next()
-		err = message.Scan(&content, &author_name)
+		err = message.Scan(&content, &author_name, &msg_time)
 		if err == sql.ErrNoRows{
 			//return nil, err
+			msg_time = ""
 			content = ""
 			author_name = ""
 		}
 		f_id,err := strconv.ParseFloat(i["id"], 64)
+		if err != nil {
+			return nil, err
+		}
+		i_time,err := strconv.ParseInt(msg_time, 10,64)
 		if err != nil {
 			return nil, err
 		}
@@ -234,7 +243,7 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 			return nil, err
 		}
 
-		chats_ids=append(chats_ids, &models.UserChatInfo{f_id,i["name"], author_name, f_a_id, moders,&m_content,0,i_delete})
+		chats_ids=append(chats_ids, &models.UserChatInfo{f_id,i["name"], author_name, f_a_id, moders,&m_content,i_time,0,i_delete})
 		defer message.Close()
 		//chats_ids
 	}
@@ -347,67 +356,91 @@ func GetFileProve(user_id float64, file_id string)(string, error){
 
 func GetMessages(user_id float64, chat_id float64)([]models.NewMessageToUser, error){
 	var id_now string
-	var start string
+	var start,deltimes string
 	var delete_a, deltime int64
-	rows_user_in_chat, err := activeConn.Prepare("SELECT chat_id, start, delete_a, deltime FROM people_in_chats WHERE (user_id=?) AND (chat_id=?)")
+	r_deltimes := [][]int64{}
+	rows_user_in_chat, err := activeConn.Prepare("SELECT chat_id, start, delete_a, deltime, deltimes FROM people_in_chats WHERE (user_id=?) AND (chat_id=?)")
 	if err != nil {
 		return nil, errors.New("Cant prove user isnt in chat")
 		//panic(nil)
 	}
-	query := rows_user_in_chat.QueryRow(user_id, chat_id).Scan(&id_now, &start, &delete_a, &deltime )
+	query := rows_user_in_chat.QueryRow(user_id, chat_id).Scan(&id_now, &start, &delete_a, &deltime, &deltimes)
+	err = json.Unmarshal([]byte(deltimes), &r_deltimes)
+	if err != nil {
+		return nil, errors.New("Cant decode delete times")
+		//panic(nil)
+	}
 	defer rows_user_in_chat.Close()
 	if query == sql.ErrNoRows{
 		return nil, errors.New("User isn't in chat")
 	}
 	var messages []models.NewMessageToUser
-	rows, err := activeConn.Query("SELECT messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time  FROM messages " +
-		"INNER JOIN people ON messages.user_id = people.id WHERE (messages.chat_id=?) and (messages.time>?)", chat_id, start)
-	if delete_a == 1{
-		rows, err = activeConn.Query("SELECT messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time  FROM messages " +
-			"INNER JOIN people ON messages.user_id = people.id WHERE (messages.chat_id=?) and (messages.time>?) and (messages.time<?)", chat_id, start, deltime)
-	}
+	i_start,_ := strconv.ParseInt(start,10,64)
+	for i:=0;i<len(r_deltimes);i++{
+		if i==0 && r_deltimes[0][0]==0{
 
-	if err != nil {
-		return nil,err
+			err = getMessageBetweenTime(&messages, i_start,9999999999,chat_id)
+		}else{
+			if i==0{
+				err = getMessageBetweenTime(&messages, i_start, r_deltimes[i+1][0],chat_id)
+			}else if i>0{
+				//i_start,_ := strconv.ParseInt(start,10,64)
+				//i_stop, _ := r_deltimes[]
+				err = getMessageBetweenTime(&messages, r_deltimes[i-1][1],r_deltimes[i][0],chat_id)
+				if r_deltimes[i][1] != 0 && i!= len(r_deltimes)-1{
+					err = getMessageBetweenTime(&messages, r_deltimes[i][1],r_deltimes[i+1][0],chat_id)
+				}else if i== len(r_deltimes)-1{
+					err = getMessageBetweenTime(&messages, r_deltimes[i][1],9999999999,chat_id)
+				}
+				//messages,err = getMessageBetweenTime(messages, r_deltimes[i-1][1],r_deltimes[i][0],chat_id)
+			}
+		}
 	}
-	defer rows.Close()
-	for rows.Next(){
+	return messages,nil
+}
+
+
+
+func getMessageBetweenTime(messages *[]models.NewMessageToUser, start int64, finish int64, chat_id float64)(error){
+	rows, err := activeConn.Query("SELECT messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time  FROM messages " +
+		"INNER JOIN people ON messages.user_id = people.id WHERE (messages.chat_id=?) and (messages.time>?) and (messages.time<?)", chat_id, start, finish)
+	for rows.Next() {
 		var id, content, u_name, c_id string
 		var m_time int64
-		if err := rows.Scan(&id,  &content,&c_id, &u_name, &m_time); err != nil {
-			return nil,err
+		if err := rows.Scan(&id, &content, &c_id, &u_name, &m_time); err != nil {
+			return err
 		}
 		//decode content
 		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		var r_content models.MessageContent
 		var f_content models.MessageContentToUser
 		err = json.Unmarshal([]byte(content), &r_content)
-		if err != nil{
-			return nil,err
+		if err != nil {
+			return  err
 		}
 		f_content.Message = r_content.Message
 		f_content.Type = r_content.Type
-		documents:=*r_content.Documents
+		documents := *r_content.Documents
 		//fmt.Println(documents)
-		for i := 0;i<len(documents);i++{
+		for i := 0; i < len(documents); i++ {
 			//id := *r_content.Documents
 			parse_doc, err := GetFileInformation(documents[i])
-			if err != nil{
-				return nil,err
+			if err != nil {
+				return  err
 			}
 			f_content.Documents = append(f_content.Documents, parse_doc)
 		}
 		f64_c_id, err := strconv.ParseFloat(c_id, 64)
 		if err != nil {
-			return nil,err
+			return  err
 		}
 		f64_id, err := strconv.ParseFloat(id, 64)
 		if err != nil {
-			return nil,err
+			return  err
 		}
-		messages = append(messages, models.NewMessageToUser{&f64_c_id,f_content,&f64_id,&u_name, &m_time})
+		*messages = append(*messages, models.NewMessageToUser{&f64_c_id, f_content, &f64_id, &u_name, &m_time})
 	}
-	return messages, nil
+	return  nil
 }
 
 func CreateFile(filename string, size int64, user_id float64, chat_id string, ratio_size string)(int64, string, error){
@@ -467,7 +500,7 @@ func createDB_structs(database *sql.DB) {
 	}
 	//Create people in chat structs
 
-	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS people_in_chats ( user_id INTEGER, chat_id INTEGER, blocked INTEGER DEFAULT 0, start INTEGER DEFAULT 0, delete_a INTEGER DEFAULT 0, deltime INTEGER DEFAULT 0)")
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS people_in_chats ( user_id INTEGER, chat_id INTEGER, blocked INTEGER DEFAULT 0, start INTEGER DEFAULT 0, delete_a INTEGER DEFAULT 0, deltime INTEGER DEFAULT 0, deltimes TEXT)")
 	statement.Exec()
 
 	//Create messages structs
@@ -705,6 +738,8 @@ func DeleteUsersInChat(users_ids []float64, chat_id string)(error){
 	}
 	return nil
 }
+
+
 
 func OpenDB(){
 	newDB := false
