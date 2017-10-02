@@ -92,7 +92,7 @@ func TestUserToken(secret string, token_line string)(*models.User,  error){
 }
 
 func ProcessMessageFromUserToUser(message *models.MessageContent)(models.MessageContentToUser, error){
-	fmt.Println(message)
+	//fmt.Println(message)
 	final := models.MessageContentToUser{}
 	final.Type = message.Type
 	final.Message = message.Message

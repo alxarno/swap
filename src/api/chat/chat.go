@@ -164,8 +164,9 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 			fmt.Println("FAIL MARSHAL MessageContentToUser")
 		}
 		now_time:=time.Now().Unix()
-		db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
-		send_message:= models.NewMessageToUser{&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+		m_id,_:=db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
+		//i_m_id:=float64(m_id)
+		send_message:= models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&now_time}
 		engine.SendMessage(send_message)
 		engine.SendNotificationAddUserInChat(id)
 	}
@@ -263,8 +264,9 @@ func deleteUsers(w http.ResponseWriter, r *http.Request){
 			fmt.Println("FAIL MARSHAL MessageContentToUser")
 		}
 		now_time:=time.Now().Unix()
-		db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
-		send_message:=models.NewMessageToUser{&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+		m_id,_:=db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
+		//i_m_id:=float64(m_id)
+		send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&now_time}
 		force_msg:=models.ForceMsgToUser{v,send_message}
 		engine.SendForceMessage(force_msg)
 		engine.SendMessage(send_message)
@@ -326,8 +328,9 @@ func recoveryUsers(w http.ResponseWriter, r *http.Request){
 			fmt.Println("FAIL MARSHAL MessageContentToUser")
 		}
 		now_time:=time.Now().Unix()
-		db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
-		send_message:=models.NewMessageToUser{&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+		m_id,_:=db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
+		//i_m_id:=float64(m_id)
+		send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&now_time}
 		//force_msg:=models.ForceMsgToUser{v,send_message}
 		//engine.SendForceMessage(force_msg)
 		engine.SendMessage(send_message)
@@ -426,8 +429,9 @@ func setSettings(w http.ResponseWriter, r *http.Request){
 		fmt.Println("FAIL MARSHAL MessageContentToUser")
 	}
 	now_time:=time.Now().Unix()
-	db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
-	send_message:=models.NewMessageToUser{&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+	m_id,_:=db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
+	//f_m_id := float64(m_id)
+	send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&now_time}
 	//force_msg:=models.ForceMsgToUser{v,send_message}
 	//engine.SendForceMessage(force_msg)
 	engine.SendMessage(send_message)
@@ -437,6 +441,35 @@ func setSettings(w http.ResponseWriter, r *http.Request){
 	}
 	for _,v:= range users_in_chat{
 		engine.SendNotificationAddUserInChat(v)
+	}
+	finish:= make(map[string]string)
+	finish["result"] = "Success"
+	final, err := json.Marshal(finish)
+	fmt.Fprintf(w, string(final))
+	return
+}
+
+
+func deleteMessages(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	var data struct{Token string; ChatId string; Ids []string}
+	err:=methods.GetJson(&data, r)
+	if err != nil {
+		methods.SendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	//fmt.Println(data)
+	user,err := methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil {
+		//fmt.Println(err)
+		methods.SendAnswerError("Failed decode token", w)
+		return
+	}
+	err = db_work.DeleteMessages(data.ChatId, user.ID, data.Ids)
+	if err != nil{
+		//fmt.Println(err)
+		methods.SendAnswerError("Failed exec db query", w)
+		return
 	}
 	finish:= make(map[string]string)
 	finish["result"] = "Success"
@@ -463,5 +496,7 @@ func MainChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 		getSettings(w,r)
 	case "setSettings":
 		setSettings(w,r)
+	case "deleteMessages":
+		deleteMessages(w,r)
 	}
 }

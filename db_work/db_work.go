@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"strconv"
 	//"strings"
+	"strings"
 )
 var (
 	activeConn *sql.DB
@@ -166,7 +167,7 @@ func CreateChat(name string, author_id string)(string,  error){
 	if err != nil{
 		return "", err
 	}
-	err = AddMessage(f_id, float64(id), string(data))
+	_,err = AddMessage(f_id, float64(id), string(data))
 	if err != nil{
 		return "", err
 	}
@@ -254,30 +255,31 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 	return chats_ids, nil
 }
 
-func AddMessage(user_id float64, chat_id float64, content string)(error){
+func AddMessage(user_id float64, chat_id float64, content string)(int64, error){
 	if !activeConnIsReal{
 		OpenDB()
 	}
 	// Is user in chat?
 	err := CheckUserINChat(user_id, chat_id)
 	if err != nil{
-		return err
+		return -1,err
 	}
 	err= CheckUserInChatDelete(user_id, chat_id)
 	if err != nil{
-		return err
+		return -1,err
 	}
 //	Create message
 	statement, err := activeConn.Prepare("INSERT INTO messages (user_id, chat_id, content, time) VALUES (?, ?, ?, ?)")
 	if err != nil {
-		return errors.New("DB failed query")
+		return -1,errors.New("DB failed query")
 	}
 	//make hash of user's password
-	_, err = statement.Exec(user_id, chat_id, content, time.Now().Unix())
+	res, err := statement.Exec(user_id, chat_id, content, time.Now().Unix())
 	if err != nil {
-		return errors.New("Failed exec statement")
+		return -1,errors.New("Failed exec statement")
 	}
-	return nil
+	id, _ := res.LastInsertId()
+	return id,nil
 }
 
 func CheckUserInChatDelete(user_id float64, chat_id float64)(error){
@@ -397,12 +399,12 @@ func GetMessages(user_id float64, chat_id float64)([]models.NewMessageToUser, er
 }
 
 func getMessageBetweenTime(messages *[]models.NewMessageToUser, start int64, finish int64, chat_id float64)(error){
-	rows, err := activeConn.Query("SELECT messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time  FROM messages " +
+	rows, err := activeConn.Query("SELECT messages.id, messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time  FROM messages " +
 		"INNER JOIN people ON messages.user_id = people.id WHERE (messages.chat_id=?) and (messages.time>=?) and (messages.time<=?)", chat_id, start, finish)
 	for rows.Next() {
-		var id, content, u_name, c_id string
+		var m_id, u_id, content, u_name, c_id string
 		var m_time int64
-		if err := rows.Scan(&id, &content, &c_id, &u_name, &m_time); err != nil {
+		if err := rows.Scan(&m_id, &u_id, &content, &c_id, &u_name, &m_time); err != nil {
 			return err
 		}
 		//decode content
@@ -429,11 +431,15 @@ func getMessageBetweenTime(messages *[]models.NewMessageToUser, start int64, fin
 		if err != nil {
 			return  err
 		}
-		f64_id, err := strconv.ParseFloat(id, 64)
+		f64_uid, err := strconv.ParseFloat(u_id, 64)
 		if err != nil {
 			return  err
 		}
-		*messages = append(*messages, models.NewMessageToUser{&f64_c_id, f_content, &f64_id, &u_name, &m_time})
+		im_id, err := strconv.ParseInt(m_id, 10,64)
+		if err != nil {
+			return  err
+		}
+		*messages = append(*messages, models.NewMessageToUser{&im_id,&f64_c_id, f_content, &f64_uid, &u_name, &m_time})
 	}
 	return  nil
 }
@@ -848,6 +854,23 @@ func SetNameChat(chat_id string, name string)(error){
 		return errors.New("Failed exec statement")
 	}
 	return nil
+}
+
+func DeleteMessages(chat_id string, user_id float64, users_ids []string)(error){
+	chat_ids := strings.Join(users_ids, ", ")
+	query := fmt.Sprintf("delete from messages where (id IN (%s)) and (user_id=?) and (chat_id=?)", chat_ids)
+	fmt.Println(query)
+	stmt, err := activeConn.Prepare(query)
+	if err != nil{
+		fmt.Println(err)
+		return errors.New("Fail prepare delete ids")
+	}
+	_, err = stmt.Exec(user_id, chat_id)
+	if err != nil{
+		fmt.Println(err)
+		return errors.New("Fail exec delete messages")
+	}
+	return  nil
 }
 
 func OpenDB(){

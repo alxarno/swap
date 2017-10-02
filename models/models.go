@@ -42,6 +42,7 @@ type User struct {
 }
 
 type NewMessageToUser struct{
+	ID *int64
 	Chat_Id *float64
 	Content MessageContentToUser
 	Author_id *float64
