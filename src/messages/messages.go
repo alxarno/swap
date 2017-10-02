@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/AlexArno/spatium/models"
-	"fmt"
 
 )
 var secret = "321312421"
@@ -55,7 +54,7 @@ func NewMessage(user_quest *string)(models.NewMessageToUser, error){
 	if err!=nil{
 		return  send,err
 	}
-	err= db_work.AddMessage(user.ID, *data.Chat_Id, string(content))
+	m_id,err:= db_work.AddMessage(user.ID, *data.Chat_Id, string(content))
 	if err != nil{
 		return send,err
 	}
@@ -63,7 +62,8 @@ func NewMessage(user_quest *string)(models.NewMessageToUser, error){
 	if err != nil{
 		return  send,err
 	}
-	fmt.Println(newContent)
+	//fmt.Println(newContent)
+	send.ID = &m_id
 	send.Author_id = &user.ID
 	send.Author_Name=&user.Name
 	send.Chat_Id = data.Chat_Id
@@ -111,7 +111,8 @@ func NewMessageAnotherStruct(user_quest *string)(models.NewMessageToUser, error)
 	if err!=nil{
 		return  send,err
 	}
-	err= db_work.AddMessage(user.ID, *data.Content.Chat_Id, string(content))
+	m_id,err:= db_work.AddMessage(user.ID, *data.Content.Chat_Id, string(content))
+	//f_m_id:= float64(m_id)
 	if err != nil{
 		return send,err
 	}
@@ -119,7 +120,8 @@ func NewMessageAnotherStruct(user_quest *string)(models.NewMessageToUser, error)
 	if err != nil{
 		return  send,err
 	}
-	fmt.Println(newContent)
+	//fmt.Println(newContent)
+	send.ID = &m_id
 	send.Author_id = &user.ID
 	send.Author_Name=&user.Name
 	send.Chat_Id = data.Content.Chat_Id

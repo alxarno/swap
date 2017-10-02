@@ -167,7 +167,7 @@ func testDb(w http.ResponseWriter, r *http.Request){
 	now:=db_work.GetInfo()
 	model :=models.GetModels()
 	//defer r.Body.Close()
-	fmt.Print(now, model)
+	//fmt.Print(now, model)
 	w.Write([]byte(now+model))
 	return
 }
