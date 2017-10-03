@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"encoding/json"
 	db_work "github.com/AlexArno/spatium/db_work"
+	engine "github.com/AlexArno/spatium/src/message_engine"
 	"github.com/robbert229/jwt"
 	"time"
 	methods "github.com/AlexArno/spatium/src/api/methods"
@@ -152,45 +153,6 @@ func uploadFile(w http.ResponseWriter, r *http.Request){
 	defer f.Close()
 	io.Copy(f, file)
 	go MiniMize(i_type,ratio_size,path)
-	//if err!=nil{
-	//	fmt.Println(err)
-	//	fmt.Println("Failed minimize image")
-	//}
-	//if i_type == "png"{
-	//	file, err := os.Open("./public/files/"+path)
-	//	if err != nil {
-	//		sendAnswerError(err.Error(), w)
-	//		fmt.Println(err)
-	//		return
-	//	}
-	//	image, err := png.Decode(file)
-	//	if err != nil {
-	//		sendAnswerError(err.Error(), w)
-	//		fmt.Println(err)
-	//		return
-	//	}
-	//	file.Close()
-	//	g := image.Bounds()
-	//	height := g.Dy()
-	//	width := g.Dx()
-	//	fmt.Println("Width = ", width)
-	//	fmt.Println("Height = ", height)
-	//	//fmt.Println("Ratio size = ", ratio_size)
-	//	if width > 250 || height>180{
-	//		width:= 180* ratio_size
-	//		newImage := resize.Resize(uint(width), 180, image, resize.NearestNeighbor)
-	//		out, err := os.Create("./public/files/min/"+path)
-	//		if err != nil {
-	//			sendAnswerError(err.Error(), w)
-	//			fmt.Println(err)
-	//		}
-	//		defer out.Close()
-	//		png.Encode(out, newImage)
-	//	}
-	//}
-	//if i_type == "jpeg" || i_type == "jpg"{
-	//	err= MiniMize(i_type,ratio_size,path)
-	//}
 	var x = make(map[string]string)
 	x["result"]="Success"
 	x["FileId"]= strconv.FormatInt(id,10)
@@ -199,9 +161,6 @@ func uploadFile(w http.ResponseWriter, r *http.Request){
 
 
 }
-
-
-
 
 func deleteFile(w http.ResponseWriter, r *http.Request){
 	var data *struct{Token string; FileId string}
@@ -366,8 +325,18 @@ func getMyChats(w http.ResponseWriter, r *http.Request){
 		sendAnswerError("Some failed",w)
 		return
 	}
+	for _,v:= range chats{
+		v.Online, _ = getOnlineUsersIntChat(v.ID)
+	}
 	finish, _:=json.Marshal(chats)
 	fmt.Fprintf(w, string(finish))
+}
+
+func getOnlineUsersIntChat(chat_id float64)(int64, error){
+	var users_id []float64
+	users_id,_ = db_work.GetChatsUsers(chat_id)
+	final:= engine.GetOnlineUsersInChat(&users_id)
+	return final, nil
 }
 
 func getMyData(w http.ResponseWriter, r *http.Request){
@@ -412,6 +381,78 @@ func getUsersForAdd(w http.ResponseWriter, r *http.Request){
 
 }
 
+func getSettings(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	var data *struct{Token string}
+	decoder:= json.NewDecoder(r.Body)
+	defer r.Body.Close()
+	err := decoder.Decode(&data)
+	if err != nil {
+		fmt.Println(err)
+		sendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	user, err:=methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	final,err := db_work.GetUserSettings(user.ID)
+	if err!=nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	finish, _:=json.Marshal(final)
+	fmt.Fprintf(w, string(finish))
+}
+
+
+func SetSettings(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	var data *struct{Token string; Name string}
+	decoder:= json.NewDecoder(r.Body)
+	defer r.Body.Close()
+	err := decoder.Decode(&data)
+	if err != nil {
+		fmt.Println(err)
+		sendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	user, err:=methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	err = db_work.SetUserSettings(user.ID, data.Name)
+	if err!=nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	var answer = make(map[string]string)
+	answer["result"] = "Success"
+	finish, _:=json.Marshal(answer)
+	fmt.Fprintf(w, string(finish))
+}
+//
+//func GetUsersByName(w http.ResponseWriter, r *http.Request){
+//	w.Header().Set("Access-Control-Allow-Origin", "*")
+//	var data *struct{Token string; Name string}
+//	decoder:= json.NewDecoder(r.Body)
+//	defer r.Body.Close()
+//	err := decoder.Decode(&data)
+//	if err != nil {
+//		fmt.Println(err)
+//		sendAnswerError("Failed decode r.Body", w)
+//		return
+//	}
+//	user, err:=methods.OnlyDecodeToken(secret, data.Token)
+//	if err != nil{
+//		sendAnswerError(err.Error(), w)
+//		return
+//	}
+//
+//}
+
 func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 	//fmt.Println(var1+"Hello")
 	switch var1 {
@@ -435,5 +476,9 @@ func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 		getDisposableFileLink(w,r)
 	case "getUsersForAdd":
 		getUsersForAdd(w,r)
+	case "getSettings":
+		getSettings(w,r)
+	case "setSettings":
+		SetSettings(w,r)
 	}
 }

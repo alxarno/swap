@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"strconv"
 	//"strings"
+	//engine "github.com/AlexArno/spatium/src/message_engine"
 	"strings"
 )
 var (
@@ -244,8 +245,14 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 			fmt.Println("content")
 			return nil, err
 		}
-
-		chats_ids=append(chats_ids, &models.UserChatInfo{f_id,i["name"], author_name, f_a_id, moders,&m_content,i_time,0,i_delete})
+		//online,err:=getOnlineUsersIntChat(f_id)
+		//if err!=nil{
+		//	fmt.Println("content")
+		//	return nil, err
+		//}
+		chats_ids=append(chats_ids, &models.UserChatInfo{f_id,i["name"], author_name, f_a_id,
+															moders,&m_content,i_time,0,
+															i_delete, 0})
 		defer message.Close()
 		//chats_ids
 	}
@@ -254,6 +261,9 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 	}
 	return chats_ids, nil
 }
+
+
+
 
 func AddMessage(user_id float64, chat_id float64, content string)(int64, error){
 	if !activeConnIsReal{
@@ -872,6 +882,44 @@ func DeleteMessages(chat_id string, user_id float64, users_ids []string)(error){
 	}
 	return  nil
 }
+
+func GetUserSettings(user_id float64)(map[string]interface{}, error){
+	final := map[string]interface{}{}
+	rows, err := activeConn.Prepare("SELECT login, u_name FROM people WHERE id=?")
+	if err != nil {
+		return nil, err
+	}
+	var login, u_name string
+	//make hash of user's password
+	query := rows.QueryRow(user_id)
+
+	err = query.Scan(&login, &u_name)
+	if err != nil {
+		return nil, err
+	}
+	final["login"] = login
+	final["name"]=u_name
+	return final, nil
+}
+
+func SetUserSettings(user_id float64, name string)(error){
+	query := fmt.Sprintf("UPDATE people SET u_name = ? where id = %s",  strconv.FormatFloat(user_id,'f',-1,64))
+	fmt.Println(query)
+	statement, err := activeConn.Prepare(query)
+	if err != nil {
+		fmt.Println(err)
+		return errors.New("DB failed query")
+	}
+	//make hash of user's password
+	_, err = statement.Exec(name)
+	if err != nil {
+		fmt.Println(err)
+		return errors.New("Failed exec statement")
+	}
+	return nil
+}
+
+//func GetUsersByName
 
 func OpenDB(){
 	newDB := false

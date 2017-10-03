@@ -129,7 +129,18 @@ func SendNotificationAddUserInChat(user_id float64)(error){
 	return nil
 }
 
-
+func GetOnlineUsersInChat(users_ids *[]float64)(int64){
+	var count int64
+	count= 0
+	for _,v:= range users{
+		for _,b := range *users_ids{
+			if v.UserId == b{
+				count+=1
+			}
+		}
+	}
+	return count
+}
 
 func SendMessage( msg models.NewMessageToUser){
 	send_messages<-msg
