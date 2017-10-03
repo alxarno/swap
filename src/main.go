@@ -11,7 +11,7 @@ import (
 	db_work "github.com/AlexArno/spatium/db_work"
 	models "github.com/AlexArno/spatium/models"
 	api "github.com/AlexArno/spatium/src/api"
-	messages_work "github.com/AlexArno/spatium/src/messages"
+	//messages_work "github.com/AlexArno/spatium/src/messages"
 	"github.com/gorilla/mux"
 	"time"
 	engine "github.com/AlexArno/spatium/src/message_engine"
@@ -45,70 +45,10 @@ var (
 )
 
 
-func broadcaster(){
-	clients:= make(map[client]bool)
-	for{
-		select {
-			case msg:=<-messages:
-				for cli := range clients{
-					cli<-msg
-				}
-			case cli:=<-entering:
-				clients[cli] = true
-			case cli:=<-leaving:
-				delete(clients, cli)
-				close(cli)
-		}
-	}
-}
 
-func writerUser(ws *websocket.Conn, ch<-chan  models.NewMessageToUser){
-	for msg:=range ch{
 
-		now_msg, err := json.Marshal(msg)
-		if err != nil {
-			fmt.Println("Fail Marshaling in function wruteUser :69")
-			return
-		}
-		if err := websocket.Message.Send(ws, string(now_msg)); err != nil {
-			fmt.Println("Can't send")
-			break
-		}
-	}
 
-}
 
-func SocketListener(ws *websocket.Conn) {
-	var err error
-	ch:= make(chan  models.NewMessageToUser)
-	go writerUser(ws, ch)
-	entering<-ch
-	for {
-		var reply string
-
-		if err = websocket.Message.Receive(ws, &reply); err != nil {
-			fmt.Println("Can't receive", err)
-			break
-		}
-
-		send, err := messages_work.NewMessage(&reply)
-		if err != nil{
-			fmt.Println("Decode message", err)
-			break
-		}
-
-		for v,r := range chats{
-			if float64(r.ID) == *send.Chat_Id{
-				chats[v].LastSender = *send.Author_Name
-				chats[v].LastMessage = *send.Content.Message
-			}
-		}
-
-		messages<-send
-	}
-	leaving<-ch
-	ws.Close()
-}
 
 func proveConnect(w http.ResponseWriter, r *http.Request){
 	//w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -131,37 +71,37 @@ func proveConnect(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, "Connect")
 }
 
-func getMessages(w http.ResponseWriter, r *http.Request){
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	var data RequestGetMessage
-	decoder:= json.NewDecoder(r.Body)
-	err := decoder.Decode(&data)
-	if err != nil {
-		log.Println(err)
-	}
-	//fmt.Println(data.Chat_Id, data.Author)
-	//fmt.Print(params.Get("Author"))
-	id := data.Chat_Id
-	for _,r := range messagesBlock{
-		if r.Chat_Id == id{
-			need_chat_messages := *r
-			data,_ := json.Marshal(need_chat_messages.Messages)
-			//fmt.Fprintf(w, string(data))
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(data)
-			return
-		}
-	}
-	errAnswer := ErrorAnswer{"Error", "Chat is undefined"}
-	js,err := json.Marshal(errAnswer)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
-	return
-}
+//func getMessages(w http.ResponseWriter, r *http.Request){
+//	w.Header().Set("Access-Control-Allow-Origin", "*")
+//	var data RequestGetMessage
+//	decoder:= json.NewDecoder(r.Body)
+//	err := decoder.Decode(&data)
+//	if err != nil {
+//		log.Println(err)
+//	}
+//	//fmt.Println(data.Chat_Id, data.Author)
+//	//fmt.Print(params.Get("Author"))
+//	id := data.Chat_Id
+//	for _,r := range messagesBlock{
+//		if r.Chat_Id == id{
+//			need_chat_messages := *r
+//			data,_ := json.Marshal(need_chat_messages.Messages)
+//			//fmt.Fprintf(w, string(data))
+//			w.Header().Set("Content-Type", "application/json")
+//			w.Write(data)
+//			return
+//		}
+//	}
+//	errAnswer := ErrorAnswer{"Error", "Chat is undefined"}
+//	js,err := json.Marshal(errAnswer)
+//	if err != nil {
+//		http.Error(w, err.Error(), http.StatusInternalServerError)
+//		return
+//	}
+//	w.Header().Set("Content-Type", "application/json")
+//	w.Write(js)
+//	return
+//}
 
 func testDb(w http.ResponseWriter, r *http.Request){
 	now:=db_work.GetInfo()
@@ -210,9 +150,9 @@ func main(){
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.Handle("/ws", websocket.Handler(engine.SocketListener))
 	myRouter.HandleFunc("/proveConnect", proveConnect)
-	myRouter.HandleFunc("/testDb", testDb)
+	//myRouter.HandleFunc("/testDb", testDb)
 	//myRouter.HandleFunc("/getChats", getChats)
-	myRouter.HandleFunc("/getMessages", getMessages)
+	//myRouter.HandleFunc("/getMessages", getMessages)
 	myRouter.HandleFunc("/api/{key}/{var1}", ApiRouter)
 	myRouter.HandleFunc("/getFile/{link}/{name}", downloadFile)
 	//if err := myRouter.ListenAndServe(":1234", nil); err != nil {

@@ -28,6 +28,7 @@ type UserChatInfo struct{
 	LastMessageTime int64
 	View int
 	Delete int64
+	Online int64
 }
 type MessageContent struct{
 	Message *string
