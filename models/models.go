@@ -20,6 +20,7 @@ type Message struct {
 type UserChatInfo struct{
 	ID float64
 	Name string
+	Type int64
 	//Addr_users []string
 	LastSender string
 	Admin_id float64

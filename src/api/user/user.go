@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"io"
+	"github.com/AlexArno/spatium/models"
 )
 type ProveConnection struct{
 	Login string
@@ -434,24 +435,63 @@ func SetSettings(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, string(finish))
 }
 //
-//func GetUsersByName(w http.ResponseWriter, r *http.Request){
-//	w.Header().Set("Access-Control-Allow-Origin", "*")
-//	var data *struct{Token string; Name string}
-//	decoder:= json.NewDecoder(r.Body)
-//	defer r.Body.Close()
-//	err := decoder.Decode(&data)
-//	if err != nil {
-//		fmt.Println(err)
-//		sendAnswerError("Failed decode r.Body", w)
-//		return
-//	}
-//	user, err:=methods.OnlyDecodeToken(secret, data.Token)
-//	if err != nil{
-//		sendAnswerError(err.Error(), w)
-//		return
-//	}
-//
-//}
+func GetUsersByName(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	var data *struct{Token string; Name string}
+	decoder:= json.NewDecoder(r.Body)
+	defer r.Body.Close()
+	err := decoder.Decode(&data)
+	if err != nil {
+		fmt.Println(err)
+		sendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	user, err:=methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	list,err:= db_work.GetUsersForCreateDialog(user.ID,data.Name)
+	if err!= nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	finish, _:=json.Marshal(list)
+	fmt.Fprintf(w, string(finish))
+}
+
+func CreateDialog(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	var data *struct{Token string; User_id float64}
+	decoder:= json.NewDecoder(r.Body)
+	defer r.Body.Close()
+	err := decoder.Decode(&data)
+	if err != nil {
+		fmt.Println(err)
+		sendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	user, err:=methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	msg, ch_id,int_last,err:= db_work.CreateDialog(user.ID,data.User_id)
+	if err!=nil{
+		sendAnswerError(err.Error(), w)
+		return
+	}
+	content:= models.MessageContentToUser{msg.Message, []interface{}{},msg.Type}
+	now:= time.Now().Unix()
+	send_message:= models.NewMessageToUser{&int_last,&ch_id, content,&user.ID,&user.Name,&now}
+	engine.SendMessage(send_message)
+	engine.SendNotificationAddUserInChat(data.User_id)
+	var answer = make(map[string]string)
+	answer["result"] = "Success"
+	finish, _:=json.Marshal(answer)
+	fmt.Fprintf(w, string(finish))
+}
+
 
 func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 	//fmt.Println(var1+"Hello")
@@ -480,5 +520,9 @@ func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 		getSettings(w,r)
 	case "setSettings":
 		SetSettings(w,r)
+	case "getUsersByNameForCreateDialog":
+		GetUsersByName(w,r)
+	case "createDialog":
+		CreateDialog(w,r)
 	}
 }
