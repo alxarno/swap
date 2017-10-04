@@ -179,7 +179,7 @@ func CreateChat(name string, author_id string)(string,  error){
 func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 	var chats_ids []*models.UserChatInfo
 	var middle []map[string]string
-	rows, err := activeConn.Query("SELECT chats.id, chats.name, chats.author_id, chats.moders_ids, people_in_chats.delete_a, people_in_chats.deltime  FROM people_in_chats INNER JOIN chats ON people_in_chats.chat_id = chats.id WHERE user_id=?", user_id)
+	rows, err := activeConn.Query("SELECT chats.id, chats.name,  chats.type, chats.author_id, chats.moders_ids, people_in_chats.delete_a, people_in_chats.deltime  FROM people_in_chats INNER JOIN chats ON people_in_chats.chat_id = chats.id WHERE user_id=?", user_id)
 	if err != nil {
 		fmt.Println("Outside", err)
 		return nil,err
@@ -188,13 +188,27 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 	for rows.Next(){
 		var id, name, un_moders string
 		var author_id string
-		var delete_a,deltime int64
+		var delete_a,deltime, c_type int64
 		//var moders []string
-		if err := rows.Scan(&id,  &name, &author_id, &un_moders, &delete_a, &deltime); err != nil {
+		if err := rows.Scan(&id,  &name, &c_type, &author_id, &un_moders, &delete_a, &deltime); err != nil {
 			fmt.Println("scan 1")
 			return nil,err
 		}
-		middle=append(middle, map[string]string{"id": id, "name": name, "author": author_id, "moders": un_moders,
+		if c_type == 1{
+			rows, err := activeConn.Query("SELECT  people.u_name FROM people INNER JOIN people_in_chats ON people_in_chats.user_id = people.id WHERE (people_in_chats.chat_id=?) and (people_in_chats.user_id<>?)", id,user_id)
+			if err != nil {
+				//fmt.Println("scan 1")
+				return nil,err
+			}
+			defer rows.Close()
+			for rows.Next(){
+				if err := rows.Scan(&name); err != nil {
+					fmt.Println("scan 2")
+					return  nil,err
+				}
+			}
+		}
+		middle=append(middle, map[string]string{"id": id, "type": strconv.FormatInt(c_type,10), "name": name, "author": author_id, "moders": un_moders,
 		"delete": strconv.FormatInt(delete_a,10), "deltime": strconv.FormatInt(deltime,10)})
 
 
@@ -250,7 +264,11 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 		//	fmt.Println("content")
 		//	return nil, err
 		//}
-		chats_ids=append(chats_ids, &models.UserChatInfo{f_id,i["name"], author_name, f_a_id,
+		id,err:= strconv.ParseInt(i["type"],10,64)
+		if err!=nil{
+			return nil, err
+		}
+		chats_ids=append(chats_ids, &models.UserChatInfo{f_id,i["name"],id, author_name, f_a_id,
 															moders,&m_content,i_time,0,
 															i_delete, 0})
 		defer message.Close()
@@ -261,9 +279,6 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 	}
 	return chats_ids, nil
 }
-
-
-
 
 func AddMessage(user_id float64, chat_id float64, content string)(int64, error){
 	if !activeConnIsReal{
@@ -920,6 +935,118 @@ func SetUserSettings(user_id float64, name string)(error){
 }
 
 //func GetUsersByName
+func GetUsersForCreateDialog(user_id float64, name string)([]map[string]interface{},error){
+	middle := make([]map[string]interface{},0)
+	var dialogs_ids []string
+	//var other_chats_ids []string
+	rows, err := activeConn.Query("SELECT  people_in_chats.user_id FROM chats INNER JOIN people_in_chats ON people_in_chats.chat_id = chats.id WHERE (chats.type=1) and (people_in_chats.user_id <> ?)", user_id)
+	if err != nil {
+		fmt.Println("scan 1")
+		return nil,err
+	}
+	defer rows.Close()
+	for rows.Next(){
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			fmt.Println("scan 2")
+			return nil,err
+		}
+		dialogs_ids = append(dialogs_ids, id)
+	}
+	str_dialogs_ids := strings.Join(dialogs_ids, ",")
+
+	fmt.Println(str_dialogs_ids)
+	//users_id_in_user_dialogs:=  fmt.Sprintf("SELECT DISTINCT people.id, people.u_name, people.login FROM people INNER JOIN people_in_chats " +
+	//												"ON people_in_chats.user_id = people.id WHERE (people_in_chats.user_id not in (%s)) and (people_in_chats.user_id <> ?)" +
+	//												"and (people.u_name LIKE (?))",str_dialogs_ids)
+	users_id_in_user_dialogs := fmt.Sprintf("SELECT DISTINCT id,u_name,login from people where (id not in (%s))" +
+													"and (id <> ?) and (u_name LIKE (?))",str_dialogs_ids)
+	//get logins and names how already in chat
+	//query:= fmt.Sprintf("SELECT  id, u_name, login FROM people  WHERE u_name  LIKE (?) ")
+	rows, err = activeConn.Query(users_id_in_user_dialogs ,user_id,"%"+name+"%")
+	if err != nil {
+		fmt.Println("scan 1")
+		return nil,err
+	}
+	defer rows.Close()
+	for rows.Next(){
+		var id, name, login string
+		if err := rows.Scan(&id, &name,  &login); err != nil {
+			fmt.Println("scan 2")
+			return nil,err
+		}
+		ret:= map[string]interface{}{}
+		ret["id"],_ = strconv.ParseInt(id,10,64)
+		ret["name"] = name
+		ret["login"] = login
+		middle=append(middle, ret)
+	}
+	return middle, nil
+}
+
+func CreateDialog(user_id float64, another_user_id float64)( *models.MessageContent, float64,int64,error){
+	var dialogs_ids []float64
+	//var other_chats_ids []string
+	rows, err := activeConn.Query("SELECT  people_in_chats.user_id FROM chats INNER JOIN people_in_chats ON people_in_chats.chat_id = chats.id WHERE (chats.type=1) and (people_in_chats.user_id<>?)", user_id)
+	if err != nil {
+		fmt.Println("scan 1")
+		return nil,0,0,err
+	}
+	defer rows.Close()
+	for rows.Next(){
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			fmt.Println("scan 2")
+			return  nil,0,0,err
+		}
+		f_id,_:= strconv.ParseFloat(id,64)
+		dialogs_ids = append(dialogs_ids, f_id)
+	}
+	for _,v:= range dialogs_ids{
+		if v==another_user_id{
+			return  nil,0,0,errors.New("Dialog with this user already exist")
+		}
+	}
+	statement, err := activeConn.Prepare("INSERT INTO chats (name,  author_id,moders_ids, type, lastmodify) VALUES (?, ?, ?, ?, ?)")
+	if err != nil {
+		return  nil,0,0,errors.New("Failed permanent statement")
+	}
+	//make hash of user's password
+	res, err := statement.Exec("",  user_id,"[]", 1,time.Now().Unix())
+	if err != nil {
+		return  nil,0,0,errors.New("Failed exec statement")
+	}
+	id, _ := res.LastInsertId()
+	err = InsertUserInChat(strconv.FormatFloat(user_id,'f',-1,64), id)
+	if err != nil {
+		return  nil,0,0,err
+		//fmt.Println(fin)
+	}
+	err = InsertUserInChat(strconv.FormatFloat(another_user_id,'f',-1,64), id)
+	if err != nil {
+		return  nil,0,0,err
+		//fmt.Println(fin)
+	}
+	mess_mss := " начал эту беседу"
+	docs := []string{}
+	m_type := "a_msg"
+	mess := models.MessageContent{&mess_mss, &docs, &m_type}
+	data ,err := json.Marshal(mess)
+	if err != nil{
+		return   nil,0,0,err
+	}
+	//f_id,err := strconv.ParseFloat(strconv.FormatFloat(user_id,'f',-1,64), 64)
+	//if err != nil{
+	//	return  err
+	//}
+	last_id,err := AddMessage(user_id, float64(id), string(data))
+	if err != nil{
+		return   nil,0,0,err
+	}
+	//last_id,_:= a_res.LastInsertId()
+	return  &mess, float64(id),last_id,nil
+
+}
 
 func OpenDB(){
 	newDB := false
