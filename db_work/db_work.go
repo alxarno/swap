@@ -546,11 +546,11 @@ func createDB_structs(database *sql.DB) {
 	//Create user structs
 	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, login TEXT, pass TEXT, u_name TEXT)")
 	statement.Exec()
-	user_id, fin, err := CreateUser("god", "1111", "Alex")
-	if err != nil {
-		fmt.Println(fin)
-		return
-	}
+	//user_id, fin, err := CreateUser("god", "1111", "Alex")
+	//if err != nil {
+	//	fmt.Println(fin)
+	//	return
+	//}
 	//Create people in chat structs
 
 	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS people_in_chats ( user_id INTEGER, chat_id INTEGER," +
@@ -573,10 +573,10 @@ func createDB_structs(database *sql.DB) {
 	//Create chat structs
 	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, name TEXT,  author_id INTEGER , moders_ids TEXT, type INTEGER DEFAULT 0,  lastmodify INTEGER)")
 	statement.Exec()
-	_, err = CreateChat("globalChat",  user_id)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
+	//_, err = CreateChat("globalChat",  user_id)
+	//if err != nil {
+	//	fmt.Println(err.Error())
+	//}
 
 
 
