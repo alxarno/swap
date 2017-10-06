@@ -6,7 +6,7 @@ import (
 	"crypto/sha256"
 	"os"
 	"fmt"
-	models "github.com/AlexArno/spatium/models"
+	models "github.com/AlexeyArno/Spatium/models"
 	"time"
 	"errors"
 	"encoding/json"

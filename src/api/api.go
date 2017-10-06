@@ -2,8 +2,8 @@ package api
 
 import (
 	"net/http"
-	chat "github.com/AlexArno/spatium/src/api/chat"
-	user "github.com/AlexArno/spatium/src/api/user"
+	chat "github.com/AlexeyArno/Spatium/src/api/chat"
+	user "github.com/AlexeyArno/Spatium/src/api/user"
 
 )
 
