@@ -3,9 +3,9 @@ package message_engine
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/AlexArno/spatium/models"
-	"github.com/AlexArno/spatium/src/api/methods"
-	messages_work "github.com/AlexArno/spatium/src/messages"
+	"github.com/AlexeyArno/Spatium/models"
+	"github.com/AlexeyArno/Spatium/src/api/methods"
+	messages_work "github.com/AlexeyArno/Spatium/src/messages"
 	"time"
 )
 var (

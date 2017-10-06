@@ -2,13 +2,13 @@ package chat
 
 import (
 	"net/http"
-	methods "github.com/AlexArno/spatium/src/api/methods"
-	db_work "github.com/AlexArno/spatium/db_work"
-	engine "github.com/AlexArno/spatium/src/message_engine"
+	methods "github.com/AlexeyArno/Spatium/src/api/methods"
+	db_work "github.com/AlexeyArno/Spatium/db_work"
+	engine "github.com/AlexeyArno/Spatium/src/message_engine"
 	"strconv"
 	"encoding/json"
 	"fmt"
-	"github.com/AlexArno/spatium/models"
+	"github.com/AlexeyArno/Spatium/models"
 	"time"
 )
 var secret = "321312421"

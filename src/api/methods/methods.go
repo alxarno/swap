@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-	db_work "github.com/AlexArno/spatium/db_work"
+	db_work "github.com/AlexeyArno/Spatium/db_work"
 	"github.com/robbert229/jwt"
-	"github.com/AlexArno/spatium/models"
+	"github.com/AlexeyArno/Spatium/models"
 	"errors"
 
 

@@ -1,11 +1,11 @@
 package messages
 
 import (
-	methods "github.com/AlexArno/spatium/src/api/methods"
-	db_work "github.com/AlexArno/spatium/db_work"
+	methods "github.com/AlexeyArno/Spatium/src/api/methods"
+	db_work "github.com/AlexeyArno/Spatium/db_work"
 	"encoding/json"
 	"errors"
-	"github.com/AlexArno/spatium/models"
+	"github.com/AlexeyArno/Spatium/models"
 
 )
 var secret = "321312421"
