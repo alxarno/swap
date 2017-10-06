@@ -407,7 +407,6 @@ func getSettings(w http.ResponseWriter, r *http.Request){
 	fmt.Fprintf(w, string(finish))
 }
 
-
 func SetSettings(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	var data *struct{Token string; Name string}
