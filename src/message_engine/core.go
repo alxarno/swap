@@ -116,6 +116,8 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium){
 	}
 }
 
+
+//Reload only chats list on client side
 func SendNotificationAddUserInChat(user_id float64)(error){
 	var message = make(map[string]interface{})
 	message["type_a"] = "system"
@@ -128,6 +130,23 @@ func SendNotificationAddUserInChat(user_id float64)(error){
 	}
 	return nil
 }
+
+
+//Reload  chats list and now chat window close on client side
+func SendNotificationDeleteChat(user_id float64)(error){
+	var message = make(map[string]interface{})
+	message["type_a"] = "system"
+	message["action"] = "delete_chat"
+	finish, _:=json.Marshal(message)
+	for _,v :=range users{
+		if v.UserId == user_id{
+			v.SystemMessChan<-string(finish)
+		}
+	}
+	return nil
+}
+
+
 
 func GetOnlineUsersInChat(users_ids *[]float64)(int64){
 	var count int64

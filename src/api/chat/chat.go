@@ -449,7 +449,6 @@ func setSettings(w http.ResponseWriter, r *http.Request){
 	return
 }
 
-
 func deleteMessages(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	var data struct{Token string; ChatId string; Ids []string}
@@ -478,7 +477,171 @@ func deleteMessages(w http.ResponseWriter, r *http.Request){
 	return
 }
 
+func deleteFromDialog(w http.ResponseWriter, r *http.Request){
+	var data struct{Token string; ChatId string}
+	err:=methods.GetJson(&data, r)
+	if err != nil {
+		methods.SendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	//fmt.Println(data)
+	user,err := methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil {
+		fmt.Println(err)
+		methods.SendAnswerError("Failed decode token", w)
+		return
+	}
+
+	// Because we need it
+	f64_caht_id,err := strconv.ParseFloat(data.ChatId, 64)
+	if err != nil{
+		fmt.Println("FAIL DECODE Ids")
+		return
+	}
+	//err= db_work.CheckUserRightsInChat(user.ID, f64_caht_id)
+	//if err !=nil{
+	//	methods.SendAnswerError(err.Error(), w)
+	//	return
+	//}
+	err = db_work.DeleteUsersInChat([]float64{user.ID}, data.ChatId)
+	if err!=nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+	f_c_id,err:= strconv.ParseFloat(data.ChatId,64)
+	if err!= nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+	dialog_users,err:=db_work.GetChatsUsers(f_c_id)
+	docs:= make([]interface{},0)
+	msg_content:= " вышел из диалога"
+	str:= "a_msg"
+	message:= models.MessageContentToUser{&msg_content, docs, &str}
+	s_message,err :=json.Marshal(message)
+	if err != nil{
+		fmt.Println("FAIL MARSHAL MessageContentToUser")
+	}
+	now_time:=time.Now().Unix()
+	m_id,_:=db_work.AddForceMessage(user.ID,f64_caht_id,string(s_message))
+	send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+	for _,v:= range dialog_users{
+		//i_m_id:=float64(m_id)
+		force_msg:=models.ForceMsgToUser{v,send_message}
+		engine.SendForceMessage(force_msg)
+		//engine.SendMessage(send_message)
+		//engine.SendNotificationAddUserInChat(v)
+	}
+	force_msg:=models.ForceMsgToUser{user.ID,send_message}
+	engine.SendForceMessage(force_msg)
+	engine.SendNotificationAddUserInChat(user.ID)
+	finish:= make(map[string]string)
+	finish["result"] = "Success"
+	final, err := json.Marshal(finish)
+	fmt.Fprintf(w, string(final))
+
+}
+
+func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
+	var data struct{Token string; ChatId string}
+	err:=methods.GetJson(&data, r)
+	if err != nil {
+		methods.SendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	//fmt.Println(data)
+	user,err := methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil {
+		fmt.Println(err)
+		methods.SendAnswerError("Failed decode token", w)
+		return
+	}
+
+	// Because we need it
+	f64_caht_id,err := strconv.ParseFloat(data.ChatId, 64)
+	if err != nil{
+		fmt.Println("FAIL DECODE Ids")
+		return
+	}
+	err= db_work.CheckUserInChatDelete(user.ID, f64_caht_id)
+	if err ==nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+	err = db_work.RecoveryUsersInChat([]float64{user.ID}, data.ChatId)
+	if err!=nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+	f_c_id,err:= strconv.ParseFloat(data.ChatId,64)
+	if err!= nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+	dialog_users,err:=db_work.GetChatsUsers(f_c_id)
+	docs:= make([]interface{},0)
+	msg_content:= " вернулся в диалог"
+	str:= "a_msg"
+	message:= models.MessageContentToUser{&msg_content, docs, &str}
+	s_message,err :=json.Marshal(message)
+	if err != nil{
+		fmt.Println("FAIL MARSHAL MessageContentToUser")
+	}
+	now_time:=time.Now().Unix()
+	m_id,_:=db_work.AddForceMessage(user.ID,f64_caht_id,string(s_message))
+	send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+	for _,v:= range dialog_users{
+		//i_m_id:=float64(m_id)
+		force_msg:=models.ForceMsgToUser{v,send_message}
+		engine.SendForceMessage(force_msg)
+		//engine.SendMessage(send_message)
+		//engine.SendNotificationAddUserInChat(v)
+	}
+	engine.SendNotificationAddUserInChat(user.ID)
+
+	//force_msg:=models.ForceMsgToUser{user.ID,send_message}
+	//engine.SendForceMessage(force_msg)
+	//
+	finish:= make(map[string]string)
+	finish["result"] = "Success"
+	final, err := json.Marshal(finish)
+	fmt.Fprintf(w, string(final))
+
+}
+
+func deleteFullUserFromChatDialog(w http.ResponseWriter, r *http.Request){
+	var data struct{Token string; ChatId string}
+	err:=methods.GetJson(&data, r)
+	if err != nil {
+		methods.SendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	//fmt.Println(data)
+	user,err := methods.OnlyDecodeToken(secret, data.Token)
+	if err != nil {
+		fmt.Println(err)
+		methods.SendAnswerError("Failed decode token", w)
+		return
+	}
+	f_c_id,err:= strconv.ParseFloat(data.ChatId, 64)
+	if err!=nil{
+		methods.SendAnswerError("Failed decode ChatId", w)
+		return
+	}
+	err=db_work.FullDeleteUserFromChat(user.ID, f_c_id)
+	if err!= nil{
+		methods.SendAnswerError("Failed delete user: "+err.Error(), w)
+		return
+	}
+	engine.SendNotificationDeleteChat(user.ID)
+	finish:= make(map[string]string)
+	finish["result"] = "Success"
+	final, err := json.Marshal(finish)
+	fmt.Fprintf(w, string(final))
+}
+
 func MainChatApi(var1 string, w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	switch var1 {
 	case "create":
 		create(w,r)
@@ -498,5 +661,11 @@ func MainChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 		setSettings(w,r)
 	case "deleteMessages":
 		deleteMessages(w,r)
+	case "deleteFromDialog":
+		deleteFromDialog(w,r)
+	case "deleteFullUserFromChatDialog":
+		deleteFullUserFromChatDialog(w,r)
+	case "recoveryUserInDialog":
+		recoveryUserInDialog(w,r)
 	}
 }

@@ -15,7 +15,11 @@ import (
 	"github.com/gorilla/mux"
 	"time"
 	engine "github.com/AlexArno/spatium/src/message_engine"
-	)
+
+	"net"
+	"os"
+	"path/filepath"
+)
 var (
 	secret = "321312421"
 	//Nmessages =engine.Messages
@@ -36,14 +40,6 @@ type ErrorAnswer struct{
 
 
 type client chan<-models.NewMessageToUser
-var (
-	chats []*models.Chat
-	messagesBlock []*models.MessageBlock
-	messages = make(chan models.NewMessageToUser)
-	entering = make(chan client)
-	leaving = make(chan client)
-)
-
 
 
 
@@ -65,50 +61,36 @@ func proveConnect(w http.ResponseWriter, r *http.Request){
 		fmt.Fprintf(w, "Error")
 		return
 	}
-	//fmt.Println(user.ID)
-	//fmt.Println(&data.Login)
-	//fmt.Println(&data.Pass)
+
 	fmt.Fprintf(w, "Connect")
 }
 
-//func getMessages(w http.ResponseWriter, r *http.Request){
-//	w.Header().Set("Access-Control-Allow-Origin", "*")
-//	var data RequestGetMessage
-//	decoder:= json.NewDecoder(r.Body)
-//	err := decoder.Decode(&data)
-//	if err != nil {
-//		log.Println(err)
-//	}
-//	//fmt.Println(data.Chat_Id, data.Author)
-//	//fmt.Print(params.Get("Author"))
-//	id := data.Chat_Id
-//	for _,r := range messagesBlock{
-//		if r.Chat_Id == id{
-//			need_chat_messages := *r
-//			data,_ := json.Marshal(need_chat_messages.Messages)
-//			//fmt.Fprintf(w, string(data))
-//			w.Header().Set("Content-Type", "application/json")
-//			w.Write(data)
-//			return
-//		}
-//	}
-//	errAnswer := ErrorAnswer{"Error", "Chat is undefined"}
-//	js,err := json.Marshal(errAnswer)
-//	if err != nil {
-//		http.Error(w, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-//	w.Header().Set("Content-Type", "application/json")
-//	w.Write(js)
-//	return
-//}
 
-func testDb(w http.ResponseWriter, r *http.Request){
-	now:=db_work.GetInfo()
-	model :=models.GetModels()
-	//defer r.Body.Close()
-	//fmt.Print(now, model)
-	w.Write([]byte(now+model))
+
+func stand(w http.ResponseWriter, r *http.Request){
+	file := "./frontend/index.html"
+	http.ServeFile(w, r, file)
+	return
+}
+
+func static(w http.ResponseWriter, r *http.Request){
+	vars:=mux.Vars(r)
+	file := "./frontend/"+vars["key1"]+"/"+vars["key2"]+"/"+vars["key3"]
+	http.ServeFile(w, r, file)
+	return
+}
+
+func logos(w http.ResponseWriter, r *http.Request){
+	vars:=mux.Vars(r)
+	file := "./frontend/"+vars["key1"]
+	http.ServeFile(w, r, file)
+	return
+}
+
+func fonts(w http.ResponseWriter, r *http.Request){
+	vars:=mux.Vars(r)
+	file := "./frontend/"+vars["key1"]+"/"+vars["key2"]
+	http.ServeFile(w, r, file)
 	return
 }
 
@@ -116,6 +98,25 @@ func ApiRouter(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	vars:=mux.Vars(r)
 	api.MainApiRouter(vars["key"], vars["var1"], w, r)
+}
+
+func RemoveContents(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(dir, name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func downloadFile(w http.ResponseWriter, r *http.Request){
@@ -147,18 +148,44 @@ func main(){
 	//go broadcaster()
 	engine.StartCoreMessenger()
 
+	RemoveContents("./public/files")
+	os.MkdirAll("./public/files/min", os.ModePerm)
+
+
 	myRouter := mux.NewRouter().StrictSlash(true)
+	myRouter.HandleFunc("/", stand)
+	myRouter.HandleFunc("/login", stand)
+	myRouter.HandleFunc("/messages", stand)
+	myRouter.HandleFunc("/messages/{key}", stand)
+	myRouter.HandleFunc("/getFile/{link}/{name}", downloadFile)
 	myRouter.Handle("/ws", websocket.Handler(engine.SocketListener))
 	myRouter.HandleFunc("/proveConnect", proveConnect)
-	//myRouter.HandleFunc("/testDb", testDb)
-	//myRouter.HandleFunc("/getChats", getChats)
-	//myRouter.HandleFunc("/getMessages", getMessages)
 	myRouter.HandleFunc("/api/{key}/{var1}", ApiRouter)
-	myRouter.HandleFunc("/getFile/{link}/{name}", downloadFile)
-	//if err := myRouter.ListenAndServe(":1234", nil); err != nil {
-	//	log.Fatal("ListenAndServe:", err)
-	//}
+	myRouter.HandleFunc("/{key1}", logos)
+	myRouter.HandleFunc("/{key1}/{key2}", fonts)
+	myRouter.HandleFunc("/{key1}/{key2}/{key3}", static)
+
+	my_addres:= ""
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		os.Stderr.WriteString("Oops: " + err.Error() + "\n")
+		os.Exit(1)
+	}
+
+	for _, a := range addrs {
+		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				my_addres+=ipnet.IP.String()
+				my_addres+=":1234   "
+
+			}
+		}
+	}
+	os.Stderr.WriteString("Spatium started on \t"+ my_addres)
+
 	log.Fatal(http.ListenAndServe(":1234", myRouter))
+
+
 }
 
 
