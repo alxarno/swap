@@ -186,7 +186,6 @@ func SocketListener(ws *websocket.Conn) {
 		var reply string
 
 		if err = websocket.Message.Receive(ws, &reply); err != nil {
-			fmt.Println("Can't receive", err)
 			break
 		}
 		decodeNewMessage(reply, user)
