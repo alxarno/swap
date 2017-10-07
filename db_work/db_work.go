@@ -499,16 +499,16 @@ func CreateFile(filename string, size int64, user_id float64, chat_id string, ra
 
 	statement, err := activeConn.Prepare("INSERT INTO files (author_id, chat_id, filename, path, time, uses, ratio_size) VALUES (?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
+		statement.Close()
 		return -1,"",errors.New("Fail insert file")
 	}
 	res,err := statement.Exec(user_id, chat_id, filename ,path, now_time, 0, ratio_size)
-	defer statement.Close()
 	if err != nil {
 		fmt.Println(err.Error())
 		statement.Close()
 		return -1,"",errors.New("Fail exec BD")
 	}
-
+	statement.Close()
 	id, _ := res.LastInsertId()
 	return id,path, nil
 }
@@ -521,24 +521,28 @@ func DeleteFile(user_id float64, file_id string)(string, error){
 	message, err := activeConn.Prepare("SELECT path FROM files where (id=?) ")
 	defer message.Close()
 	if err != nil {
+		message.Close()
 		return "", err
 	}
 	query := message.QueryRow(file_id)
 
 	err = query.Scan(&path)
 	if err == sql.ErrNoRows{
+		message.Close()
 		return "", err
 	}
 	stmt, err := activeConn.Prepare("delete from files where (id=?) and (uses = 0) and (author_id=?)")
 	defer stmt.Close()
 	if err != nil{
+		message.Close()
 		return "",errors.New("Fail prepare delete file")
 	}
 	_, err = stmt.Exec(file_id, user_id)
 	if err != nil{
+		message.Close()
 		return "",errors.New("Fail exec delete file")
 	}
-
+	message.Close()
 	return  path, nil
 }
 
@@ -620,7 +624,7 @@ func FindUserByName(name string, chat_id string)([]map[string]string,error){
 	//fmt.Println(query_logins)
 	//"SELECT  messages.content, people.u_name FROM messages INNER JOIN people ON messages.user_id = people.id WHERE chat_id=? ORDER BY time DESC"
 	rows, err = activeConn.Query("SELECT id , u_name, login FROM people  WHERE  u_name NOT IN " +
-		"(SELECT  people.u_name FROM people INNER JOIN people_in_chats ON people_in_chats.user_id = people.id WHERE people_in_chats.chat_id=?) and u_name LIKE (?)",chat_id, "%"+name+"%")
+		"(SELECT  people.u_name FROM people INNER JOIN people_in_chats ON people_in_chats.user_id = people.id WHERE people_in_chats.chat_id=?) and ((u_name LIKE (?)) or (login LIKE (?))) ",chat_id, "%"+name+"%", "%"+name+"%")
 	if err != nil {
 		fmt.Println("scan 3")
 		return nil,err
@@ -952,7 +956,6 @@ func GetUserSettings(user_id float64)(map[string]interface{}, error){
 
 func SetUserSettings(user_id float64, name string)(error){
 	query := fmt.Sprintf("UPDATE people SET u_name = ? where id = %s",  strconv.FormatFloat(user_id,'f',-1,64))
-	fmt.Println(query)
 	statement, err := activeConn.Prepare(query)
 	if err != nil {
 		fmt.Println(err)
@@ -969,8 +972,6 @@ func SetUserSettings(user_id float64, name string)(error){
 
 //func GetUsersByName
 func GetUsersForCreateDialog(user_id float64, name string)([]map[string]interface{},error){
-
-
 	var users_dialogs_ids []string
 	//get users dialogs
 	rows, err := activeConn.Query("SELECT  chats.id FROM chats INNER JOIN people_in_chats ON people_in_chats.chat_id = chats.id WHERE (chats.type=1) and (people_in_chats.user_id = ?)", user_id)
@@ -1014,7 +1015,7 @@ func GetUsersForCreateDialog(user_id float64, name string)([]map[string]interfac
 	}
 	str_dialogs_ids := strings.Join(dialogs_ids, ",")
 
-	fmt.Println(str_dialogs_ids)
+	//fmt.Println(str_dialogs_ids)
 	//users_id_in_user_dialogs:=  fmt.Sprintf("SELECT DISTINCT people.id, people.u_name, people.login FROM people INNER JOIN people_in_chats " +
 	//												"ON people_in_chats.user_id = people.id WHERE (people_in_chats.user_id not in (%s)) and (people_in_chats.user_id <> ?)" +
 	//												"and (people.u_name LIKE (?))",str_dialogs_ids)
@@ -1052,7 +1053,7 @@ func HaveAlreadyDialog(user_id float64, another_user_id float64)(error){
 	}
 
 	query := p_rows.QueryRow(user_id, another_user_id, user_id, another_user_id).Scan(&s_chat_id, &s_delete_users)
-	fmt.Println(s_chat_id)
+	//fmt.Println(s_chat_id)
 	defer p_rows.Close()
 	if query == sql.ErrNoRows{
 		return nil
@@ -1066,28 +1067,14 @@ func CreateDialog(user_id float64, another_user_id float64)( *models.MessageCont
 	if err!= nil{
 		return nil,0,0,err
 	}
-	var dialogs_ids []float64
+	//var dialogs_ids []float64
 	//var other_chats_ids []string
-	rows, err := activeConn.Query("SELECT  people_in_chats.user_id FROM chats INNER JOIN people_in_chats ON people_in_chats.chat_id = chats.id WHERE (chats.type=1) and (people_in_chats.user_id<>?)", user_id)
-	if err != nil {
-		fmt.Println("scan 1")
-		return nil,0,0,err
-	}
-	defer rows.Close()
-	for rows.Next(){
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			fmt.Println("scan 2")
-			return  nil,0,0,err
-		}
-		f_id,_:= strconv.ParseFloat(id,64)
-		dialogs_ids = append(dialogs_ids, f_id)
-	}
-	for _,v:= range dialogs_ids{
-		if v==another_user_id{
-			return  nil,0,0,errors.New("Dialog with this user already exist")
-		}
-	}
+	//may_be_users:= GetUsersForCreateDialog(user_id,)
+	//for _,v:= range dialogs_ids{
+	//	if v==another_user_id{
+	//		return  nil,0,0,errors.New("Dialog with this user already exist")
+	//	}
+	//}
 	statement, err := activeConn.Prepare("INSERT INTO chats (name,  author_id,moders_ids, type, lastmodify) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		return  nil,0,0,errors.New("Failed permanent statement")

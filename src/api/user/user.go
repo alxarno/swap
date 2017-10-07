@@ -112,9 +112,8 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
 
 func uploadFile(w http.ResponseWriter, r *http.Request){
 	//w.Header().Set("Access-Control-Allow-Origin", "*")
-	r.ParseMultipartForm(104857600)
+	r.ParseMultipartForm(52428800)
 	s_ratio_size := r.FormValue("ratio_size")
-	fmt.Println(s_ratio_size)
 	ratio_size,err := strconv.ParseFloat(s_ratio_size,64)
 	if err !=nil{
 		sendAnswerError(err.Error(), w)
@@ -124,6 +123,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request){
 	token := r.FormValue("token")
 	i_type := r.FormValue("type")
 	chat_id :=  r.FormValue("chat_id")
+	name :=  r.FormValue("fileName")
 	user, err:=methods.OnlyDecodeToken(secret, token)
 	if err != nil{
 		sendAnswerError(err.Error(), w)
@@ -138,7 +138,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request){
 
 	defer file.Close()
 
-	id, path, err := db_work.CreateFile(handler.Filename, handler.Size,user.ID, chat_id, s_ratio_size)
+	id, path, err := db_work.CreateFile(name, handler.Size,user.ID, chat_id, s_ratio_size)
 	if err != nil{
 		sendAnswerError(err.Error(), w)
 		fmt.Println(err)

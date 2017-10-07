@@ -515,7 +515,7 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 	}
 	dialog_users,err:=db_work.GetChatsUsers(f_c_id)
 	docs:= make([]interface{},0)
-	msg_content:= " вышел из диалога"
+	msg_content:= " вышел из беседы"
 	str:= "a_msg"
 	message:= models.MessageContentToUser{&msg_content, docs, &str}
 	s_message,err :=json.Marshal(message)
@@ -580,7 +580,7 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 	}
 	dialog_users,err:=db_work.GetChatsUsers(f_c_id)
 	docs:= make([]interface{},0)
-	msg_content:= " вернулся в диалог"
+	msg_content:= " вернулся в беседу"
 	str:= "a_msg"
 	message:= models.MessageContentToUser{&msg_content, docs, &str}
 	s_message,err :=json.Marshal(message)
