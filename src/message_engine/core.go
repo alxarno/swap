@@ -44,7 +44,48 @@ var(
 
 	send_messages = make(chan models.NewMessageToUser)
 	force_send_messages = make(chan models.ForceMsgToUser)
+
 )
+
+func UserMove(user_id float64, m_type string){
+	user_chats,err:= db_work.GetUsersChatsIds(user_id)
+	if err!=nil{
+		return
+	}
+	var users_online []float64
+	for _,b:=range users{
+		if b.Authoriz==true{
+			users_online = append(users_online, b.UserId)
+		}
+	}
+	fmt.Println("Uesr_online:",users_online)
+	notif_ids,err:= db_work.GetUsersIdsForUpdateChatsInfoOnline(&user_chats, &users_online)
+	fmt.Println("Notif_users:",notif_ids)
+	if err!=nil{
+		return
+	}
+	var data= make(map[string]interface{})
+	data["action"] = "online_user"
+	data["type"]=m_type
+	data["chats"]=user_chats
+	data["type_a"] = "system"
+	data["self"] = false
+	finish, _:=json.Marshal(data)
+	for _,i := range notif_ids{
+		for _,v :=range users{
+			if v.UserId == i{
+				if i==user_id{
+					data["self"] = true
+					finish, _:=json.Marshal(data)
+					v.SystemMessChan<-string(finish)
+					data["self"] = false
+				}else{
+					v.SystemMessChan<-string(finish)
+				}
+			}
+		}
+	}
+}
 
 func writerUserSys(ws *websocket.Conn,  sys_ch<-chan string){
 	for sysMsg := range sys_ch{
@@ -98,9 +139,11 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium){
 				answer["type"]=err.Error()
 			}else{
 				connect.UserId = user.ID
+				connect.Authoriz = true
 				answer["type_a"]="system"
 				answer["result"]="Success"
 				answer["action"]="authoriz"
+				UserMove(connect.UserId, "+")
 			}
 			finish, _:=json.Marshal(answer)
 			connect.SystemMessChan<-string(finish)
@@ -229,6 +272,7 @@ func broadcaster(){
 			for i:=0;i<len(users);i++{
 				if users[i] == cli{
 					index=i
+					UserMove(users[i].UserId, "-")
 				}
 			}
 			if index != -1{
