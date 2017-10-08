@@ -58,9 +58,7 @@ func UserMove(user_id float64, m_type string){
 			users_online = append(users_online, b.UserId)
 		}
 	}
-	fmt.Println("Uesr_online:",users_online)
 	notif_ids,err:= db_work.GetUsersIdsForUpdateChatsInfoOnline(&user_chats, &users_online)
-	fmt.Println("Notif_users:",notif_ids)
 	if err!=nil{
 		return
 	}
@@ -75,10 +73,12 @@ func UserMove(user_id float64, m_type string){
 		for _,v :=range users{
 			if v.UserId == i{
 				if i==user_id{
-					data["self"] = true
-					finish, _:=json.Marshal(data)
-					v.SystemMessChan<-string(finish)
-					data["self"] = false
+					if m_type != "-" {
+						data["self"] = true
+						finish, _ := json.Marshal(data)
+						v.SystemMessChan <- string(finish)
+						data["self"] = false
+					}
 				}else{
 					v.SystemMessChan<-string(finish)
 				}
