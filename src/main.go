@@ -46,6 +46,7 @@ type client chan<-models.NewMessageToUser
 
 
 
+
 func proveConnect(w http.ResponseWriter, r *http.Request){
 	//w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -75,8 +76,15 @@ func stand(w http.ResponseWriter, r *http.Request){
 
 func static(w http.ResponseWriter, r *http.Request){
 	vars:=mux.Vars(r)
-	file := "./frontend/"+vars["key1"]+"/"+vars["key2"]+"/"+vars["key3"]
-	http.ServeFile(w, r, file)
+	file := "./frontend/"+vars["key1"]+"/"+vars["key2"]+"/"+vars["key3"]+".gz"
+	if vars["key3"] == "main.css"{
+		file := "./frontend/"+vars["key1"]+"/"+vars["key2"]+"/"+vars["key3"]
+		http.ServeFile(w, r,file)
+		return
+	}
+	w.Header().Set("Content-Encoding", "gzip")
+	w.Header().Set("Vary", "accept-encoding")
+	http.ServeFile(w, r,file)
 	return
 }
 
@@ -89,7 +97,9 @@ func logos(w http.ResponseWriter, r *http.Request){
 
 func fonts(w http.ResponseWriter, r *http.Request){
 	vars:=mux.Vars(r)
-	file := "./frontend/"+vars["key1"]+"/"+vars["key2"]
+	file := "./frontend/"+vars["key1"]+"/"+vars["key2"]+".gz"
+	w.Header().Set("Content-Encoding", "gzip")
+	w.Header().Set("Vary", "accept-encoding")
 	http.ServeFile(w, r, file)
 	return
 }
@@ -150,8 +160,6 @@ func main(){
 
 	RemoveContents("./public/files")
 	os.MkdirAll("./public/files/min", os.ModePerm)
-
-
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", stand)
 	myRouter.HandleFunc("/login", stand)
@@ -163,7 +171,7 @@ func main(){
 	myRouter.HandleFunc("/api/{key}/{var1}", ApiRouter)
 	myRouter.HandleFunc("/{key1}", logos)
 	myRouter.HandleFunc("/{key1}/{key2}", fonts)
-	myRouter.HandleFunc("/{key1}/{key2}/{key3}", static)
+	myRouter.HandleFunc("/{key1}/{key2}/{key3}",static)
 
 	my_addres:= ""
 	addrs, err := net.InterfaceAddrs()
