@@ -644,25 +644,65 @@ func FindUserByName(name string, chat_id string)([]map[string]string,error){
 	return middle, nil
 }
 
-//func GetUsersChatsIds(user_id float64)([]string,error){
-//	var ids []string
-//	rows, err := activeConn.Query("SELECT chats.id FROM people_in_chats INNER JOIN chats ON people_in_chats.chat_id = chats.id WHERE user_id=?", user_id)
-//	if err != nil {
-//		fmt.Println("Outside", err)
-//		return nil,err
-//	}
-//	defer rows.Close()
-//	for rows.Next(){
-//		var id string
-//		//var moders []string
-//		if err := rows.Scan(&id); err != nil {
-//			fmt.Println("scan 1")
-//			return nil,err
-//		}
-//		ids=append(ids, id)
-//	}
-//	return  ids, nil
-//}
+func GetUsersChatsIds(user_id float64)([]float64,error){
+	var ids []float64
+	rows, err := activeConn.Query("SELECT chats.id FROM people_in_chats INNER JOIN chats ON people_in_chats.chat_id = chats.id WHERE user_id=?", user_id)
+	if err != nil {
+		fmt.Println("Outside", err)
+		return nil,err
+	}
+	defer rows.Close()
+	for rows.Next(){
+		var id float64
+		//var moders []string
+		if err := rows.Scan(&id); err != nil {
+			fmt.Println("scan 1")
+			return nil,err
+		}
+		ids=append(ids, id)
+	}
+	return  ids, nil
+}
+
+func GetUsersIdsForUpdateChatsInfoOnline(chats_ids *[]float64, users_online_ids *[]float64)([]float64, error){
+	//Get chats ids for get users for send update
+	var final []float64
+	var users_ids []string
+	var chats_ids_s []string
+	for _,v:= range *chats_ids{
+		chats_ids_s = append(chats_ids_s, strconv.FormatFloat(v,'f',-1,64))
+	}
+	for _,v:= range *users_online_ids{
+		users_ids = append(users_ids, strconv.FormatFloat(v,'f',-1,64))
+	}
+	user_s_ids := strings.Join(users_ids, ",")
+	chat_s_ids := strings.Join(chats_ids_s, ",")
+	//fmt.Println(user_s_ids)
+	//fmt.Println(chat_s_ids)
+	query := fmt.Sprintf("SELECT DISTINCT user_id FROM people_in_chats WHERE (chat_id in (%s)) and (user_id in (%s)) and (delete_a = 0)", chat_s_ids, user_s_ids)
+	stmt, err := activeConn.Query(query)
+	if err != nil {
+		fmt.Println("GetUsersIdsForUpdateChatsInfoOnline : (671) :", err)
+		return nil,err
+	}
+	var id string
+	for stmt.Next(){
+		err = stmt.Scan(&id)
+		if err != nil {
+			fmt.Println("GetUsersIdsForUpdateChatsInfoOnline : (678) :", err)
+			return nil,err
+		}
+		f64_id,err:= strconv.ParseFloat(id, 64)
+		if err != nil {
+			fmt.Println("GetUsersIdsForUpdateChatsInfoOnline : (694) :", err)
+			return nil,err
+		}
+		final = append(final, f64_id)
+	}
+	return final, nil
+}
+
+
 
 func GetChatsUsers(chat_id float64)([]float64,error){
 	var ids []float64
