@@ -363,18 +363,19 @@ func CheckUserINChat(user_id float64, chat_id float64)(error){
 	return nil
 }
 
-func GetFileInformation(file_id string)(map[string]string, error){
-	final := make(map[string]string)
+func GetFileInformation(file_id string)(map[string]interface{}, error){
+	final := make(map[string]interface{})
 	//var getFileBD struct{filename string; path string; uses int}
 	var filename string
 	var path string
 	var uses int
 	var ratio_size string
-	rows, err := activeConn.Prepare("SELECT filename, path, uses, ratio_size  FROM files  WHERE id=?")
+	var size int
+	rows, err := activeConn.Prepare("SELECT filename, path, uses, ratio_size, size  FROM files  WHERE id=?")
 	if err != nil {
 		panic(nil)
 	}
-	query := rows.QueryRow(file_id).Scan(&filename, &path, &uses, &ratio_size)
+	query := rows.QueryRow(file_id).Scan(&filename, &path, &uses, &ratio_size, &size)
 	defer rows.Close()
 	if query == sql.ErrNoRows{
 		return final,errors.New("File is undefine")
@@ -383,6 +384,7 @@ func GetFileInformation(file_id string)(map[string]string, error){
 	final["path"] = path
 	final["ratio_size"] = ratio_size
 	final["file_id"] = file_id
+	final["size"] = size
 	return final, nil
 }
 
@@ -497,12 +499,12 @@ func CreateFile(filename string, size int64, user_id float64, chat_id string, ra
 	f_size :=strconv.FormatInt(size,10)
 	path := now_time+f_size+filename
 
-	statement, err := activeConn.Prepare("INSERT INTO files (author_id, chat_id, filename, path, time, uses, ratio_size) VALUES (?, ?, ?, ?, ?, ?, ?)")
+	statement, err := activeConn.Prepare("INSERT INTO files (author_id, chat_id, filename, path, time, uses, ratio_size, size) VALUES (?, ?, ?, ?, ?, ?, ?,?)")
 	if err != nil {
 		statement.Close()
 		return -1,"",errors.New("Fail insert file")
 	}
-	res,err := statement.Exec(user_id, chat_id, filename ,path, now_time, 0, ratio_size)
+	res,err := statement.Exec(user_id, chat_id, filename ,path, now_time, 0, ratio_size, f_size)
 	if err != nil {
 		fmt.Println(err.Error())
 		statement.Close()
@@ -567,7 +569,7 @@ func createDB_structs(database *sql.DB) {
 	statement.Exec()
 
 	//Create files structs
-	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, author_id INTEGER, chat_id INTEGER, filename TEXT, path Text, time INTEGER, uses INTEGER, ratio_size TEXT)")
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, author_id INTEGER, chat_id INTEGER, filename TEXT, path Text, time INTEGER, uses INTEGER, ratio_size TEXT, size INTEGER )")
 	statement.Exec()
 
 	//create dialogs info
