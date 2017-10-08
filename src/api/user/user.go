@@ -137,7 +137,6 @@ func uploadFile(w http.ResponseWriter, r *http.Request){
 	}
 
 	defer file.Close()
-
 	id, path, err := db_work.CreateFile(name, handler.Size,user.ID, chat_id, s_ratio_size)
 	if err != nil{
 		sendAnswerError(err.Error(), w)
