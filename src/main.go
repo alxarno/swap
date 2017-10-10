@@ -163,6 +163,7 @@ func main(){
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", stand)
 	myRouter.HandleFunc("/login", stand)
+	myRouter.HandleFunc("/reg", stand)
 	myRouter.HandleFunc("/messages", stand)
 	myRouter.HandleFunc("/messages/{key}", stand)
 	myRouter.HandleFunc("/getFile/{link}/{name}", downloadFile)

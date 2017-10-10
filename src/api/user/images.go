@@ -8,6 +8,7 @@ import (
 	"image/png"
 	"image"
 	"errors"
+	//"github.com/disintegration/imaging"
 	"github.com/disintegration/imaging"
 )
 
@@ -44,16 +45,40 @@ func MiniMize(i_type string, ratio float64,  path string)(error){
 	//fmt.Println("Width = ", width)
 	//fmt.Println("Height = ", height)
 	//fmt.Println("Ratio size = ", ratio_size)
-	if width > 250 || height>180{
-		width:= int(180* ratio)
+	out, err := os.Create("./public/files/min/"+path)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	if width > 500 || height>360{
+		height =360
+		width =int(float64(height)*ratio)
 		//newImage := resize.Resize(uint(width), 180, image, resize.Lanczos3)
-		dstImage128 := imaging.Resize(image, width, 180, imaging.Lanczos)
-		out, err := os.Create("./public/files/min/"+path)
-		if err != nil {
-			return err
+		//imaging.
+		dstImage128 := imaging.Resize(image, width, height, imaging.Lanczos)
+		//dstImage128:= imaging.CropAnchor(image, width, height, imaging.Center)
+		//dstImage := imaging.Blur(dstImage128, 1.3)
+		dstImage:= dstImage128
+
+		//Options := struct {Quality int}{70}
+		if i_type == "png"{
+			//Options:=png.Options{70}
+			png.Encode(out, dstImage)
 		}
-		defer out.Close()
-		jpeg.Encode(out, dstImage128,nil)
+		if i_type == "jpeg" || i_type == "jpg"{
+			Options:=jpeg.Options{70}
+			jpeg.Encode(out, dstImage,&Options)
+		}
+
+	}else{
+		if i_type == "png"{
+			//Options:=png.Options{70}
+			png.Encode(out, image)
+		}
+		if i_type == "jpeg" || i_type == "jpg"{
+			Options:=jpeg.Options{70}
+			jpeg.Encode(out, image, &Options)
+		}
 	}
 	return nil
 }
