@@ -156,7 +156,7 @@ func CreateChat(name string, author_id string)(string,  error){
 		return "",err
 		//fmt.Println(fin)
 	}
-	mess_mss := "Я создал этот чат"
+	mess_mss := "создал этот чат"
 	docs := []string{}
 	m_type := "a_msg"
 	mess := models.MessageContent{&mess_mss, &docs, &m_type}
@@ -173,7 +173,45 @@ func CreateChat(name string, author_id string)(string,  error){
 		return "", err
 	}
 	return string(id), nil
+}
 
+
+func CreateChannel(name string, author_id string)(string,  error){
+	if !activeConnIsReal{
+		OpenDB()
+	}
+	statement, err := activeConn.Prepare("INSERT INTO chats (name,  author_id, moders_ids, type, lastmodify) VALUES (?, ?, ?, ?, ?)")
+	if err != nil {
+		return "",errors.New("Failed permanent statement")
+	}
+	//make hash of user's password
+	res, err := statement.Exec(name,  author_id,"[]", 3, time.Now().Unix())
+	if err != nil {
+		return "",errors.New("Failed exec statement")
+	}
+	id, _ := res.LastInsertId()
+	err = InsertUserInChat(author_id, id)
+	if err != nil {
+		return "",err
+		//fmt.Println(fin)
+	}
+	mess_mss := "создал этот каннал"
+	docs := []string{}
+	m_type := "a_msg"
+	mess := models.MessageContent{&mess_mss, &docs, &m_type}
+	data ,err := json.Marshal(mess)
+	if err != nil{
+		return "", err
+	}
+	f_id,err := strconv.ParseFloat(author_id, 64)
+	if err != nil{
+		return "", err
+	}
+	_,err = AddMessage(f_id, float64(id), string(data))
+	if err != nil{
+		return "", err
+	}
+	return string(id), nil
 }
 
 func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
@@ -386,6 +424,17 @@ func GetFileInformation(file_id string)(map[string]interface{}, error){
 	final["file_id"] = file_id
 	final["size"] = size
 	return final, nil
+}
+
+func GetChatType(chat_id float64)(int, error){
+	var id int
+	rows, err := activeConn.Prepare("SELECT  type FROM chats WHERE id=?")
+	if err != nil {
+		//panic(nil)
+		return 0,err
+	}
+	rows.QueryRow(chat_id).Scan(&id)
+	return id, nil
 }
 
 func GetFileProve(user_id float64, file_id string)(string, error){
@@ -1137,7 +1186,7 @@ func CreateDialog(user_id float64, another_user_id float64)( *models.MessageCont
 		return  nil,0,0,err
 		//fmt.Println(fin)
 	}
-	mess_mss := " начал эту беседу"
+	mess_mss := "начал эту беседу"
 	docs := []string{}
 	m_type := "a_msg"
 	mess := models.MessageContent{&mess_mss, &docs, &m_type}
