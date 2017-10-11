@@ -17,6 +17,7 @@ type createChat struct{
 	Token string
 	//Login string
 	Name string
+	Type string
 }
 
 type getMessagesData struct{
@@ -38,10 +39,20 @@ func create(w http.ResponseWriter, r *http.Request){
 	}
 	id_int64 := int64(user.ID)
 	u_id:= strconv.FormatInt(id_int64, 10)
-	_,err = db_work.CreateChat(data.Name, u_id)
-	if err != nil{
-		methods.SendAnswerError(err.Error(), w)
-		return
+	if data.Type == "chat"{
+		_,err = db_work.CreateChat(data.Name, u_id)
+		if err != nil{
+			methods.SendAnswerError(err.Error(), w)
+			return
+		}
+	}
+
+	if data.Type == "channel"{
+		_,err = db_work.CreateChannel(data.Name, u_id)
+		if err != nil{
+			methods.SendAnswerError(err.Error(), w)
+			return
+		}
 	}
 	var x = make(map[string]string)
 	x["result"]="Success"
@@ -146,10 +157,20 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 	finish, _:=json.Marshal(final)
 	fmt.Fprintf(w, string(finish))
 	//Send notification and messages to users and chats
+	chat_type, err:=db_work.GetChatType(f64_caht_id)
+	if err!=nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
 	for _,v := range data.Ids{
+
 		id,err := strconv.ParseFloat(v, 64)
 		if err != nil{
 			fmt.Println("FAIL DECODE Ids")
+		}
+		if chat_type==3{
+			engine.SendNotificationAddUserInChat(id)
+			continue
 		}
 		add_user_info,err := db_work.GetUser("id", map[string]string{"id": v})
 		if err != nil{
@@ -249,7 +270,16 @@ func deleteUsers(w http.ResponseWriter, r *http.Request){
 		methods.SendAnswerError(err.Error(), w)
 		return
 	}
+	chat_type, err:=db_work.GetChatType(f64_caht_id)
+	if err!=nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
 	for _,v:=range data.Ids{
+		if chat_type==3{
+			engine.SendNotificationAddUserInChat(v)
+			continue
+		}
 		s_id := strconv.FormatFloat(v,'f',0,64)
 		add_user_info,err := db_work.GetUser("id", map[string]string{"id": s_id})
 		if err != nil{
@@ -420,8 +450,17 @@ func setSettings(w http.ResponseWriter, r *http.Request){
 		methods.SendAnswerError(err.Error(), w)
 		return
 	}
-	docs:= make([]interface{},0)
+	chat_type, err:=db_work.GetChatType(f64_caht_id)
+	if err!=nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
 	msg_content:= "переименовал чат в '"+data.Name+"'"
+	if chat_type == 3{
+		msg_content= "переименовал каннал в '"+data.Name+"'"
+	}
+	docs:= make([]interface{},0)
+
 	str:= "a_msg"
 	message:= models.MessageContentToUser{&msg_content, docs, &str}
 	s_message,err :=json.Marshal(message)
@@ -477,6 +516,9 @@ func deleteMessages(w http.ResponseWriter, r *http.Request){
 	return
 }
 
+
+//func DeleteFromChannel()
+
 func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 	var data struct{Token string; ChatId string}
 	err:=methods.GetJson(&data, r)
@@ -506,6 +548,20 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 	err = db_work.DeleteUsersInChat([]float64{user.ID}, data.ChatId)
 	if err!=nil{
 		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+
+	chat_type, err:=db_work.GetChatType(f64_caht_id)
+	if err!=nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+	if chat_type==3{
+		engine.SendNotificationAddUserInChat(user.ID)
+		finish:= make(map[string]string)
+		finish["result"] = "Success"
+		final, _ := json.Marshal(finish)
+		fmt.Fprintf(w, string(final))
 		return
 	}
 	f_c_id,err:= strconv.ParseFloat(data.ChatId,64)
@@ -571,6 +627,20 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 	err = db_work.RecoveryUsersInChat([]float64{user.ID}, data.ChatId)
 	if err!=nil{
 		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+
+	chat_type, err:=db_work.GetChatType(f64_caht_id)
+	if err!=nil{
+		methods.SendAnswerError(err.Error(), w)
+		return
+	}
+	if chat_type==3{
+		engine.SendNotificationAddUserInChat(user.ID)
+		finish:= make(map[string]string)
+		finish["result"] = "Success"
+		final, _ := json.Marshal(finish)
+		fmt.Fprintf(w, string(final))
 		return
 	}
 	f_c_id,err:= strconv.ParseFloat(data.ChatId,64)
