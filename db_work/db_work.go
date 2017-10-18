@@ -495,12 +495,12 @@ func GetMessages(user_id float64, chat_id float64)([]models.NewMessageToUser, er
 }
 
 func getMessageBetweenTime(messages *[]models.NewMessageToUser, start int64, finish int64, chat_id float64)(error){
-	rows, err := activeConn.Query("SELECT messages.id, messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time  FROM messages " +
+	rows, err := activeConn.Query("SELECT messages.id, messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time,  people.login  FROM messages " +
 		"INNER JOIN people ON messages.user_id = people.id WHERE (messages.chat_id=?) and (messages.time>=?) and (messages.time<=?)", chat_id, start, finish)
 	for rows.Next() {
-		var m_id, u_id, content, u_name, c_id string
+		var m_id, u_id, content, u_name, c_id, login string
 		var m_time int64
-		if err := rows.Scan(&m_id, &u_id, &content, &c_id, &u_name, &m_time); err != nil {
+		if err := rows.Scan(&m_id, &u_id, &content, &c_id, &u_name, &m_time, &login); err != nil {
 			return err
 		}
 		//decode content
@@ -535,7 +535,7 @@ func getMessageBetweenTime(messages *[]models.NewMessageToUser, start int64, fin
 		if err != nil {
 			return  err
 		}
-		*messages = append(*messages, models.NewMessageToUser{&im_id,&f64_c_id, f_content, &f64_uid, &u_name, &m_time})
+		*messages = append(*messages, models.NewMessageToUser{&im_id,&f64_c_id, f_content, &f64_uid, &u_name, &login,&m_time})
 	}
 	return  nil
 }

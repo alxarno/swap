@@ -124,6 +124,7 @@ func NewMessageAnotherStruct(user_quest *string)(models.NewMessageToUser, error)
 	send.ID = &m_id
 	send.Author_id = &user.ID
 	send.Author_Name=&user.Name
+	send.Author_Login = &user.Login
 	send.Chat_Id = data.Content.Chat_Id
 	send.Content = newContent
 	return send, nil

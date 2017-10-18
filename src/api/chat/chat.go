@@ -187,7 +187,7 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 		now_time:=time.Now().Unix()
 		m_id,_:=db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
 		//i_m_id:=float64(m_id)
-		send_message:= models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+		send_message:= models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&user.Login,&now_time}
 		engine.SendMessage(send_message)
 		engine.SendNotificationAddUserInChat(id)
 	}
@@ -296,7 +296,7 @@ func deleteUsers(w http.ResponseWriter, r *http.Request){
 		now_time:=time.Now().Unix()
 		m_id,_:=db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
 		//i_m_id:=float64(m_id)
-		send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+		send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&user.Login,&now_time}
 		force_msg:=models.ForceMsgToUser{v,send_message}
 		engine.SendForceMessage(force_msg)
 		engine.SendMessage(send_message)
@@ -360,7 +360,7 @@ func recoveryUsers(w http.ResponseWriter, r *http.Request){
 		now_time:=time.Now().Unix()
 		m_id,_:=db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
 		//i_m_id:=float64(m_id)
-		send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+		send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&user.Login,&now_time}
 		//force_msg:=models.ForceMsgToUser{v,send_message}
 		//engine.SendForceMessage(force_msg)
 		engine.SendMessage(send_message)
@@ -470,7 +470,7 @@ func setSettings(w http.ResponseWriter, r *http.Request){
 	now_time:=time.Now().Unix()
 	m_id,_:=db_work.AddMessage(user.ID,f64_caht_id,string(s_message))
 	//f_m_id := float64(m_id)
-	send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+	send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&user.Login,&now_time}
 	//force_msg:=models.ForceMsgToUser{v,send_message}
 	//engine.SendForceMessage(force_msg)
 	engine.SendMessage(send_message)
@@ -580,7 +580,7 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 	}
 	now_time:=time.Now().Unix()
 	m_id,_:=db_work.AddForceMessage(user.ID,f64_caht_id,string(s_message))
-	send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+	send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&user.Login,&now_time}
 	for _,v:= range dialog_users{
 		//i_m_id:=float64(m_id)
 		force_msg:=models.ForceMsgToUser{v,send_message}
@@ -659,7 +659,7 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 	}
 	now_time:=time.Now().Unix()
 	m_id,_:=db_work.AddForceMessage(user.ID,f64_caht_id,string(s_message))
-	send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&now_time}
+	send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&user.Login,&now_time}
 	for _,v:= range dialog_users{
 		//i_m_id:=float64(m_id)
 		force_msg:=models.ForceMsgToUser{v,send_message}

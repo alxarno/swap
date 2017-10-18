@@ -18,23 +18,23 @@ type Message struct {
 	Chat_Id float64
 }
 type UserChatInfo struct{
-	ID float64
-	Name string
-	Type int64
+	ID float64 `json:"id"`
+	Name string `json:"name"`
+	Type int64 `json:"type"`
 	//Addr_users []string
-	LastSender string
-	Admin_id float64
-	Moders_ids []float64
-	LastMessage *MessageContent
-	LastMessageTime int64
-	View int
-	Delete int64
-	Online int64
+	LastSender string `json:"last_sender"`
+	Admin_id float64 `json:"admin_id"`
+	Moders_ids []float64 `json:"moderators_ids"`
+	LastMessage *MessageContent `json:"last_message"`
+	LastMessageTime int64 `json:"last_message_time"`
+	View int `json:"view"`
+	Delete int64 `json:"delete"`
+	Online int64 `json:"online"`
 }
 type MessageContent struct{
-	Message *string
-	Documents *[]string
-	Type *string
+	Message *string `json:"message"`
+	Documents *[]string `json:"documents"`
+	Type *string `json:"type"`
 }
 type User struct {
 	ID float64
@@ -44,18 +44,19 @@ type User struct {
 }
 
 type NewMessageToUser struct{
-	ID *int64
-	Chat_Id *float64
-	Content MessageContentToUser
-	Author_id *float64
-	Author_Name *string
-	Time *int64
+	ID *int64 `json:"id"`
+	Chat_Id *float64 `json:"chat_id"`
+	Content MessageContentToUser `json:"message"`
+	Author_id *float64 `json:"author_id"`
+	Author_Name *string `json:"author_name"`
+	Author_Login *string `json:"author_login"`
+	Time *int64 `json:"time"`
 }
 
 type MessageContentToUser struct{
-	Message *string
-	Documents []interface{}
-	Type *string
+	Message *string `json:"content"`
+	Documents []interface{} `json:"documents"`
+	Type *string `json:"type"`
 }
 type ForceMsgToUser struct{User_id float64; Msg NewMessageToUser}
 
