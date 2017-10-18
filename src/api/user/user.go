@@ -352,7 +352,7 @@ func getMyData(w http.ResponseWriter, r *http.Request){
 	}
 
 	data := make(map[string]interface{})
-	data["ID"] = user.ID
+	data["id"] = user.ID
 	finish, _:=json.Marshal(data)
 	fmt.Fprintf(w, string(finish))
 }
@@ -481,7 +481,7 @@ func CreateDialog(w http.ResponseWriter, r *http.Request){
 	}
 	content:= models.MessageContentToUser{msg.Message, []interface{}{},msg.Type}
 	now:= time.Now().Unix()
-	send_message:= models.NewMessageToUser{&int_last,&ch_id, content,&user.ID,&user.Name,&now}
+	send_message:= models.NewMessageToUser{&int_last,&ch_id, content,&user.ID,&user.Name,&user.Login,&now}
 	engine.SendMessage(send_message)
 	engine.SendNotificationAddUserInChat(data.User_id)
 	var answer = make(map[string]string)
