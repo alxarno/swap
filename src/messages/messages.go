@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/AlexeyArno/Spatium/models"
 
+	"fmt"
 )
 var secret = "321312421"
 
@@ -109,15 +110,18 @@ func NewMessageAnotherStruct(user_quest *string)(models.NewMessageToUser, error)
 	}
 	content,err:= json.Marshal(*data.Content.Content)
 	if err!=nil{
+		fmt.Println("113")
 		return  send,err
 	}
 	m_id,err:= db_work.AddMessage(user.ID, *data.Content.Chat_Id, string(content))
 	//f_m_id:= float64(m_id)
 	if err != nil{
+		fmt.Println("118")
 		return send,err
 	}
 	newContent,err := methods.ProcessMessageFromUserToUser( data.Content.Content)
 	if err != nil{
+		fmt.Println("124")
 		return  send,err
 	}
 	//fmt.Println(newContent)

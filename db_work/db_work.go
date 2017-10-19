@@ -185,7 +185,7 @@ func CreateChannel(name string, author_id string)(string,  error){
 		return "",errors.New("Failed permanent statement")
 	}
 	//make hash of user's password
-	res, err := statement.Exec(name,  author_id,"[]", 3, time.Now().Unix())
+	res, err := statement.Exec(name,  author_id,"[]", 2, time.Now().Unix())
 	if err != nil {
 		return "",errors.New("Failed exec statement")
 	}
@@ -319,6 +319,7 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 }
 
 func AddMessage(user_id float64, chat_id float64, content string)(int64, error){
+	fmt.Println(user_id, chat_id,  content)
 	if !activeConnIsReal{
 		OpenDB()
 	}
@@ -339,6 +340,7 @@ func AddMessage(user_id float64, chat_id float64, content string)(int64, error){
 	//make hash of user's password
 	res, err := statement.Exec(user_id, chat_id, content, time.Now().Unix())
 	if err != nil {
+		fmt.Println(err.Error())
 		return -1,errors.New("Failed exec statement")
 	}
 	id, _ := res.LastInsertId()
