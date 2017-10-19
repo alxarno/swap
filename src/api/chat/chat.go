@@ -14,7 +14,7 @@ import (
 var secret = "321312421"
 
 type createChat struct{
-	Token string
+	Token string `json`
 	//Login string
 	Name string
 	Type string

@@ -153,6 +153,7 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium){
 	}else{
 		messageToUser,err := UserMsg(msg)
 		if err!=nil{
+			fmt.Println(err.Error())
 			return
 		}
 		send_messages<-*messageToUser
