@@ -101,7 +101,7 @@ func writerUser(ws *websocket.Conn, ch <-chan models.NewMessageToUser){
 	for msg := range ch{
 		now_msg, err := json.Marshal(msg)
 		if err != nil {
-			fmt.Println("Fail Marshaling in function wruteUser :69")
+			fmt.Println("Fail Marshaling in function wruteUser :104")
 			return
 		}
 		if err := websocket.Message.Send(ws, string(now_msg)); err != nil {

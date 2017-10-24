@@ -32,7 +32,7 @@ type UserChatInfo struct{
 	Online int64 `json:"online"`
 }
 type MessageContent struct{
-	Message *string `json:"message"`
+	Message *string `json:"content"`
 	Documents *[]string `json:"documents"`
 	Type *string `json:"type"`
 }

@@ -455,7 +455,8 @@ func GetFileProve(user_id float64, file_id string)(string, error){
 
 }
 
-func GetMessages(user_id float64, chat_id float64)([]models.NewMessageToUser, error){
+func GetMessages(user_id float64, chat_id float64, add bool, last_index int)([]models.NewMessageToUser, error){
+	const MAX_TIME = 9999999999
 	var id_now string
 	var start,deltimes string
 	var delete_a, deltime int64
@@ -477,28 +478,48 @@ func GetMessages(user_id float64, chat_id float64)([]models.NewMessageToUser, er
 	}
 	var messages []models.NewMessageToUser
 	i_start,_ := strconv.ParseInt(start,10,64)
+	basic_query := "SELECT messages.id, messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time,  people.login  FROM messages " +
+		"INNER JOIN people ON messages.user_id = people.id WHERE (messages.chat_id=?)"
 	for i:=0;i<len(r_deltimes);i++{
 		if i==0 && r_deltimes[0][0]==0{
-			err = getMessageBetweenTime(&messages, i_start,9999999999,chat_id)
+			//err = getMessageBetweenTime(&messages, i_start,9999999999,chat_id)
+			basic_query += fmt.Sprintf(" and (messages.time>=%d) and (messages.time<=%d)",i_start, MAX_TIME)
 		}else{
 			if i==0{
-				err = getMessageBetweenTime(&messages, i_start, r_deltimes[i][0],chat_id)
+				//err = getMessageBetweenTime(&messages, i_start, r_deltimes[i][0],chat_id)
+				basic_query += fmt.Sprintf(" and (messages.time>=%d) and (messages.time<=%d)",i_start, r_deltimes[i][0])
 			}else if i>0{
 
-				err = getMessageBetweenTime(&messages, r_deltimes[i-1][1],r_deltimes[i][0],chat_id)
+				//err = getMessageBetweenTime(&messages, r_deltimes[i-1][1],r_deltimes[i][0],chat_id)
+				basic_query += fmt.Sprintf(" and (messages.time>=%d) and (messages.time<=%d)", r_deltimes[i-1][1], r_deltimes[i][0])
 				if r_deltimes[i][0] == 0{
-					err = getMessageBetweenTime(&messages, r_deltimes[i-1][1],9999999999,chat_id)
+					//err = getMessageBetweenTime(&messages, r_deltimes[i-1][1],MAX_TIME,chat_id)
+					basic_query += fmt.Sprintf(" and (messages.time>=%d) and (messages.time<=%d)",r_deltimes[i-1][1], MAX_TIME)
 				}
 
 			}
 		}
 	}
+	if add{
+		basic_query += fmt.Sprintf(" and (messages.id < %d)", last_index)
+	}
+	basic_query += " ORDER BY messages.time DESC LIMIT 80"
+	err = getMessageByQuery(basic_query, chat_id, &messages)
+	if err != nil{
+		return messages,err
+	}
 	return messages,nil
 }
 
-func getMessageBetweenTime(messages *[]models.NewMessageToUser, start int64, finish int64, chat_id float64)(error){
-	rows, err := activeConn.Query("SELECT messages.id, messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time,  people.login  FROM messages " +
-		"INNER JOIN people ON messages.user_id = people.id WHERE (messages.chat_id=?) and (messages.time>=?) and (messages.time<=?)", chat_id, start, finish)
+
+func getMessageByQuery(query string, chat_id float64, messages *[]models.NewMessageToUser)(error){
+	rows, err := activeConn.Query(query, chat_id)
+	if err == sql.ErrNoRows{
+		return err
+	}
+	if err!= nil{
+		return err
+	}
 	for rows.Next() {
 		var m_id, u_id, content, u_name, c_id, login string
 		var m_time int64
@@ -537,10 +558,63 @@ func getMessageBetweenTime(messages *[]models.NewMessageToUser, start int64, fin
 		if err != nil {
 			return  err
 		}
-		*messages = append(*messages, models.NewMessageToUser{&im_id,&f64_c_id, f_content, &f64_uid, &u_name, &login,&m_time})
+		*messages = append(*messages, models.NewMessageToUser{
+			&im_id,
+			&f64_c_id,
+			f_content,
+			&f64_uid,
+			&u_name,
+			&login,
+			&m_time})
 	}
 	return  nil
 }
+
+//func getMessageBetweenTime(messages *[]models.NewMessageToUser, start int64, finish int64, chat_id float64)(error){
+//	rows, err := activeConn.Query("SELECT messages.id, messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time,  people.login  FROM messages " +
+//		"INNER JOIN people ON messages.user_id = people.id WHERE (messages.chat_id=?) and (messages.time>=?) and (messages.time<=?)", chat_id, start, finish)
+//	for rows.Next() {
+//		var m_id, u_id, content, u_name, c_id, login string
+//		var m_time int64
+//		if err := rows.Scan(&m_id, &u_id, &content, &c_id, &u_name, &m_time, &login); err != nil {
+//			return err
+//		}
+//		//decode content
+//		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//		var r_content models.MessageContent
+//		var f_content models.MessageContentToUser
+//		err = json.Unmarshal([]byte(content), &r_content)
+//		if err != nil {
+//			return  err
+//		}
+//		f_content.Message = r_content.Message
+//		f_content.Type = r_content.Type
+//		documents := *r_content.Documents
+//		//fmt.Println(documents)
+//		for i := 0; i < len(documents); i++ {
+//			//id := *r_content.Documents
+//			parse_doc, err := GetFileInformation(documents[i])
+//			if err != nil {
+//				return  err
+//			}
+//			f_content.Documents = append(f_content.Documents, parse_doc)
+//		}
+//		f64_c_id, err := strconv.ParseFloat(c_id, 64)
+//		if err != nil {
+//			return  err
+//		}
+//		f64_uid, err := strconv.ParseFloat(u_id, 64)
+//		if err != nil {
+//			return  err
+//		}
+//		im_id, err := strconv.ParseInt(m_id, 10,64)
+//		if err != nil {
+//			return  err
+//		}
+//		*messages = append(*messages, models.NewMessageToUser{&im_id,&f64_c_id, f_content, &f64_uid, &u_name, &login,&m_time})
+//	}
+//	return  nil
+//}
 
 func CreateFile(filename string, size int64, user_id float64, chat_id string, ratio_size string)(int64, string, error){
 	if !activeConnIsReal{
