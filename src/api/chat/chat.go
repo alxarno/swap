@@ -78,7 +78,7 @@ func getMessages(w http.ResponseWriter, r *http.Request){
 		methods.SendAnswerError("User isn't in chat", w)
 		return
 	}
-	messages,err:=db_work.GetMessages(user.ID,data.ID)
+	messages,err:=db_work.GetMessages(user.ID,data.ID, false,0)
 	if err != nil{
 		fmt.Println(err.Error())
 		methods.SendAnswerError("Fail get data from db", w)
@@ -91,6 +91,43 @@ func getMessages(w http.ResponseWriter, r *http.Request){
 	}
 	finish, _:=json.Marshal(messages)
 	fmt.Fprintf(w, string(finish))
+}
+
+func getEarlyMessages(w http.ResponseWriter, r *http.Request){
+	var data = struct {
+		Chat_id float64`json:"chat_id"`
+		LastId int `json:"last_index"`
+		Token string`json:"token"`
+	}{}
+	err:=methods.GetJson(&data, r)
+	if err != nil {
+		methods.SendAnswerError("Failed decode r.Body", w)
+		return
+	}
+	user, err:=methods.TestUserToken(secret, data.Token)
+	if err != nil{
+		methods.SendAnswerError("Failed decode token", w)
+		return
+	}
+	err = db_work.CheckUserINChat(user.ID, data.Chat_id)
+	if err != nil{
+		methods.SendAnswerError("User isn't in chat", w)
+		return
+	}
+	messages,err:=db_work.GetMessages(user.ID,data.Chat_id, true, data.LastId)
+	if err != nil{
+		fmt.Println(err.Error())
+		methods.SendAnswerError("Fail get data from db", w)
+		return
+	}
+	if messages == nil{
+		finish, _:=json.Marshal([]string{})
+		fmt.Fprintf(w, string(finish))
+		return
+	}
+	finish, _:=json.Marshal(messages)
+	fmt.Fprintf(w, string(finish))
+
 }
 
 func addUsers(w http.ResponseWriter, r *http.Request){
@@ -737,5 +774,7 @@ func MainChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 		deleteFullUserFromChatDialog(w,r)
 	case "recoveryUserInDialog":
 		recoveryUserInDialog(w,r)
+	case "getEarlyMessages":
+		getEarlyMessages(w,r)
 	}
 }
