@@ -3,5 +3,6 @@
 # dependencies
 .idea
 public
+security
 app.db
 

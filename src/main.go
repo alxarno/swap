@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/kabukky/httpscerts"
 	"net/http"
 	"log"
 	"golang.org/x/net/websocket"
@@ -170,6 +171,11 @@ func downloadFile(w http.ResponseWriter, r *http.Request){
 	http.ServeFile(w,r,file)
 }
 
+func redirectToHttps(w http.ResponseWriter, r *http.Request) {
+	// Redirect the incoming HTTP request. Note that "127.0.0.1:8081" will only work if you are accessing the server from your local machine.
+	http.Redirect(w, r, "https://192.168.56.1:1235"+r.RequestURI, http.StatusMovedPermanently)
+}
+
 func main(){
 	db_work.OpenDB()
 	//go broadcaster()
@@ -198,19 +204,28 @@ func main(){
 		os.Stderr.WriteString("Oops: " + err.Error() + "\n")
 		os.Exit(1)
 	}
-
+	var ip string
 	for _, a := range addrs {
 		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
 				my_addres+=ipnet.IP.String()
 				my_addres+=":1234   "
-
+				ip=ipnet.IP.String()+":1234 "
 			}
 		}
 	}
+	err = httpscerts.Check("./security/cert.pem", "./security/key.pem")
+	if err != nil {
+		err = httpscerts.Generate("./security/cert.pem", "./security/key.pem", ip)
+		if err != nil {
+			log.Fatal("Error: Couldn't create https certs.")
+		}
+	}
+
 	os.Stderr.WriteString("Spatium started on \t"+ my_addres)
 
-	log.Fatal(http.ListenAndServe(":1234", myRouter))
+	go http.ListenAndServeTLS(":1235", "./security/cert.pem", "./security/key.pem", myRouter)
+	http.ListenAndServe(":1234", http.HandlerFunc(redirectToHttps))
 
 
 }
