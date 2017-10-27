@@ -32,6 +32,10 @@ func create(w http.ResponseWriter, r *http.Request){
 		methods.SendAnswerError("Failed decode r.Body", w)
 		return
 	}
+	if len(data.Name)<3{
+		methods.SendAnswerError("Name is so short", w)
+		return
+	}
 	user, err:=methods.TestUserToken(secret, data.Token)
 	if err != nil{
 		methods.SendAnswerError("Failed decode token", w)

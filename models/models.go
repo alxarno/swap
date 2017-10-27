@@ -53,6 +53,14 @@ type NewMessageToUser struct{
 	Time *int64 `json:"time"`
 }
 
+type CreateDHData struct{
+	CommonName string
+	Organization string
+	DNSNames1 string //wiki
+	DNSNames2 string //192.168.0.2
+	Type string
+}
+
 type MessageContentToUser struct{
 	Message *string `json:"content"`
 	Documents []interface{} `json:"documents"`

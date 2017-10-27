@@ -319,7 +319,6 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 }
 
 func AddMessage(user_id float64, chat_id float64, content string)(int64, error){
-	fmt.Println(user_id, chat_id,  content)
 	if !activeConnIsReal{
 		OpenDB()
 	}
