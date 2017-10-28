@@ -14,6 +14,7 @@ import (
 	"os"
 	"io"
 	"github.com/AlexeyArno/Spatium/models"
+	"github.com/AlexeyArno/Spatium/settings"
 )
 type ProveConnection struct{
 	Login string
@@ -34,7 +35,7 @@ type TokenData struct{
 }
 
 var (
-	secret = "321312421"
+	secret = settings.ServiceSettings.Server.SecretKeyForToken
 )
 
 
@@ -112,7 +113,7 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
 
 func uploadFile(w http.ResponseWriter, r *http.Request){
 	//w.Header().Set("Access-Control-Allow-Origin", "*")
-	r.ParseMultipartForm(52428800)
+	r.ParseMultipartForm(settings.ServiceSettings.Service.MaxFileSize)
 	s_ratio_size := r.FormValue("ratio_size")
 	ratio_size,err := strconv.ParseFloat(s_ratio_size,64)
 	if err !=nil{

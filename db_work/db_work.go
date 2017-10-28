@@ -478,31 +478,37 @@ func GetMessages(user_id float64, chat_id float64, add bool, last_index int)([]m
 	var messages []models.NewMessageToUser
 	i_start,_ := strconv.ParseInt(start,10,64)
 	basic_query := "SELECT messages.id, messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time,  people.login  FROM messages " +
-		"INNER JOIN people ON messages.user_id = people.id WHERE (messages.chat_id=?)"
+		"INNER JOIN people ON messages.user_id = people.id WHERE (messages.chat_id=?) and ("
+	messages_queries:= []string{}
 	for i:=0;i<len(r_deltimes);i++{
 		if i==0 && r_deltimes[0][0]==0{
-			//err = getMessageBetweenTime(&messages, i_start,9999999999,chat_id)
-			basic_query += fmt.Sprintf(" and (messages.time>=%d) and (messages.time<=%d)",i_start, MAX_TIME)
+			messages_queries = append(messages_queries, fmt.Sprintf("((messages.time>=%d) and  (messages.time<=%d)) ",i_start, MAX_TIME))
 		}else{
 			if i==0{
-				//err = getMessageBetweenTime(&messages, i_start, r_deltimes[i][0],chat_id)
-				basic_query += fmt.Sprintf(" and (messages.time>=%d) and (messages.time<=%d)",i_start, r_deltimes[i][0])
+				messages_queries = append(messages_queries, fmt.Sprintf("((messages.time>=%d) and (messages.time<=%d)) ",i_start, r_deltimes[i][0]))
 			}else if i>0{
-
-				//err = getMessageBetweenTime(&messages, r_deltimes[i-1][1],r_deltimes[i][0],chat_id)
-				basic_query += fmt.Sprintf(" and (messages.time>=%d) and (messages.time<=%d)", r_deltimes[i-1][1], r_deltimes[i][0])
+				messages_queries = append(messages_queries, fmt.Sprintf("((messages.time>=%d) and (messages.time<=%d)) ", r_deltimes[i-1][1], r_deltimes[i][0]))
 				if r_deltimes[i][0] == 0{
-					//err = getMessageBetweenTime(&messages, r_deltimes[i-1][1],MAX_TIME,chat_id)
-					basic_query += fmt.Sprintf(" and (messages.time>=%d) and (messages.time<=%d)",r_deltimes[i-1][1], MAX_TIME)
+					messages_queries  = append(messages_queries, fmt.Sprintf("((messages.time>=%d) and (messages.time<=%d)) ",r_deltimes[i-1][1], MAX_TIME))
 				}
 
 			}
 		}
 	}
-	if add{
-		basic_query += fmt.Sprintf(" and (messages.id < %d)", last_index)
+
+	for i,v := range messages_queries{
+		if i == 0 {
+			basic_query+= v
+		}else {
+			basic_query += "or " + v
+		}
 	}
-	basic_query += " ORDER BY messages.time DESC LIMIT 80"
+
+	// send yet early messages
+	if add{
+		basic_query += fmt.Sprintf(") and ((messages.id < %d)", last_index)
+	}
+	basic_query += ") ORDER BY messages.time DESC LIMIT 80"
 	err = getMessageByQuery(basic_query, chat_id, &messages)
 	if err != nil{
 		return messages,err

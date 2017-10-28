@@ -10,8 +10,9 @@ import (
 	"fmt"
 	"github.com/AlexeyArno/Spatium/models"
 	"time"
+	"github.com/AlexeyArno/Spatium/settings"
 )
-var secret = "321312421"
+var secret = settings.ServiceSettings.Server.SecretKeyForToken
 
 type createChat struct{
 	Token string `json`
