@@ -1,0 +1,12 @@
+{
+	"server": {
+		"encryption":false,
+		"cert_file": "",
+		"key_file": "",
+		"host": "1234",
+		"secret_key_for_token": "Тайвань рулит"
+	},
+	"service": {
+		"max_file_size_byte": 104857600
+	}
+}

@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/AlexeyArno/Spatium/models"
-
+	"github.com/AlexeyArno/Spatium/settings"
 	"fmt"
 )
-var secret = "321312421"
+var secret = settings.ServiceSettings.Server.SecretKeyForToken
 
 
 type NewMessageFormUser struct{

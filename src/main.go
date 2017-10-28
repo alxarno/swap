@@ -2,29 +2,29 @@ package main
 
 import (
 	"fmt"
-	"github.com/kabukky/httpscerts"
 	"net/http"
 	"log"
 	"golang.org/x/net/websocket"
 	"encoding/json"
-	//"strconv"
 	"github.com/robbert229/jwt"
 	db_work "github.com/AlexeyArno/Spatium/db_work"
 	models "github.com/AlexeyArno/Spatium/models"
 	api "github.com/AlexeyArno/Spatium/src/api"
-	//messages_work "github.com/AlexArno/spatium/src/messages"
 	"github.com/gorilla/mux"
 	"time"
 	engine "github.com/AlexeyArno/Spatium/src/message_engine"
-
 	"net"
 	"os"
 	"path/filepath"
+	"bufio"
+	"github.com/AlexeyArno/Spatium/settings"
 )
 var (
-	secret = "321312421"
+	secret = settings.ServiceSettings.Server.SecretKeyForToken
 	//Nmessages =engine.Messages
 )
+
+
 
 type ProveConnection struct{
 	Login string
@@ -176,6 +176,8 @@ func redirectToHttps(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "https://192.168.56.1:1235"+r.RequestURI, http.StatusMovedPermanently)
 }
 
+
+
 func main(){
 	db_work.OpenDB()
 	//go broadcaster()
@@ -204,28 +206,38 @@ func main(){
 		os.Stderr.WriteString("Oops: " + err.Error() + "\n")
 		os.Exit(1)
 	}
-	var ip string
+
 	for _, a := range addrs {
 		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
 				my_addres+=ipnet.IP.String()
-				my_addres+=":1234   "
-				ip=ipnet.IP.String()+":1234 "
+				my_addres+=":1234 \t"
 			}
 		}
 	}
-	err = httpscerts.Check("./security/cert.pem", "./security/key.pem")
-	if err != nil {
-		err = httpscerts.Generate("./security/cert.pem", "./security/key.pem", ip)
-		if err != nil {
-			log.Fatal("Error: Couldn't create https certs.")
-		}
+	err = settings.LoadSettings()
+
+	if err!=nil{
+		fmt.Println(err.Error())
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+		return
 	}
 
-	os.Stderr.WriteString("Spatium started on \t"+ my_addres)
+	os.Stderr.WriteString("Spatium started on \t"+ my_addres+"\n")
 
-	go http.ListenAndServeTLS(":1235", "./security/cert.pem", "./security/key.pem", myRouter)
-	http.ListenAndServe(":1234", http.HandlerFunc(redirectToHttps))
+	if settings.ServiceSettings.Server.Encryption{
+		log.Fatal("ListenAndServeTLS: ",http.ListenAndServeTLS(
+			":"+ settings.ServiceSettings.Server.Host,
+			settings.ServiceSettings.Server.Cert_file,
+			settings.ServiceSettings.Server.Key_file,
+			myRouter))
+	}else{
+		log.Fatal("ListenAndServe: ", http.ListenAndServe(
+		 	":"+ settings.ServiceSettings.Server.Host,
+			 myRouter))
+	}
+
+	//http.ListenAndServe(":1234", http.HandlerFunc(redirectToHttps))
 
 
 }

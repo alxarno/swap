@@ -7,9 +7,10 @@ import (
 	"github.com/AlexeyArno/Spatium/src/api/methods"
 	messages_work "github.com/AlexeyArno/Spatium/src/messages"
 	"time"
+	"github.com/AlexeyArno/Spatium/settings"
 )
 var (
-	secret = "321312421"
+	secret = settings.ServiceSettings.Server.SecretKeyForToken
 )
 func SystemMsg(msg string)(map[string]interface{}, error){
 	var final = make(map[string]interface{})
