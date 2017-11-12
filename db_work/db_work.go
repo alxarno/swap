@@ -367,18 +367,21 @@ func AddForceMessage(user_id float64, chat_id float64, content string)(int64, er
 
 func CheckUserInChatDelete(user_id float64, chat_id float64)(error){
 	//var id_now string
-	var delete_a int64
-	rows, err := activeConn.Prepare("SELECT  delete_a FROM people_in_chats WHERE (user_id=?) AND (chat_id=?)")
+	var delete_a,  deltype  int64
+	rows, err := activeConn.Prepare("SELECT  delete_a, delete_by_admin FROM people_in_chats WHERE (user_id=?) AND (chat_id=?)")
 	if err != nil {
 		panic(nil)
 	}
-	query := rows.QueryRow(user_id, chat_id).Scan( &delete_a)
+	query := rows.QueryRow(user_id, chat_id).Scan( &delete_a, &deltype)
 	defer rows.Close()
 	if query == sql.ErrNoRows{
 		return errors.New("User aren't in chat")
 	}
 	if delete_a == 1{
 		return errors.New("User aren't in chat")
+	}
+	if deltype == 1{
+		return errors.New("User banned by admin ")
 	}
 	return nil
 }
@@ -575,51 +578,6 @@ func getMessageByQuery(query string, chat_id float64, messages *[]models.NewMess
 	return  nil
 }
 
-//func getMessageBetweenTime(messages *[]models.NewMessageToUser, start int64, finish int64, chat_id float64)(error){
-//	rows, err := activeConn.Query("SELECT messages.id, messages.user_id, messages.content, messages.chat_id,  people.u_name, messages.time,  people.login  FROM messages " +
-//		"INNER JOIN people ON messages.user_id = people.id WHERE (messages.chat_id=?) and (messages.time>=?) and (messages.time<=?)", chat_id, start, finish)
-//	for rows.Next() {
-//		var m_id, u_id, content, u_name, c_id, login string
-//		var m_time int64
-//		if err := rows.Scan(&m_id, &u_id, &content, &c_id, &u_name, &m_time, &login); err != nil {
-//			return err
-//		}
-//		//decode content
-//		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//		var r_content models.MessageContent
-//		var f_content models.MessageContentToUser
-//		err = json.Unmarshal([]byte(content), &r_content)
-//		if err != nil {
-//			return  err
-//		}
-//		f_content.Message = r_content.Message
-//		f_content.Type = r_content.Type
-//		documents := *r_content.Documents
-//		//fmt.Println(documents)
-//		for i := 0; i < len(documents); i++ {
-//			//id := *r_content.Documents
-//			parse_doc, err := GetFileInformation(documents[i])
-//			if err != nil {
-//				return  err
-//			}
-//			f_content.Documents = append(f_content.Documents, parse_doc)
-//		}
-//		f64_c_id, err := strconv.ParseFloat(c_id, 64)
-//		if err != nil {
-//			return  err
-//		}
-//		f64_uid, err := strconv.ParseFloat(u_id, 64)
-//		if err != nil {
-//			return  err
-//		}
-//		im_id, err := strconv.ParseInt(m_id, 10,64)
-//		if err != nil {
-//			return  err
-//		}
-//		*messages = append(*messages, models.NewMessageToUser{&im_id,&f64_c_id, f_content, &f64_uid, &u_name, &login,&m_time})
-//	}
-//	return  nil
-//}
 
 func CreateFile(filename string, size int64, user_id float64, chat_id string, ratio_size string)(int64, string, error){
 	if !activeConnIsReal{
@@ -834,8 +792,6 @@ func GetUsersIdsForUpdateChatsInfoOnline(chats_ids *[]float64, users_online_ids 
 	return final, nil
 }
 
-
-
 func GetChatsUsers(chat_id float64)([]float64,error){
 	var ids []float64
 	rows, err := activeConn.Query("SELECT user_id FROM people_in_chats  WHERE chat_id=? and delete_a = 0", chat_id)
@@ -976,7 +932,7 @@ func DeleteUsersInChat(users_ids []float64, chat_id string)(error){
 		if r_deltimes[len(r_deltimes)-1][0]==0 {
 			r_deltimes[len(r_deltimes)-1][0] = time.Now().Unix()
 
-			query := fmt.Sprintf("UPDATE people_in_chats SET delete_a = ?, deltime = ?, deltimes = ? where (user_id = %s) and (chat_id = %s)", s_id, chat_id)
+			query := fmt.Sprintf("UPDATE people_in_chats SET delete_a = ?, deltime = ?, deltimes = ?, delete_by_admin = 1 where (user_id = %s) and (chat_id = %s)", s_id, chat_id)
 			//fmt.Println(query)
 			statement, err := activeConn.Prepare(query)
 			if err != nil {
@@ -1313,6 +1269,8 @@ func CreateDialog(user_id float64, another_user_id float64)( *models.MessageCont
 //	}
 //
 //}
+
+
 
 func FullDeleteUserFromChat(user_id float64, chat_id float64)(error){
 	delete:= CheckUserInChatDelete(user_id,chat_id)
