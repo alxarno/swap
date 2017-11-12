@@ -461,7 +461,7 @@ func GetUsersByName(w http.ResponseWriter, r *http.Request){
 
 func CreateDialog(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	var data *struct{Token string; User_id float64}
+	var data *struct{Token string`json:"token"`; User_id float64`json:"user_id"`}
 	decoder:= json.NewDecoder(r.Body)
 	defer r.Body.Close()
 	err := decoder.Decode(&data)
@@ -490,7 +490,6 @@ func CreateDialog(w http.ResponseWriter, r *http.Request){
 	finish, _:=json.Marshal(answer)
 	fmt.Fprintf(w, string(finish))
 }
-
 
 func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request){
 	//fmt.Println(var1+"Hello")

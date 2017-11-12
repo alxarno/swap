@@ -15,7 +15,7 @@ import (
 var secret = settings.ServiceSettings.Server.SecretKeyForToken
 
 type createChat struct{
-	Token string `json`
+	Token string
 	//Login string
 	Name string
 	Type string
@@ -562,7 +562,7 @@ func deleteMessages(w http.ResponseWriter, r *http.Request){
 //func DeleteFromChannel()
 
 func deleteFromDialog(w http.ResponseWriter, r *http.Request){
-	var data struct{Token string; ChatId string}
+	var data struct{Token string`json:"token"`; ChatId string`json:"chat_id"`}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
 		methods.SendAnswerError("Failed decode r.Body", w)
@@ -641,7 +641,8 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 }
 
 func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
-	var data struct{Token string; ChatId string}
+	fmt.Println("hello")
+	var data struct{Token string`json:"token"`; ChatId string`json:"chat_id"`}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
 		methods.SendAnswerError("Failed decode r.Body", w)
@@ -656,12 +657,13 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 	}
 
 	// Because we need it
-	f64_caht_id,err := strconv.ParseFloat(data.ChatId, 64)
+	f64_chat_id,err := strconv.ParseFloat(data.ChatId, 64)
 	if err != nil{
 		fmt.Println("FAIL DECODE Ids")
+		fmt.Println(err)
 		return
 	}
-	err= db_work.CheckUserInChatDelete(user.ID, f64_caht_id)
+	err= db_work.CheckUserInChatDelete(user.ID, f64_chat_id)
 	if err ==nil{
 		methods.SendAnswerError(err.Error(), w)
 		return
@@ -672,7 +674,7 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	chat_type, err:=db_work.GetChatType(f64_caht_id)
+	chat_type, err:=db_work.GetChatType(f64_chat_id)
 	if err!=nil{
 		methods.SendAnswerError(err.Error(), w)
 		return
@@ -700,8 +702,8 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 		fmt.Println("FAIL MARSHAL MessageContentToUser")
 	}
 	now_time:=time.Now().Unix()
-	m_id,_:=db_work.AddForceMessage(user.ID,f64_caht_id,string(s_message))
-	send_message:=models.NewMessageToUser{&m_id,&f64_caht_id, message,&user.ID,&user.Name,&user.Login,&now_time}
+	m_id,_:=db_work.AddForceMessage(user.ID, f64_chat_id,string(s_message))
+	send_message:=models.NewMessageToUser{&m_id,&f64_chat_id, message,&user.ID,&user.Name,&user.Login,&now_time}
 	for _,v:= range dialog_users{
 		//i_m_id:=float64(m_id)
 		force_msg:=models.ForceMsgToUser{v,send_message}
