@@ -307,7 +307,7 @@ func deleteUsers(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	err = db_work.DeleteUsersInChat(data.Ids, data.ChatId)
+	err = db_work.DeleteUsersInChat(data.Ids, data.ChatId, false)
 	if err!=nil{
 		methods.SendAnswerError(err.Error(), w)
 		return
@@ -587,7 +587,7 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 	//	methods.SendAnswerError(err.Error(), w)
 	//	return
 	//}
-	err = db_work.DeleteUsersInChat([]float64{user.ID}, data.ChatId)
+	err = db_work.DeleteUsersInChat([]float64{user.ID}, data.ChatId, true)
 	if err!=nil{
 		methods.SendAnswerError(err.Error(), w)
 		return

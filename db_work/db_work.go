@@ -6,8 +6,10 @@ import (
 	"crypto/sha256"
 	"os"
 	"fmt"
+	"encoding/base64"
 	models "github.com/AlexeyArno/Spatium/models"
 	"time"
+	"crypto/rand"
 	"errors"
 	"encoding/json"
 	"strconv"
@@ -585,7 +587,21 @@ func CreateFile(filename string, size int64, user_id float64, chat_id string, ra
 	}
 	now_time := strconv.FormatInt(time.Now().Unix(),10)
 	f_size :=strconv.FormatInt(size,10)
-	path := now_time+f_size+filename
+	if len(filename)>20{
+		runes := []rune(filename)
+		filename = string(runes[len(runes)-20:])
+	}
+	// Generate random string, because create different path for two similar files
+	b := make([]byte, 20)
+	_, err := rand.Read(b)
+
+	if err != nil {
+		return -1,"",err
+	}
+
+	addName := base64.URLEncoding.EncodeToString(b)
+
+	path := now_time+f_size+addName+filename
 
 	statement, err := activeConn.Prepare("INSERT INTO files (author_id, chat_id, filename, path, time, uses, ratio_size, size) VALUES (?, ?, ?, ?, ?, ?, ?,?)")
 	if err != nil {
@@ -906,7 +922,7 @@ func CheckUserRightsInChat(user_id float64, chat_id float64)(error){
 	//}
 }
 
-func DeleteUsersInChat(users_ids []float64, chat_id string)(error){
+func DeleteUsersInChat(users_ids []float64, chat_id string, delete_yourself bool)(error){
 	//var query_str string
 
 	//s_ids := []string{}
@@ -932,7 +948,7 @@ func DeleteUsersInChat(users_ids []float64, chat_id string)(error){
 		if r_deltimes[len(r_deltimes)-1][0]==0 {
 			r_deltimes[len(r_deltimes)-1][0] = time.Now().Unix()
 
-			query := fmt.Sprintf("UPDATE people_in_chats SET delete_a = ?, deltime = ?, deltimes = ?, delete_by_admin = 1 where (user_id = %s) and (chat_id = %s)", s_id, chat_id)
+			query := fmt.Sprintf("UPDATE people_in_chats SET delete_a = ?, deltime = ?, deltimes = ?, delete_by_admin = ? where (user_id = %s) and (chat_id = %s)", s_id, chat_id)
 			//fmt.Println(query)
 			statement, err := activeConn.Prepare(query)
 			if err != nil {
@@ -945,7 +961,11 @@ func DeleteUsersInChat(users_ids []float64, chat_id string)(error){
 				return errors.New("Fail encode r_deltimes")
 			}
 			//make hash of user's password
-			_, err = statement.Exec(1, time.Now().Unix()+1, string(s_deltime))
+			delete_by_admin := 1
+			if delete_yourself{
+				delete_by_admin = 0
+			}
+			_, err = statement.Exec(1, time.Now().Unix()+1, string(s_deltime), delete_by_admin)
 			if err != nil {
 				fmt.Println(err)
 				return errors.New("Failed exec statement")
