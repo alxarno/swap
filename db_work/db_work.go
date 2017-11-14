@@ -2,6 +2,7 @@ package spatium_db_work
 
 import (
 	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/go-sql-driver/mysql"
 	"database/sql"
 	"crypto/sha256"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"errors"
 	"encoding/json"
 	"strconv"
+	"github.com/AlexeyArno/Spatium/settings"
 	//"strings"
 	//engine "github.com/AlexArno/spatium/src/message_engine"
 	"strings"
@@ -1340,25 +1342,63 @@ func FullDeleteUserFromChat(user_id float64, chat_id float64)(error){
 	return nil
 }
 
-func OpenDB(){
+
+func openMySql()(*sql.DB, error){
+	db,err := sql.Open("mysql", settings.Settings.DB.Mysql.Url)
+	if err!=nil{
+		return nil, err
+	}
+	return db,nil
+}
+
+func openPostgresSQL()(*sql.DB, error){
+	var data = settings.Settings.DB.Postgres
+	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable",
+		data.User, data.Pass, data.Name)
+	db, err := sql.Open("postgres", dbinfo)
+	if err!=nil{
+		return nil, err
+	}
+	return db,nil
+}
+
+func openSQLite(path string)(*sql.DB, error){
 	newDB := false
-	_, err := os.Open("app.db")
+	_, err := os.Open(path)
 	if err != nil{
 		newDB = true
-		file, err := os.Create("app.db")
+		file, err := os.Create(path)
 		if err != nil {
 			// handle the error here
 			fmt.Println("God: i cant create database, your PC is atheist")
-			return
+			return nil, err
 		}
 		defer file.Close()
 		fmt.Println("God: im create database")
 	}
-	database, _ := sql.Open("sqlite3", "./app.db")
+	database, _ := sql.Open("sqlite3", path)
 	if newDB{
 		createDB_structs(database)
 	}
-	activeConn = database
-	activeConnIsReal=true
+	return database, nil
+}
+
+func OpenDB()(error){
+	var database *sql.DB = nil
+	var err error
+	switch settings.Settings.DB.DataBaseType {
+	case "l": database, err = openSQLite(settings.Settings.DB.SQLite.Path)
+	case "m": database, err = openMySql()
+	case "p": database, err = openPostgresSQL()
+	}
+	if database!=nil && err == nil{
+		activeConn = database
+		activeConnIsReal=true
+
+	}else{
+		return err
+	}
+	return nil
+
 }
 

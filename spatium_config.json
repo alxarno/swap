@@ -6,6 +6,20 @@
 		"host": "1234",
 		"secret_key_for_token": "Тайвань рулит"
 	},
+    "db":{
+        "db_type": "l",
+        "sqlite":{
+            "file_path": "app.db"
+        },
+        "postgres":{
+            "user": "",
+            "pass":"",
+            "name":""
+        },
+        "mysql":{
+          "url": ""
+        }
+    },
 	"service": {
 		"max_file_size_byte": 104857600
 	}
