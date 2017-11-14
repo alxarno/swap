@@ -179,7 +179,7 @@ func redirectToHttps(w http.ResponseWriter, r *http.Request) {
 
 
 func main(){
-	db_work.OpenDB()
+
 	//go broadcaster()
 	engine.StartCoreMessenger()
 
@@ -217,12 +217,18 @@ func main(){
 	}
 	err = settings.LoadSettings()
 
+
 	if err!=nil{
 		fmt.Println(err.Error())
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		return
 	}
-
+	err = db_work.OpenDB()
+	if err!=nil{
+		fmt.Println(err.Error())
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+		return
+	}
 	os.Stderr.WriteString("Spatium started on \t"+ my_addres+"\n")
 
 	if settings.ServiceSettings.Server.Encryption{

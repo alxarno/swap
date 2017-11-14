@@ -13,7 +13,8 @@ var (
 
 type Settings struct {
 	Server struct{
-		Encryption bool `json:"encryption"`
+
+		Encryption bool`json:"encryption"`
 		Cert_file string`json:"cert_file"`
 		Key_file string`json:"key_file"`
 		Host string`json:"host"`
@@ -22,6 +23,20 @@ type Settings struct {
 	Service struct{
 		MaxFileSize int64 `json:"max_file_size_byte"`
 	}`json:"service"`
+	DB struct{
+		DataBaseType string`json:"db_type"`
+		SQLite struct{
+			Path string`json:"file_path"`
+		}`json:"sqlite"`
+		Postgres struct{
+			User string`json:"user"`
+			Pass string`json:"pass"`
+			Name string`json:"name"`
+		}`json:"postgres"`
+		Mysql struct{
+			Url string`json:"url"`
+		}`json:"mysql"`
+	}`json:"db"`
 }
 
 func LoadSettings()(error){
