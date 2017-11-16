@@ -3,8 +3,8 @@
 		"encryption":false,
 		"cert_file": "",
 		"key_file": "",
-		"host": "1234",
-		"secret_key_for_token": "Тайвань рулит"
+		"host": "12345",
+		"secret_key_for_token": "89189365083"
 	},
     "db":{
         "db_type": "l",
@@ -17,7 +17,7 @@
             "name":""
         },
         "mysql":{
-          "url": ""
+          "url": "root:1111@tcp(localhost:3306)/alex"
         }
     },
 	"service": {

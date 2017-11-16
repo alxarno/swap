@@ -654,7 +654,7 @@ func DeleteFile(user_id float64, file_id string)(string, error){
 	return  path, nil
 }
 
-func createDB_structs(database *sql.DB) {
+func createDB_structs(database *sql.DB)(error){
 	//Create user structs
 	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, login TEXT, pass TEXT, u_name TEXT)")
 	statement.Exec()
@@ -679,7 +679,11 @@ func createDB_structs(database *sql.DB) {
 	statement.Exec()
 
 	//create dialogs info
-	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS dialogs_info (id INTEGER PRIMARY KEY,  chat_id INTEGER, user_1 INTEGER , user_2 INTEGER,  delete_users TEXT DEFAULT '[]')")
+	statement, err := database.Prepare("CREATE TABLE IF NOT EXISTS dialogs_info (id INTEGER PRIMARY KEY,  chat_id INTEGER, user_1 INTEGER , user_2 INTEGER,  delete_users TEXT DEFAULT '[]')")
+	if err!=nil{
+		fmt.Println(err.Error())
+		return err
+	}
 	statement.Exec()
 
 	//Create chat structs
@@ -689,10 +693,18 @@ func createDB_structs(database *sql.DB) {
 	//if err != nil {
 	//	fmt.Println(err.Error())
 	//}
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS sys (id INTEGER PRIMARY KEY, version TEXT, data_instence TEXT)")
+	statement.Exec()
 
-
-
+	statement, _ = database.Prepare("INSERT INTO sys (version, data_instence) VALUES (?, ?)")
+	current_time := time.Now().UTC().Format("Mon Jan 2 15:04:05 MST 2006")
+	_, err = statement.Exec("0.0.1", current_time)
+	if err!=nil{
+		fmt.Println(err.Error())
+		return err
 	}
+	return nil
+}
 
 func FindUserByName(name string, chat_id string)([]map[string]string,error){
 	var middle []map[string]string
@@ -1342,22 +1354,41 @@ func FullDeleteUserFromChat(user_id float64, chat_id float64)(error){
 	return nil
 }
 
+func check_instance_db(db *sql.DB)(bool){
+	var date, version string
+	rows, err := db.Query("SELECT * FROM sys")
+	if err!=nil{
+		return false
+	}
+	err = rows.Scan(&version, &date)
+	if err!=nil{
+		return false
+	}
+	fmt.Println("DB date instence: "+date+", spatium version: "+version)
+	return true
+}
 
 func openMySql()(*sql.DB, error){
-	db,err := sql.Open("mysql", settings.Settings.DB.Mysql.Url)
+	db,err := sql.Open("mysql", settings.ServiceSettings.DB.Mysql.Url)
 	if err!=nil{
 		return nil, err
+	}
+	if !check_instance_db(db){
+		createDB_structs(db)
 	}
 	return db,nil
 }
 
 func openPostgresSQL()(*sql.DB, error){
-	var data = settings.Settings.DB.Postgres
+	var data = settings.ServiceSettings.DB.Postgres
 	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable",
 		data.User, data.Pass, data.Name)
 	db, err := sql.Open("postgres", dbinfo)
 	if err!=nil{
 		return nil, err
+	}
+	if !check_instance_db(db){
+		createDB_structs(db)
 	}
 	return db,nil
 }
@@ -1369,7 +1400,6 @@ func openSQLite(path string)(*sql.DB, error){
 		newDB = true
 		file, err := os.Create(path)
 		if err != nil {
-			// handle the error here
 			fmt.Println("God: i cant create database, your PC is atheist")
 			return nil, err
 		}
@@ -1377,7 +1407,7 @@ func openSQLite(path string)(*sql.DB, error){
 		fmt.Println("God: im create database")
 	}
 	database, _ := sql.Open("sqlite3", path)
-	if newDB{
+	if !check_instance_db(database) || newDB{
 		createDB_structs(database)
 	}
 	return database, nil
@@ -1386,15 +1416,14 @@ func openSQLite(path string)(*sql.DB, error){
 func OpenDB()(error){
 	var database *sql.DB = nil
 	var err error
-	switch settings.Settings.DB.DataBaseType {
-	case "l": database, err = openSQLite(settings.Settings.DB.SQLite.Path)
-	case "m": database, err = openMySql()
-	case "p": database, err = openPostgresSQL()
+	switch settings.ServiceSettings.DB.DataBaseType {
+	case "l": database, err = openSQLite(settings.ServiceSettings.DB.SQLite.Path); break
+	case "m": database, err = openMySql(); break
+	case "p": database, err = openPostgresSQL(); break
 	}
 	if database!=nil && err == nil{
 		activeConn = database
 		activeConnIsReal=true
-
 	}else{
 		return err
 	}

@@ -26,6 +26,7 @@ var (
 
 
 
+
 type ProveConnection struct{
 	Login string
 	Pass string
@@ -206,16 +207,16 @@ func main(){
 		os.Stderr.WriteString("Oops: " + err.Error() + "\n")
 		os.Exit(1)
 	}
+	err = settings.LoadSettings()
 
 	for _, a := range addrs {
 		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
 				my_addres+=ipnet.IP.String()
-				my_addres+=":1234 \t"
+				my_addres+=":"+settings.ServiceSettings.Server.Host+"\t"
 			}
 		}
 	}
-	err = settings.LoadSettings()
 
 
 	if err!=nil{
