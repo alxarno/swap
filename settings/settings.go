@@ -13,7 +13,6 @@ var (
 
 type Settings struct {
 	Server struct{
-
 		Encryption bool`json:"encryption"`
 		Cert_file string`json:"cert_file"`
 		Key_file string`json:"key_file"`
@@ -65,4 +64,8 @@ func LoadSettings()(error){
 		return err
 	}
 	return nil
+}
+
+func GetSettings()(Settings){
+	return ServiceSettings
 }
