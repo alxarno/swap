@@ -3,21 +3,13 @@
 		"encryption":false,
 		"cert_file": "",
 		"key_file": "",
-		"host": "12345",
+		"host": "1234",
 		"secret_key_for_token": "89189365083"
 	},
     "db":{
         "db_type": "l",
         "sqlite":{
-            "file_path": "app.db"
-        },
-        "postgres":{
-            "user": "",
-            "pass":"",
-            "name":""
-        },
-        "mysql":{
-          "url": "root:1111@tcp(localhost:3306)/alex"
+            "file_path": "./app.db"
         }
     },
 	"service": {

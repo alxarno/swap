@@ -27,14 +27,6 @@ type Settings struct {
 		SQLite struct{
 			Path string`json:"file_path"`
 		}`json:"sqlite"`
-		Postgres struct{
-			User string`json:"user"`
-			Pass string`json:"pass"`
-			Name string`json:"name"`
-		}`json:"postgres"`
-		Mysql struct{
-			Url string`json:"url"`
-		}`json:"mysql"`
 	}`json:"db"`
 }
 

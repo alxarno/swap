@@ -2,7 +2,6 @@ package spatium_db_work
 
 import (
 	_ "github.com/mattn/go-sqlite3"
-	_ "github.com/go-sql-driver/mysql"
 	"database/sql"
 	"crypto/sha256"
 	"os"
@@ -78,6 +77,7 @@ func CreateUser(login string, pass string, u_name string)(string, string, error)
 	var id_now string
 	rows, err := activeConn.Prepare("SELECT id FROM people WHERE login=?")
 	if err != nil {
+		fmt.Println(err.Error())
 		panic(nil)
 	}
 	query := rows.QueryRow(login).Scan(&id_now)
@@ -93,13 +93,16 @@ func CreateUser(login string, pass string, u_name string)(string, string, error)
 	//make hash of user's password
 	h := sha256.New()
 	h.Write([]byte(pass))
-	statement.Exec(login, h.Sum(nil), u_name)
+	_, err = statement.Exec(login, h.Sum(nil), u_name)
+	if err != nil {
+		return "",err.Error(),err
+	}
 	rows, err = activeConn.Prepare("SELECT id FROM people WHERE login=?")
 	if err != nil {
 		return "","DB failed query",err
 	}
-	query = rows.QueryRow(login).Scan(&id_now)
-	if query == sql.ErrNoRows{
+	err = rows.QueryRow(login).Scan(&id_now)
+	if err == sql.ErrNoRows{
 		return "","Some is fail",err
 	}
 	return id_now,"Success", nil
@@ -178,7 +181,6 @@ func CreateChat(name string, author_id string)(string,  error){
 	}
 	return string(id), nil
 }
-
 
 func CreateChannel(name string, author_id string)(string,  error){
 	if !activeConnIsReal{
@@ -343,8 +345,8 @@ func AddMessage(user_id float64, chat_id float64, content string)(int64, error){
 	//make hash of user's password
 	res, err := statement.Exec(user_id, chat_id, content, time.Now().Unix())
 	if err != nil {
-		fmt.Println(err.Error())
-		return -1,errors.New("Failed exec statement")
+		//fmt.Println(err.Error())
+		return -1, err
 	}
 	id, _ := res.LastInsertId()
 	return id,nil
@@ -523,7 +525,6 @@ func GetMessages(user_id float64, chat_id float64, add bool, last_index int)([]m
 	return messages,nil
 }
 
-
 func getMessageByQuery(query string, chat_id float64, messages *[]models.NewMessageToUser)(error){
 	rows, err := activeConn.Query(query, chat_id)
 	if err == sql.ErrNoRows{
@@ -581,7 +582,6 @@ func getMessageByQuery(query string, chat_id float64, messages *[]models.NewMess
 	}
 	return  nil
 }
-
 
 func CreateFile(filename string, size int64, user_id float64, chat_id string, ratio_size string)(int64, string, error){
 	if !activeConnIsReal{
@@ -658,28 +658,24 @@ func createDB_structs(database *sql.DB)(error){
 	//Create user structs
 	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, login TEXT, pass TEXT, u_name TEXT)")
 	statement.Exec()
-	//user_id, fin, err := CreateUser("god", "1111", "Alex")
-	//if err != nil {
-	//	fmt.Println(fin)
-	//	return
-	//}
 	//Create people in chat structs
 
-	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS people_in_chats ( user_id INTEGER, chat_id INTEGER," +
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS people_in_chats (id INTEGER PRIMARY KEY,"+
+											" user_id INTEGER, chat_id INTEGER," +
 		"									 blocked INTEGER DEFAULT 0, start INTEGER DEFAULT 0, delete_a INTEGER DEFAULT 0," +
 			"								 deltime INTEGER DEFAULT 0, deltimes TEXT, delete_by_admin INTEGER DEFAULT 0)")
 	statement.Exec()
 
 	//Create messages structs
-	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, user_id INTEGER, chat_id INTEGER, content TEXT, time INTEGER)")
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY , user_id INTEGER, chat_id INTEGER, content TEXT, time INTEGER)")
 	statement.Exec()
 
 	//Create files structs
-	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY, author_id INTEGER, chat_id INTEGER, filename TEXT, path Text, time INTEGER, uses INTEGER, ratio_size TEXT, size INTEGER )")
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS files (id INTEGER PRIMARY KEY , author_id INTEGER, chat_id INTEGER, filename TEXT, path Text, time INTEGER, uses INTEGER, ratio_size TEXT, size INTEGER )")
 	statement.Exec()
 
 	//create dialogs info
-	statement, err := database.Prepare("CREATE TABLE IF NOT EXISTS dialogs_info (id INTEGER PRIMARY KEY,  chat_id INTEGER, user_1 INTEGER , user_2 INTEGER,  delete_users TEXT DEFAULT '[]')")
+	statement, err := database.Prepare("CREATE TABLE IF NOT EXISTS dialogs_info (id INTEGER PRIMARY KEY ,  chat_id INTEGER, user_1 INTEGER , user_2 INTEGER,  delete_users TEXT)")
 	if err!=nil{
 		fmt.Println(err.Error())
 		return err
@@ -687,16 +683,13 @@ func createDB_structs(database *sql.DB)(error){
 	statement.Exec()
 
 	//Create chat structs
-	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, name TEXT,  author_id INTEGER , moders_ids TEXT, type INTEGER DEFAULT 0,  lastmodify INTEGER)")
-	statement.Exec()
-	//_, err = CreateChat("globalChat",  user_id)
-	//if err != nil {
-	//	fmt.Println(err.Error())
-	//}
-	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS sys (id INTEGER PRIMARY KEY, version TEXT, data_instence TEXT)")
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY , name TEXT,  author_id INTEGER , moders_ids TEXT, type INTEGER DEFAULT 0,  lastmodify INTEGER)")
 	statement.Exec()
 
-	statement, _ = database.Prepare("INSERT INTO sys (version, data_instence) VALUES (?, ?)")
+	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS sys (id INTEGER PRIMARY KEY, version TEXT, data_instance TEXT)")
+	statement.Exec()
+
+	statement, _ = database.Prepare("INSERT INTO sys (version, data_instance) VALUES (?, ?)")
 	current_time := time.Now().UTC().Format("Mon Jan 2 15:04:05 MST 2006")
 	_, err = statement.Exec("0.0.1", current_time)
 	if err!=nil{
@@ -799,22 +792,22 @@ func GetUsersIdsForUpdateChatsInfoOnline(chats_ids *[]float64, users_online_ids 
 	chat_s_ids := strings.Join(chats_ids_s, ",")
 	//fmt.Println(user_s_ids)
 	//fmt.Println(chat_s_ids)
-	query := fmt.Sprintf("SELECT DISTINCT user_id FROM people_in_chats WHERE (chat_id in (%s)) and (user_id in (%s)) and (delete_a = 0)", chat_s_ids, user_s_ids)
+	query := fmt.Sprintf("SELECT DISTINCT user_id FROM people_in_chats WHERE chat_id in (%s) and user_id in (%s) and delete_a = 0", chat_s_ids, user_s_ids)
 	stmt, err := activeConn.Query(query)
 	if err != nil {
-		fmt.Println("GetUsersIdsForUpdateChatsInfoOnline : (671) :", err)
+		//fmt.Println("GetUsersIdsForUpdateChatsInfoOnline  :", err)
 		return nil,err
 	}
 	var id string
 	for stmt.Next(){
 		err = stmt.Scan(&id)
 		if err != nil {
-			fmt.Println("GetUsersIdsForUpdateChatsInfoOnline : (678) :", err)
+			//fmt.Println("GetUsersIdsForUpdateChatsInfoOnline :", err)
 			return nil,err
 		}
 		f64_id,err:= strconv.ParseFloat(id, 64)
 		if err != nil {
-			fmt.Println("GetUsersIdsForUpdateChatsInfoOnline : (694) :", err)
+			//fmt.Println("GetUsersIdsForUpdateChatsInfoOnline : (694) :", err)
 			return nil,err
 		}
 		final = append(final, f64_id)
@@ -1274,12 +1267,12 @@ func CreateDialog(user_id float64, another_user_id float64)( *models.MessageCont
 		return   nil,0,0,err
 	}
 	//last_id,_:= a_res.LastInsertId()
-	statement, err = activeConn.Prepare("INSERT INTO dialogs_info (chat_id, user_1,user_2) VALUES (?, ?, ?)")
+	statement, err = activeConn.Prepare("INSERT INTO dialogs_info (chat_id, user_1,user_2, delete_users) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		return  nil,0,0,errors.New("Failed permanent statement")
 	}
 	//make hash of user's password
-	res, err = statement.Exec(id, user_id, another_user_id)
+	res, err = statement.Exec(id, user_id, another_user_id, "[]")
 	if err != nil {
 		return  nil,0,0,errors.New("Failed exec create dialog info")
 	}
@@ -1356,41 +1349,19 @@ func FullDeleteUserFromChat(user_id float64, chat_id float64)(error){
 
 func check_instance_db(db *sql.DB)(bool){
 	var date, version string
-	rows, err := db.Query("SELECT * FROM sys")
+	rows, err := db.Query("SELECT version, data_instance FROM sys")
 	if err!=nil{
+		fmt.Println(err.Error())
 		return false
 	}
+	rows.Next()
 	err = rows.Scan(&version, &date)
 	if err!=nil{
+		fmt.Println(err.Error())
 		return false
 	}
-	fmt.Println("DB date instence: "+date+", spatium version: "+version)
+	fmt.Println("DB date instance: "+date+", spatium version: "+version)
 	return true
-}
-
-func openMySql()(*sql.DB, error){
-	db,err := sql.Open("mysql", settings.ServiceSettings.DB.Mysql.Url)
-	if err!=nil{
-		return nil, err
-	}
-	if !check_instance_db(db){
-		createDB_structs(db)
-	}
-	return db,nil
-}
-
-func openPostgresSQL()(*sql.DB, error){
-	var data = settings.ServiceSettings.DB.Postgres
-	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable",
-		data.User, data.Pass, data.Name)
-	db, err := sql.Open("postgres", dbinfo)
-	if err!=nil{
-		return nil, err
-	}
-	if !check_instance_db(db){
-		createDB_structs(db)
-	}
-	return db,nil
 }
 
 func openSQLite(path string)(*sql.DB, error){
@@ -1406,7 +1377,10 @@ func openSQLite(path string)(*sql.DB, error){
 		defer file.Close()
 		fmt.Println("God: im create database")
 	}
-	database, _ := sql.Open("sqlite3", path)
+	database, err := sql.Open("sqlite3", path)
+	if err!=nil{
+		return nil, err
+	}
 	if !check_instance_db(database) || newDB{
 		createDB_structs(database)
 	}
@@ -1418,10 +1392,8 @@ func OpenDB()(error){
 	var err error
 	switch settings.ServiceSettings.DB.DataBaseType {
 	case "l": database, err = openSQLite(settings.ServiceSettings.DB.SQLite.Path); break
-	case "m": database, err = openMySql(); break
-	case "p": database, err = openPostgresSQL(); break
 	}
-	if database!=nil && err == nil{
+	if database!=nil{
 		activeConn = database
 		activeConnIsReal=true
 	}else{
