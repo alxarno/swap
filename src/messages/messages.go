@@ -116,12 +116,12 @@ func NewMessageAnotherStruct(user_quest *string)(models.NewMessageToUser, error)
 	m_id,err:= db_work.AddMessage(user.ID, *data.Content.Chat_Id, string(content))
 	//f_m_id:= float64(m_id)
 	if err != nil{
-		fmt.Println("118")
+		fmt.Println(err.Error())
 		return send,err
 	}
 	newContent,err := methods.ProcessMessageFromUserToUser( data.Content.Content)
 	if err != nil{
-		fmt.Println("124")
+		fmt.Println(err.Error())
 		return  send,err
 	}
 	//fmt.Println(newContent)
