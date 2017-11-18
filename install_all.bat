@@ -26,5 +26,4 @@ cd ..
 cd settings
 go install
 cd ..
-git rm --cached app.db
 go run src/main.go
