@@ -364,7 +364,7 @@ func AddMessage(user_id float64, chat_id float64, content string)(int64, error){
 	if err != nil{
 		return -1,err
 	}
-//	Create message
+	//	Create message
 	statement, err := activeConn.Prepare("INSERT INTO messages (user_id, chat_id, content, time) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		return -1,errors.New("DB failed query")
@@ -1168,43 +1168,24 @@ func SetUserSettings(user_id float64, name string)(error){
 
 //func GetUsersByName
 func GetUsersForCreateDialog(user_id float64, name string)([]map[string]interface{},error){
-	var users_dialogs_ids []string
-	//get users dialogs
-	rows, err := activeConn.Query("SELECT  chats.id FROM chats INNER JOIN people_in_chats ON people_in_chats.chat_id = chats.id WHERE (chats.type=1) and (people_in_chats.user_id = ?)", user_id)
-	if err != nil {
-		fmt.Println("scan 1")
-		return nil,err
-	}
-	for rows.Next(){
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			fmt.Println("scan 2")
-			return nil,err
-		}
-		users_dialogs_ids = append(users_dialogs_ids, id)
-	}
-	rows.Close()
-	str_users_dialogs_ids := strings.Join(users_dialogs_ids, ",")
-
-	//Get users_id how have dialogs with user
 	middle := make([]map[string]interface{},0)
 	var dialogs_ids []string
 	//var other_chats_ids []string
 	query1:= fmt.Sprintf("SELECT  people_in_chats.user_id FROM chats INNER JOIN people_in_chats ON" +
-		"		 people_in_chats.chat_id = chats.id WHERE ( chats.id in (%s) ) and (chats.type=1) and (people_in_chats.user_id <> ?)",str_users_dialogs_ids)
+		"		 people_in_chats.chat_id = chats.id WHERE (chats.id in "+
+		"(SELECT  chats.id FROM chats INNER JOIN people_in_chats ON people_in_chats.chat_id = chats.id WHERE (chats.type=1) and (people_in_chats.user_id = ?)) )"+
+		" and (chats.type=1) and (people_in_chats.user_id <> ?)")
 
-	//query1 := fmt.Sprintf("SELECT DISTINCT id,u_name,login from people where (id not in (%s))" +
-	//	"and (id <> ?) and (u_name LIKE (?))",str_dialogs_ids)
-	rows, err = activeConn.Query(query1, user_id)
+	rows, err := activeConn.Query(query1, user_id, user_id)
 	if err != nil {
-		fmt.Println("scan 1")
+		fmt.Println("GetUsersForCreateDialog 1:", err.Error())
 		return nil,err
 	}
 
 	for rows.Next(){
 		var id string
 		if err := rows.Scan(&id); err != nil {
-			fmt.Println("scan 2")
+			fmt.Println("GetUsersForCreateDialog 2:", err.Error())
 			return nil,err
 		}
 		dialogs_ids = append(dialogs_ids, id)
@@ -1212,28 +1193,27 @@ func GetUsersForCreateDialog(user_id float64, name string)([]map[string]interfac
 	rows.Close()
 	str_dialogs_ids := strings.Join(dialogs_ids, ",")
 
+	fmt.Println(name)
 	//fmt.Println(str_dialogs_ids)
-	//users_id_in_user_dialogs:=  fmt.Sprintf("SELECT DISTINCT people.id, people.u_name, people.login FROM people INNER JOIN people_in_chats " +
-	//												"ON people_in_chats.user_id = people.id WHERE (people_in_chats.user_id not in (%s)) and (people_in_chats.user_id <> ?)" +
-	//												"and (people.u_name LIKE (?))",str_dialogs_ids)
+	name = "%"+name+"%"
+
 	users_id_in_user_dialogs := fmt.Sprintf("SELECT DISTINCT id,u_name,login from people where (id not in (%s))" +
-													"and (id <> ?) and (u_name LIKE (?))",str_dialogs_ids)
-	//get logins and names how already in chat
-	//query:= fmt.Sprintf("SELECT  id, u_name, login FROM people  WHERE u_name  LIKE (?) ")
-	rows, err = activeConn.Query(users_id_in_user_dialogs ,user_id,"%"+name+"%")
+		" and (id <> ?) and (u_name LIKE ? or login LIKE ?)",str_dialogs_ids)
+
+	rows, err = activeConn.Query(users_id_in_user_dialogs ,user_id, name, name)
 	if err != nil {
-		fmt.Println("scan 1")
+		fmt.Println("GetUsersForCreateDialog 3:", err.Error())
 		return nil,err
 	}
 	for rows.Next(){
-		var id, name, login string
-		if err := rows.Scan(&id, &name,  &login); err != nil {
-			fmt.Println("scan 2")
+		var id, u_name, login string
+		if err := rows.Scan(&id, &u_name,  &login); err != nil {
+			fmt.Println("GetUsersForCreateDialog 4:", err.Error())
 			return nil,err
 		}
 		ret:= map[string]interface{}{}
 		ret["id"],_ = strconv.ParseInt(id,10,64)
-		ret["name"] = name
+		ret["name"] = u_name
 		ret["login"] = login
 		middle=append(middle, ret)
 	}
