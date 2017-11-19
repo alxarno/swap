@@ -724,7 +724,7 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 }
 
 func deleteFullUserFromChatDialog(w http.ResponseWriter, r *http.Request){
-	var data struct{Token string; ChatId string}
+	var data struct{Token string`json:"token"`; ChatId string`json:"chat_id"`}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
 		methods.SendAnswerError("Failed decode r.Body", w)
