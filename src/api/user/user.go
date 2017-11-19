@@ -441,7 +441,7 @@ func SetSettings(w http.ResponseWriter, r *http.Request){
 //
 func GetUsersByName(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	var data *struct{Token string; Name string}
+	var data *struct{Token string`json:"token"`; Name string`json:"search"`}
 	decoder:= json.NewDecoder(r.Body)
 	defer r.Body.Close()
 	err := decoder.Decode(&data)
