@@ -1193,7 +1193,6 @@ func GetUsersForCreateDialog(user_id float64, name string)([]map[string]interfac
 	rows.Close()
 	str_dialogs_ids := strings.Join(dialogs_ids, ",")
 
-	fmt.Println(name)
 	//fmt.Println(str_dialogs_ids)
 	name = "%"+name+"%"
 
@@ -1325,48 +1324,50 @@ func CreateDialog(user_id float64, another_user_id float64)( *models.MessageCont
 
 func FullDeleteUserFromChat(user_id float64, chat_id float64)(error){
 	delete:= CheckUserInChatDelete(user_id,chat_id)
+	fmt.Println(user_id, chat_id)
 	if delete == nil{
 		return errors.New("User yet not delete")
 	}
-	rows, err := activeConn.Query("DELETE FROM people_in_chats WHERE (user_id=?) and (chat_id=?)",user_id, chat_id)
+	rows, err := activeConn.Query("DELETE FROM people_in_chats WHERE user_id=? and chat_id=?",user_id, chat_id)
 	if err != nil {
 		fmt.Println("Fail delete", err)
 		return err
 	}
-	//rows.Next()
+	rows.Next()
 	rows.Close()
-	p_rows, err := activeConn.Prepare("SELECT delete_users FROM dialogs_info WHERE chat_id=?")
-	if err != nil {
-		fmt.Println("Fail update dialog info", err)
-		return err
-	}
-	var del_user string
-	//var del_user_b byte
-	var del_user_2 []float64
-	query := p_rows.QueryRow(user_id, chat_id).Scan(&del_user)
-	p_rows.Close()
-	if query == sql.ErrNoRows{
-		return errors.New("User aren't in chat")
-	}
-	err = json.Unmarshal([]byte(del_user),del_user_2)
-	if err != nil {
-		fmt.Println("Fail unmarhal delete  info", err)
-		return err
-	}
-	del_user_2 = append(del_user_2, user_id)
-	del_user_b,err :=json.Marshal(del_user_2)
-	if err != nil {
-		fmt.Println("Fail unmarhal delete  info", err)
-		return err
-	}
-	del_user = string(del_user_b)
-	statement, err := activeConn.Prepare("UPDATE dialogs_info SET delete_users=? WHERE chat_id=?")
-	if err != nil {
-		return errors.New("DB failed query")
-	}
-	//make hash of user's password
-	statement.Exec(del_user, chat_id)
-	statement.Close()
+	//p_rows, err := activeConn.Prepare("SELECT delete_users FROM dialogs_info WHERE chat_id=?")
+	//if err != nil {
+	//	fmt.Println("Fail update dialog info", err)
+	//	return err
+	//}
+	//var del_user string
+	////var del_user_b byte
+	//var del_user_2 []float64
+	//query := p_rows.QueryRow(user_id, chat_id).Scan(&del_user)
+	//p_rows.Close()
+	//if query == sql.ErrNoRows{
+	//	return errors.New("User aren't in chat")
+	//}
+	//err = json.Unmarshal([]byte(del_user),del_user_2)
+	//if err != nil {
+	//	fmt.Println("Fail unmarhal delete  info", err)
+	//	return err
+	//}
+	//del_user_2 = append(del_user_2, user_id)
+	//del_user_b,err :=json.Marshal(del_user_2)
+	//if err != nil {
+	//	fmt.Println("Fail unmarhal delete  info", err)
+	//	return err
+	//}
+	//del_user = string(del_user_b)
+	//statement, err := activeConn.Prepare("UPDATE dialogs_info SET delete_users=? WHERE chat_id=?")
+	//if err != nil {
+	//	return errors.New("DB failed query")
+	//}
+	////make hash of user's password
+	//statement.Exec(del_user, chat_id)
+	//statement.Close()
+
 	return nil
 }
 

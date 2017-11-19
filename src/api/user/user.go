@@ -326,15 +326,15 @@ func getMyChats(w http.ResponseWriter, r *http.Request){
 		sendAnswerError("Some failed",w)
 		return
 	}
+	for _,v:= range chats {
+		v.Online, _ = getOnlineUsersIntChat(v.ID)
+	}
 	if chats == nil{
 		finish, _:=json.Marshal([]interface{}{})
 		fmt.Fprintf(w, string(finish))
 	}else{
 		finish, _:=json.Marshal(chats)
 		fmt.Fprintf(w, string(finish))
-	}
-	for _,v:= range chats {
-		v.Online, _ = getOnlineUsersIntChat(v.ID)
 	}
 }
 
