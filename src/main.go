@@ -7,17 +7,17 @@ import (
 	"golang.org/x/net/websocket"
 	"encoding/json"
 	"github.com/robbert229/jwt"
-	db_work "github.com/AlexeyArno/Spatium/db_work"
-	models "github.com/AlexeyArno/Spatium/models"
-	api "github.com/AlexeyArno/Spatium/src/api"
+	db_work "github.com/Spatium-Messenger/Server/db_work"
+	models "github.com/Spatium-Messenger/Server/models"
+	api "github.com/Spatium-Messenger/Server/src/api"
 	"github.com/gorilla/mux"
 	"time"
-	engine "github.com/AlexeyArno/Spatium/src/message_engine"
+	engine "github.com/Spatium-Messenger/Server/src/message_engine"
 	"net"
 	"os"
 	"path/filepath"
 	"bufio"
-	"github.com/AlexeyArno/Spatium/settings"
+	"github.com/Spatium-Messenger/Server/settings"
 )
 var (
 	secret = settings.ServiceSettings.Server.SecretKeyForToken

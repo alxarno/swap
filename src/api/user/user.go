@@ -4,17 +4,17 @@ import (
 	//"fmt"
 	"net/http"
 	"encoding/json"
-	db_work "github.com/AlexeyArno/Spatium/db_work"
-	engine "github.com/AlexeyArno/Spatium/src/message_engine"
+	db_work "github.com/Spatium-Messenger/Server/db_work"
+	engine "github.com/Spatium-Messenger/Server/src/message_engine"
 	"github.com/robbert229/jwt"
 	"time"
-	methods "github.com/AlexeyArno/Spatium/src/api/methods"
+	methods "github.com/Spatium-Messenger/Server/src/api/methods"
 	"strconv"
 	"fmt"
 	"os"
 	"io"
-	"github.com/AlexeyArno/Spatium/models"
-	"github.com/AlexeyArno/Spatium/settings"
+	"github.com/Spatium-Messenger/Server/models"
+	"github.com/Spatium-Messenger/Server/settings"
 )
 type ProveConnection struct{
 	Login string

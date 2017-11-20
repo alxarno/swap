@@ -1,4 +1,4 @@
-package spatium_db_work
+﻿package spatium_db_work
 
 import (
 	_ "github.com/mattn/go-sqlite3"
@@ -7,15 +7,15 @@ import (
 	"os"
 	"fmt"
 	"encoding/base64"
-	models "github.com/AlexeyArno/Spatium/models"
+	models "github.com/Spatium-Messenger/Server/models"
 	"time"
 	"crypto/rand"
 	"errors"
 	"encoding/json"
 	"strconv"
-	"github.com/AlexeyArno/Spatium/settings"
+	"github.com/Spatium-Messenger/Server/settings"
 	//"strings"
-	//engine "github.com/AlexArno/spatium/src/message_engine"
+	//engine "github.com/Spatium-Messenger/Server/src/message_engine"
 	"strings"
 )
 var (

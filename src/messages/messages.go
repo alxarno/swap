@@ -1,12 +1,12 @@
 package messages
 
 import (
-	methods "github.com/AlexeyArno/Spatium/src/api/methods"
-	db_work "github.com/AlexeyArno/Spatium/db_work"
+	methods "github.com/Spatium-Messenger/Server/src/api/methods"
+	db_work "github.com/Spatium-Messenger/Server/db_work"
 	"encoding/json"
 	"errors"
-	"github.com/AlexeyArno/Spatium/models"
-	"github.com/AlexeyArno/Spatium/settings"
+	"github.com/Spatium-Messenger/Server/models"
+	"github.com/Spatium-Messenger/Server/settings"
 	"fmt"
 )
 var secret = settings.ServiceSettings.Server.SecretKeyForToken
