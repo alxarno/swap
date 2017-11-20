@@ -177,6 +177,19 @@ func redirectToHttps(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "https://192.168.56.1:1235"+r.RequestURI, http.StatusMovedPermanently)
 }
 
+func printLogo(){
+	fmt.Println()
+	fmt.Println(" ________  ________  ________  _________  ___  ___  ___  _____ ______      ")
+	fmt.Println(`|\   ____\|\   __  \|\   __  \|\___   ___|\  \|\  \|\  \|\   _ \  _   \    `)
+	fmt.Println(`\ \  \___|\ \  \|\  \ \  \|\  \|___ \  \_\ \  \ \  \\\  \ \  \\\__\ \  \   `)
+	fmt.Println(` \ \_____  \ \   ____\ \   __  \   \ \  \ \ \  \ \  \\\  \ \  \\|__| \  \  `)
+	fmt.Println(`  \|____|\  \ \  \___|\ \  \ \  \   \ \  \ \ \  \ \  \\\  \ \  \    \ \  \ `)
+	fmt.Println(`    ____\_\  \ \__\    \ \__\ \__\   \ \__\ \ \__\ \_______\ \__\    \ \__\`)
+	fmt.Println(`   |\_________\|__|     \|__|\|__|    \|__|  \|__|\|_______|\|__|     \|__|`)
+	fmt.Println(`   \|_________|                                                            `)
+	fmt.Println()
+}
+
 
 
 func main(){
@@ -224,6 +237,7 @@ func main(){
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		return
 	}
+	printLogo()
 	err = db_work.OpenDB()
 	if err!=nil{
 		fmt.Println(err.Error())

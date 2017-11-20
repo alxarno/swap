@@ -210,7 +210,7 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 		if err != nil{
 			fmt.Println("FAIL DECODE Ids")
 		}
-		if chat_type==3{
+		if chat_type==2{
 			engine.SendNotificationAddUserInChat(id)
 			continue
 		}
@@ -598,7 +598,7 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 		methods.SendAnswerError(err.Error(), w)
 		return
 	}
-	if chat_type==3{
+	if chat_type==2{
 		engine.SendNotificationAddUserInChat(user.ID)
 		finish:= make(map[string]string)
 		finish["result"] = "Success"
@@ -641,7 +641,7 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 }
 
 func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
-	fmt.Println("hello")
+	//fmt.Println("hello")
 	var data struct{Token string`json:"token"`; ChatId string`json:"chat_id"`}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
@@ -679,7 +679,7 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 		methods.SendAnswerError(err.Error(), w)
 		return
 	}
-	if chat_type==3{
+	if chat_type==2{
 		engine.SendNotificationAddUserInChat(user.ID)
 		finish:= make(map[string]string)
 		finish["result"] = "Success"
