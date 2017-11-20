@@ -66,7 +66,6 @@ func sendToken(id string, w http.ResponseWriter){
 	fmt.Fprintf(w, string(finish))
 }
 
-
 func getJson(target interface{}, r*http.Request) error {
 	defer r.Body.Close()
 	return json.NewDecoder(r.Body).Decode(target)
@@ -481,8 +480,15 @@ func CreateDialog(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	msg, ch_id,int_last,err:= db_work.CreateDialog(user.ID,data.User_id)
-	if err!=nil{
+	if err!=nil && msg==nil{
 		sendAnswerError(err.Error(), w)
+		return
+	}
+	if msg==nil{
+		var answer = make(map[string]string)
+		answer["result"] = "Success"
+		finish, _:=json.Marshal(answer)
+		fmt.Fprintf(w, string(finish))
 		return
 	}
 	content:= models.MessageContentToUser{msg.Message, []interface{}{},msg.Type}
