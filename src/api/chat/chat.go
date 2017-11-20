@@ -1,16 +1,16 @@
-package chat
+﻿package chat
 
 import (
 	"net/http"
-	methods "github.com/AlexeyArno/Spatium/src/api/methods"
-	db_work "github.com/AlexeyArno/Spatium/db_work"
-	engine "github.com/AlexeyArno/Spatium/src/message_engine"
+	methods "github.com/Spatium-Messenger/Server/src/api/methods"
+	db_work "github.com/Spatium-Messenger/Server/db_work"
+	engine "github.com/Spatium-Messenger/Server/src/message_engine"
 	"strconv"
 	"encoding/json"
 	"fmt"
-	"github.com/AlexeyArno/Spatium/models"
+	"github.com/Spatium-Messenger/Server/models"
 	"time"
-	"github.com/AlexeyArno/Spatium/settings"
+	"github.com/Spatium-Messenger/Server/settings"
 )
 var secret = settings.ServiceSettings.Server.SecretKeyForToken
 
