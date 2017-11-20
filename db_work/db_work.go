@@ -125,7 +125,22 @@ func InsertUserInChat(user_id string, chat_id int64)( error){
 	query := rows.QueryRow(user_id, chat_id).Scan(&id_now)
 	rows.Close()
 	if query != sql.ErrNoRows{
-		return errors.New("User already in chat")
+
+		var list_delete int
+		rows, err := activeConn.Prepare("SELECT list_delete FROM people_in_chats WHERE (user_id=?) AND (chat_id=?)")
+		rows.QueryRow(user_id, chat_id).Scan(&list_delete)
+		if list_delete == 0{
+			return errors.New("User already in chat")
+		}
+		rows.Close()
+		stmt, err := activeConn.Prepare("UPDATE people_in_chats SET list_delete=? WHERE user_id=? and chat_id=?")
+		if err != nil {
+			//fmt.Println("Fail delete", err)
+			return errors.New("Failed return user in chat")
+		}
+		stmt.Exec(0, user_id, chat_id)
+		stmt.Close()
+		return nil
 	}
 	statement, err := activeConn.Prepare("INSERT INTO people_in_chats (user_id, chat_id, blocked, start, deltimes) VALUES (?, ?, ?, ?,?)")
 	if err != nil {
@@ -243,7 +258,7 @@ func GetMyChats(user_id float64)([]*models.UserChatInfo, error){
 	var chats_ids []*models.UserChatInfo
 	var middle []map[string]string
 	var chat_infos []chatInfo
-	rows, err := activeConn.Query("SELECT chats.id, chats.name,  chats.type, chats.author_id, chats.moders_ids, people_in_chats.delete_a, people_in_chats.deltime  FROM people_in_chats INNER JOIN chats ON people_in_chats.chat_id = chats.id WHERE user_id=?", user_id)
+	rows, err := activeConn.Query("SELECT chats.id, chats.name,  chats.type, chats.author_id, chats.moders_ids, people_in_chats.delete_a, people_in_chats.deltime  FROM people_in_chats INNER JOIN chats ON people_in_chats.chat_id = chats.id WHERE user_id=? AND list_delete=0", user_id)
 	if err != nil {
 		fmt.Println("Outside", err)
 		return nil,err
@@ -694,7 +709,7 @@ func createDB_structs(database *sql.DB)(error){
 	statement, _ = database.Prepare("CREATE TABLE IF NOT EXISTS people_in_chats (id INTEGER PRIMARY KEY,"+
 											" user_id INTEGER, chat_id INTEGER," +
 		"									 blocked INTEGER DEFAULT 0, start INTEGER DEFAULT 0, delete_a INTEGER DEFAULT 0," +
-			"								 deltime INTEGER DEFAULT 0, deltimes TEXT, delete_by_admin INTEGER DEFAULT 0)")
+			"								 deltime INTEGER DEFAULT 0, deltimes TEXT, delete_by_admin INTEGER DEFAULT 0, list_delete INTEGER DEFAULT 0)")
 	statement.Exec()
 
 	//Create messages structs
@@ -735,7 +750,7 @@ func FindUserByName(name string, chat_id string)([]map[string]string,error){
 	var logins []string
 	var names []string
 	//get logins and names how already in chat
-	rows, err := activeConn.Query("SELECT  people.u_name, people.login FROM people INNER JOIN people_in_chats ON people_in_chats.user_id = people.id WHERE people_in_chats.chat_id=?", chat_id)
+	rows, err := activeConn.Query("SELECT  people.u_name, people.login FROM people INNER JOIN people_in_chats ON people_in_chats.user_id = people.id WHERE people_in_chats.chat_id=? and people_in_chats.list_delete=0", chat_id)
 	if err != nil {
 		fmt.Println("scan 1")
 		return nil,err
@@ -768,7 +783,7 @@ func FindUserByName(name string, chat_id string)([]map[string]string,error){
 	//fmt.Println(query_logins)
 	//"SELECT  messages.content, people.u_name FROM messages INNER JOIN people ON messages.user_id = people.id WHERE chat_id=? ORDER BY time DESC"
 	rows, err = activeConn.Query("SELECT id , u_name, login FROM people  WHERE  u_name NOT IN " +
-		"(SELECT  people.u_name FROM people INNER JOIN people_in_chats ON people_in_chats.user_id = people.id WHERE people_in_chats.chat_id=?) and ((u_name LIKE (?)) or (login LIKE (?))) ",chat_id, "%"+name+"%", "%"+name+"%")
+		"(SELECT  people.u_name FROM people INNER JOIN people_in_chats ON people_in_chats.user_id = people.id WHERE people_in_chats.chat_id=? and people_in_chats.list_delete=0) and ((u_name LIKE (?)) or (login LIKE (?))) ",chat_id, "%"+name+"%", "%"+name+"%")
 	if err != nil {
 		fmt.Println("scan 3")
 		return nil,err
@@ -848,7 +863,7 @@ func GetUsersIdsForUpdateChatsInfoOnline(chats_ids *[]float64, users_online_ids 
 
 func GetChatsUsers(chat_id float64)([]float64,error){
 	var ids []float64
-	rows, err := activeConn.Query("SELECT user_id FROM people_in_chats  WHERE chat_id=? and delete_a = 0", chat_id)
+	rows, err := activeConn.Query("SELECT user_id FROM people_in_chats  WHERE chat_id=? and delete_a = 0 and list_delete=0", chat_id)
 	if err != nil {
 		fmt.Println("Outside", err)
 		return nil,err
@@ -876,7 +891,8 @@ func GetChatUsersInfo(chat_id float64)(string, error ){
 	}
 
 	users:=make([]userInfo,0)
-	rows, err := activeConn.Query("SELECT people.id, people.login, people.u_name, people_in_chats.blocked, people_in_chats.delete_a FROM people_in_chats INNER JOIN people ON people_in_chats.user_id = people.id WHERE people_in_chats.chat_id=?", chat_id)
+	rows, err := activeConn.Query("SELECT people.id, people.login, people.u_name, people_in_chats.blocked, people_in_chats.delete_a"+
+		" FROM people_in_chats INNER JOIN people ON people_in_chats.user_id = people.id WHERE people_in_chats.chat_id=? and people_in_chats.list_delete = 0", chat_id)
 	if err != nil {
 		fmt.Println("Outside", err)
 		return "",err
@@ -1173,7 +1189,7 @@ func GetUsersForCreateDialog(user_id float64, name string)([]map[string]interfac
 	//var other_chats_ids []string
 	query1:= fmt.Sprintf("SELECT  people_in_chats.user_id FROM chats INNER JOIN people_in_chats ON" +
 		"		 people_in_chats.chat_id = chats.id WHERE (chats.id in "+
-		"(SELECT  chats.id FROM chats INNER JOIN people_in_chats ON people_in_chats.chat_id = chats.id WHERE (chats.type=1) and (people_in_chats.user_id = ?)) )"+
+		"(SELECT  chats.id FROM chats INNER JOIN people_in_chats ON people_in_chats.chat_id = chats.id WHERE (chats.type=1) and (people_in_chats.user_id = ?)  and (people_in_chats.list_delete = 0)) )"+
 		" and (chats.type=1) and (people_in_chats.user_id <> ?)")
 
 	rows, err := activeConn.Query(query1, user_id, user_id)
@@ -1220,28 +1236,39 @@ func GetUsersForCreateDialog(user_id float64, name string)([]map[string]interfac
 	return middle, nil
 }
 
-func HaveAlreadyDialog(user_id float64, another_user_id float64)(error){
-	var s_chat_id, s_delete_users string
+func HaveAlreadyDialog(user_id float64, another_user_id float64)(error, float64){
+	var chat_id float64
+	var s_delete_users string
 	p_rows, err := activeConn.Prepare("SELECT  chat_id, delete_users FROM dialogs_info WHERE ((user_1=?) or (user_1=?)) and ((user_2=?) or (user_2=?))")
 	if err != nil {
 		fmt.Println("Fail update dialog info", err)
-		return  err
+		return  err, 0
 	}
 
-	query := p_rows.QueryRow(user_id, another_user_id, user_id, another_user_id).Scan(&s_chat_id, &s_delete_users)
+	query := p_rows.QueryRow(user_id, another_user_id, user_id, another_user_id).Scan(&chat_id, &s_delete_users)
 	//fmt.Println(s_chat_id)
 	defer p_rows.Close()
 	if query == sql.ErrNoRows{
-		return nil
+		return nil, 0
 	}
-	return errors.New("That dialog already created")
+	return errors.New("That dialog already created"), chat_id
 }
 
 func CreateDialog(user_id float64, another_user_id float64)( *models.MessageContent, float64,int64,error){
 	// Search, maybe db already have this dialog
-	err:=  HaveAlreadyDialog(user_id, another_user_id)
-	if err!= nil{
-		return nil,0,0,err
+	err, chat_id :=  HaveAlreadyDialog(user_id, another_user_id)
+
+	if err != nil{
+		//return nil,0,0,err
+		fmt.Println(chat_id)
+		stmt, err := activeConn.Prepare("UPDATE people_in_chats SET list_delete=0 WHERE chat_id=? and user_id=?")
+		if err != nil {
+			fmt.Println("Fail recovery dialog user", err)
+			return  nil,0,0,errors.New("Failed permanent statement")
+		}
+		_, err = stmt.Exec(chat_id, user_id)
+		stmt.Close()
+		return  nil, chat_id,0,nil
 	}
 	//var dialogs_ids []float64
 	//var other_chats_ids []string
@@ -1253,22 +1280,25 @@ func CreateDialog(user_id float64, another_user_id float64)( *models.MessageCont
 	//}
 	statement, err := activeConn.Prepare("INSERT INTO chats (name,  author_id,moders_ids, type, lastmodify) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
-		return  nil,0,0,errors.New("Failed permanent statement")
+		return  nil,0,0,err
 	}
 	//make hash of user's password
 	res, err := statement.Exec("",  user_id,"[]", 1,time.Now().Unix())
 	statement.Close()
 	if err != nil {
-		return  nil,0,0,errors.New("Failed exec statement")
+		fmt.Println("Create Dialog: ", err.Error())
+		return  nil,0,0,err
 	}
 	id, _ := res.LastInsertId()
 	err = InsertUserInChat(strconv.FormatFloat(user_id,'f',-1,64), id)
 	if err != nil {
+		fmt.Println("Create Dialog: ", err.Error())
 		return  nil,0,0,err
 		//fmt.Println(fin)
 	}
 	err = InsertUserInChat(strconv.FormatFloat(another_user_id,'f',-1,64), id)
 	if err != nil {
+		fmt.Println("Create Dialog: ", err.Error())
 		return  nil,0,0,err
 		//fmt.Println(fin)
 	}
@@ -1278,6 +1308,7 @@ func CreateDialog(user_id float64, another_user_id float64)( *models.MessageCont
 	mess := models.MessageContent{&mess_mss, &docs, &m_type}
 	data ,err := json.Marshal(mess)
 	if err != nil{
+		fmt.Println("Create Dialog: ", err.Error())
 		return   nil,0,0,err
 	}
 	//f_id,err := strconv.ParseFloat(strconv.FormatFloat(user_id,'f',-1,64), 64)
@@ -1291,13 +1322,15 @@ func CreateDialog(user_id float64, another_user_id float64)( *models.MessageCont
 	//last_id,_:= a_res.LastInsertId()
 	statement, err = activeConn.Prepare("INSERT INTO dialogs_info (chat_id, user_1,user_2, delete_users) VALUES (?, ?, ?, ?)")
 	if err != nil {
-		return  nil,0,0,errors.New("Failed permanent statement")
+		fmt.Println("Create Dialog: ", err.Error())
+		return  nil,0,0,err
 	}
 	//make hash of user's password
 	res, err = statement.Exec(id, user_id, another_user_id, "[]")
 	statement.Close()
 	if err != nil {
-		return  nil,0,0,errors.New("Failed exec create dialog info")
+		fmt.Println("Create Dialog: ", err.Error())
+		return  nil,0,0,err
 	}
 	return  &mess, float64(id),last_id,nil
 
@@ -1328,7 +1361,7 @@ func FullDeleteUserFromChat(user_id float64, chat_id float64)(error){
 	if delete == nil{
 		return errors.New("User yet not delete")
 	}
-	rows, err := activeConn.Query("DELETE FROM people_in_chats WHERE user_id=? and chat_id=?",user_id, chat_id)
+	rows, err := activeConn.Query("UPDATE people_in_chats SET list_delete=? WHERE user_id=? and chat_id=?",1, user_id, chat_id)
 	if err != nil {
 		fmt.Println("Fail delete", err)
 		return err
@@ -1375,13 +1408,13 @@ func check_instance_db(db *sql.DB)(bool){
 	var date, version string
 	rows, err := db.Query("SELECT version, data_instance FROM sys")
 	if err!=nil{
-		fmt.Println(err.Error())
+		//fmt.Println(err.Error())
 		return false
 	}
 	rows.Next()
 	err = rows.Scan(&version, &date)
 	if err!=nil{
-		fmt.Println(err.Error())
+		//fmt.Println(err.Error())
 		return false
 	}
 	rows.Close()
@@ -1396,11 +1429,11 @@ func openSQLite(path string)(*sql.DB, error){
 		newDB = true
 		file, err := os.Create(path)
 		if err != nil {
-			fmt.Println("God: i cant create database, your PC is atheist")
+			fmt.Println("Cant create database...")
 			return nil, err
 		}
 		defer file.Close()
-		fmt.Println("God: im create database")
+		fmt.Println("Create database")
 	}
 	database, err := sql.Open("sqlite3", path)
 	if err!=nil{
@@ -1408,6 +1441,7 @@ func openSQLite(path string)(*sql.DB, error){
 	}
 	if !check_instance_db(database) || newDB{
 		createDB_structs(database)
+		check_instance_db(database)
 	}
 	return database, nil
 }
