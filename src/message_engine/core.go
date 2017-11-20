@@ -16,14 +16,14 @@ package message_engine
 //
 //
 import(
-	db_work "github.com/AlexeyArno/Spatium/db_work"
-	//methods "github.com/AlexArno/spatium/src/api/methods"
-	models "github.com/AlexeyArno/Spatium/models"
+	db_work "github.com/Spatium-Messenger/Server/db_work"
+	//methods "github.com/Spatium-Messenger/Server/src/api/methods"
+	models "github.com/Spatium-Messenger/Server/models"
 	"golang.org/x/net/websocket"
 	"fmt"
 	"encoding/json"
-	//"github.com/AlexArno/spatium/src/api/methods"
-	"github.com/AlexeyArno/Spatium/src/api/methods"
+	//"github.com/Spatium-Messenger/Server/src/api/methods"
+	"github.com/Spatium-Messenger/Server/src/api/methods"
 )
 
 type ConnectionSpatium struct {

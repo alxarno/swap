@@ -3,11 +3,11 @@ package message_engine
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/AlexeyArno/Spatium/models"
-	"github.com/AlexeyArno/Spatium/src/api/methods"
-	messages_work "github.com/AlexeyArno/Spatium/src/messages"
+	"github.com/Spatium-Messenger/Server/models"
+	"github.com/Spatium-Messenger/Server/src/api/methods"
+	messages_work "github.com/Spatium-Messenger/Server/src/messages"
 	"time"
-	"github.com/AlexeyArno/Spatium/settings"
+	"github.com/Spatium-Messenger/Server/settings"
 )
 var (
 	secret = settings.ServiceSettings.Server.SecretKeyForToken
