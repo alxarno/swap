@@ -40,13 +40,14 @@ var (
 
 
 
-func sendAnswerError(e_type string, w http.ResponseWriter){
-	var answer = make(map[string]string)
-	answer["result"] = "Error"
-	answer["type"]=e_type
-	finish, _:=json.Marshal(answer)
-	fmt.Fprintf(w, string(finish))
-}
+//func sendAnswerError(e_type string, err_code int, w http.ResponseWriter){
+	//	var answer = make(map[string]interface{})
+	//	answer["result"] = "Error"
+	//	answer["code"] = err_code
+	//	answer["type"]=e_type
+	//	finish, _:=json.Marshal(answer)
+	//	fmt.Fprintf(w, string(finish))
+	//}
 
 func sendToken(id string, w http.ResponseWriter){
 	algorithm :=  jwt.HmacSha256(secret)
@@ -55,20 +56,20 @@ func sendToken(id string, w http.ResponseWriter){
 	claims.Set("time", time.Now().AddDate(0,0,30).Unix())
 	token, err := algorithm.Encode(claims)
 	if err!=nil{
-		sendAnswerError("Token is failed", w)
-		//fmt.Println(err)
-		return
+	methods.SendAnswerError("Token is failed",0, w)
+	//fmt.Println(err)
+	return
 	}
 	var x = make(map[string]string)
 	x["token"]=token
 	x["result"]="Success"
 	finish, _:=json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
-}
+	}
 
-func getJson(target interface{}, r*http.Request) error {
-	defer r.Body.Close()
-	return json.NewDecoder(r.Body).Decode(target)
+	func getJson(target interface{}, r*http.Request) error {
+defer r.Body.Close()
+return json.NewDecoder(r.Body).Decode(target)
 }
 
 func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
@@ -79,17 +80,17 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
 	err := decoder.Decode(&data)
 	if err != nil {
 		fmt.Println(err)
-		sendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	user, err:=methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	path, err := db_work.GetFileProve(user.ID, data.FileId)
 	if err!=nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	algorithm :=  jwt.HmacSha256(secret)
@@ -116,7 +117,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request){
 	s_ratio_size := r.FormValue("ratio_size")
 	ratio_size,err := strconv.ParseFloat(s_ratio_size,64)
 	if err !=nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	//fmt.Println(i_type)
@@ -126,12 +127,12 @@ func uploadFile(w http.ResponseWriter, r *http.Request){
 	name :=  r.FormValue("fileName")
 	user, err:=methods.OnlyDecodeToken(secret, token)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	file, handler, err := r.FormFile("uploadfile")
 	if err != nil {
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		fmt.Println(err)
 		return
 	}
@@ -139,13 +140,13 @@ func uploadFile(w http.ResponseWriter, r *http.Request){
 	defer file.Close()
 	id, path, err := db_work.CreateFile(name, handler.Size,user.ID, chat_id, s_ratio_size)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		fmt.Println(err)
 		return
 	}
 	f, err := os.OpenFile("./public/files/"+path, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		fmt.Println(err)
 		return
 	}
@@ -168,32 +169,32 @@ func deleteFile(w http.ResponseWriter, r *http.Request){
 	defer r.Body.Close()
 	err := decoder.Decode(&data)
 	if err != nil {
-		sendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	user, err:=methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	path, err := db_work.DeleteFile(user.ID, data.FileId)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	//fmt.Println(path)
 	if path == ""{
-		sendAnswerError("Path is undefined", w)
+		methods.SendAnswerError("Path is undefined",0, w)
 		return
 	}
 	err = os.Remove("./public/files/"+path)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	err = os.Remove("./public/files/min/"+path)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	var x = make(map[string]string)
@@ -210,17 +211,17 @@ func getFile(w http.ResponseWriter, r *http.Request){
 	err := decoder.Decode(&data)
 	if err != nil {
 		fmt.Println(err)
-		sendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	user, err:=methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	path, err := db_work.GetFileProve(user.ID, data.FileId)
 	if err!=nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	file := "./public/files/"+path
@@ -243,26 +244,27 @@ func getFile(w http.ResponseWriter, r *http.Request){
 }
 
 func enter( w http.ResponseWriter, r *http.Request){
+	//ANSWER CODE
 	var data *ProveConnection
 	decoder:= json.NewDecoder(r.Body)
 	defer r.Body.Close()
 	err := decoder.Decode(&data)
 	if err != nil {
-		sendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	//fmt.Println(data)
 	if data == nil{
-		sendAnswerError("Haven't all fields (login, pass)", w)
+		methods.SendAnswerError("Haven't all fields (login, pass)",0, w)
 		return
 	}
 	now_user, err:= db_work.GetUser("login" , map[string]string{"login":data.Login, "pass":data.Pass})
 	if err!=nil{
-		sendAnswerError("User is undefined", w)
+		methods.SendAnswerError("User is undefined",0, w)
 		return
 	}
 	if now_user == nil{
-		sendAnswerError("User is undefined", w)
+		methods.SendAnswerError("User is undefined",0, w)
 		return
 	}
 	id_int64 := int64(now_user.ID)
@@ -274,16 +276,16 @@ func proveToken(w http.ResponseWriter, r *http.Request){
 	var data *userGetToken
 	err:=getJson(&data,r)
 	if err != nil {
-		sendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	if data == nil{
-		sendAnswerError("Haven't all fields (Token)", w)
+		methods.SendAnswerError("Haven't all fields (Token)",0, w)
 		return
 	}
 	tokenIsTrue, err := methods.TestUserToken(secret, data.Token)
 	if err != nil {
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	if tokenIsTrue != nil{
@@ -298,17 +300,17 @@ func createUser(w http.ResponseWriter, r *http.Request){
 	var data *ProveConnection
 	err:=getJson(&data,r)
 	if err != nil {
-		sendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	if data.Login == "" || data.Pass == ""{
-		sendAnswerError("Haven't all fields (Login,Pass)", w)
+		methods.SendAnswerError("Haven't all fields (Login,Pass)",0, w)
 		return
 	}
 	id,err_string, err := db_work.CreateUser(data.Login, data.Pass, data.Login)
 	if err != nil || id==""{
-			sendAnswerError(err_string,w)
-			return
+		methods.SendAnswerError(err_string,0,w)
+		return
 	}
 	sendToken(id, w)
 }
@@ -317,12 +319,12 @@ func getMyChats(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	user, err:=methods.DecodeToken(secret, r)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	chats,err := db_work.GetMyChats(user.ID)
 	if err!= nil{
-		sendAnswerError("Some failed",w)
+		methods.SendAnswerError("Some failed", 0,w)
 		return
 	}
 	for _,v:= range chats {
@@ -348,11 +350,11 @@ func getMyData(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	user, err:=methods.DecodeToken(secret, r)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	if user == nil{
-		sendAnswerError("User is undefined", w)
+		methods.SendAnswerError("User is undefined",0, w)
 		return
 	}
 
@@ -369,13 +371,13 @@ func getUsersForAdd(w http.ResponseWriter, r *http.Request){
 	err := decoder.Decode(&data)
 	if err != nil {
 		fmt.Println(err)
-		sendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	users ,err:= db_work.FindUserByName(data.Name, data.Chatid)
 	if err!=nil{
 		fmt.Println(err)
-		sendAnswerError("Failed find user", w)
+		methods.SendAnswerError("Failed find user",0, w)
 		return
 	}
 	f_data := make(map[string]interface{})
@@ -394,17 +396,17 @@ func getSettings(w http.ResponseWriter, r *http.Request){
 	err := decoder.Decode(&data)
 	if err != nil {
 		fmt.Println(err)
-		sendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	user, err:=methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	final,err := db_work.GetUserSettings(user.ID)
 	if err!=nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	finish, _:=json.Marshal(final)
@@ -419,17 +421,17 @@ func SetSettings(w http.ResponseWriter, r *http.Request){
 	err := decoder.Decode(&data)
 	if err != nil {
 		fmt.Println(err)
-		sendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	user, err:=methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	err = db_work.SetUserSettings(user.ID, data.Name)
 	if err!=nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	var answer = make(map[string]string)
@@ -446,17 +448,17 @@ func GetUsersByName(w http.ResponseWriter, r *http.Request){
 	err := decoder.Decode(&data)
 	if err != nil {
 		fmt.Println(err)
-		sendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	user, err:=methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	list,err:= db_work.GetUsersForCreateDialog(user.ID,data.Name)
 	if err!= nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	finish, _:=json.Marshal(list)
@@ -471,17 +473,17 @@ func CreateDialog(w http.ResponseWriter, r *http.Request){
 	err := decoder.Decode(&data)
 	if err != nil {
 		fmt.Println(err)
-		sendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	user, err:=methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	msg, ch_id,int_last,err:= db_work.CreateDialog(user.ID,data.User_id)
 	if err!=nil && msg==nil{
-		sendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	if msg==nil{

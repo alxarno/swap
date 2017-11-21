@@ -38,9 +38,10 @@ func DecodeToken(secret string, r *http.Request)(*models.User, error){
 	return tokenIsTrue, nil
 }
 
-func SendAnswerError(e_type string, w http.ResponseWriter){
-	var answer = make(map[string]string)
+func SendAnswerError(e_type string, err_code int, w http.ResponseWriter){
+	var answer = make(map[string]interface{})
 	answer["result"] = "Error"
+	answer["code"] = err_code
 	answer["type"]=e_type
 	finish, _:=json.Marshal(answer)
 	fmt.Fprintf(w, string(finish))
