@@ -30,16 +30,16 @@ func create(w http.ResponseWriter, r *http.Request){
 	var data *createChat
 	err:=methods.GetJson(&data, r)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	if len(data.Name)<3{
-		methods.SendAnswerError("Name is so short", w)
+		methods.SendAnswerError("Name is so short",0, w)
 		return
 	}
 	user, err:=methods.TestUserToken(secret, data.Token)
 	if err != nil{
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token",0, w)
 		return
 	}
 	id_int64 := int64(user.ID)
@@ -47,7 +47,7 @@ func create(w http.ResponseWriter, r *http.Request){
 	if data.Type == "chat"{
 		_,err = db_work.CreateChat(data.Name, u_id)
 		if err != nil{
-			methods.SendAnswerError(err.Error(), w)
+			methods.SendAnswerError(err.Error(), 0,w)
 			return
 		}
 	}
@@ -55,7 +55,7 @@ func create(w http.ResponseWriter, r *http.Request){
 	if data.Type == "channel"{
 		_,err = db_work.CreateChannel(data.Name, u_id)
 		if err != nil{
-			methods.SendAnswerError(err.Error(), w)
+			methods.SendAnswerError(err.Error(),0, w)
 			return
 		}
 	}
@@ -70,23 +70,23 @@ func getMessages(w http.ResponseWriter, r *http.Request){
 	err:=methods.GetJson(&data, r)
 	//fmt.Println(data)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	user, err:=methods.TestUserToken(secret, data.Token)
 	if err != nil{
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token", 0,w)
 		return
 	}
 	err = db_work.CheckUserINChat(user.ID, data.ID)
 	if err != nil{
-		methods.SendAnswerError("User isn't in chat", w)
+		methods.SendAnswerError("User isn't in chat",0, w)
 		return
 	}
 	messages,err:=db_work.GetMessages(user.ID,data.ID, false,0)
 	if err != nil{
 		fmt.Println(err.Error())
-		methods.SendAnswerError("Fail get data from db", w)
+		methods.SendAnswerError("Fail get data from db",0, w)
 		return
 	}
 	if messages == nil{
@@ -106,23 +106,23 @@ func getEarlyMessages(w http.ResponseWriter, r *http.Request){
 	}{}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	user, err:=methods.TestUserToken(secret, data.Token)
 	if err != nil{
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token",0, w)
 		return
 	}
 	err = db_work.CheckUserINChat(user.ID, data.Chat_id)
 	if err != nil{
-		methods.SendAnswerError("User isn't in chat", w)
+		methods.SendAnswerError("User isn't in chat", 0,w)
 		return
 	}
 	messages,err:=db_work.GetMessages(user.ID,data.Chat_id, true, data.LastId)
 	if err != nil{
 		fmt.Println(err.Error())
-		methods.SendAnswerError("Fail get data from db", w)
+		methods.SendAnswerError("Fail get data from db",0, w)
 		return
 	}
 	if messages == nil{
@@ -140,14 +140,14 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 	var data struct{Token string; Ids []string; ChatId string}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	//fmt.Println(data)
 	user,err := methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil {
 		fmt.Println(err)
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token",0, w)
 		return
 	}
 	// Because we need it
@@ -166,7 +166,7 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 	i_chat_add, err := strconv.ParseInt(data.ChatId, 10, 64)
 	if err != nil {
 		fmt.Println(err)
-		methods.SendAnswerError("Failed retype chat_id", w)
+		methods.SendAnswerError("Failed retype chat_id",0, w)
 		return
 	}
 	failesAdd := []string{}
@@ -201,7 +201,7 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 	//Send notification and messages to users and chats
 	chat_type, err:=db_work.GetChatType(f64_caht_id)
 	if err!=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	for _,v := range data.Ids{
@@ -241,14 +241,14 @@ func getUsers(w http.ResponseWriter, r *http.Request){
 	var data struct{Token string; ChatId string}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	//fmt.Println(data)
 	user,err := methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil {
 		fmt.Println(err)
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token", 0,w)
 		return
 	}
 	f64_caht_id,err := strconv.ParseFloat(data.ChatId, 64)
@@ -259,7 +259,7 @@ func getUsers(w http.ResponseWriter, r *http.Request){
 	err= db_work.CheckUserINChat(user.ID, f64_caht_id)
 	if err!=nil{
 		fmt.Println("FAIL GetChatsUsers")
-		methods.SendAnswerError("You aren't have rights for this action", w)
+		methods.SendAnswerError("You aren't have rights for this action", 0,w)
 		return
 	}
 
@@ -278,14 +278,14 @@ func deleteUsers(w http.ResponseWriter, r *http.Request){
 	var data struct{Token string; Ids []float64; ChatId string}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body", 0,w)
 		return
 	}
 	//fmt.Println(data)
 	user,err := methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil {
 		fmt.Println(err)
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token",0, w)
 		return
 	}
 
@@ -297,24 +297,24 @@ func deleteUsers(w http.ResponseWriter, r *http.Request){
 	}
 	err= db_work.CheckUserRightsInChat(user.ID, f64_caht_id)
 	if err !=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 
 	err = db_work.CheckUserRightsInChat(user.ID, f64_caht_id)
 	if err!=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 
 	err = db_work.DeleteUsersInChat(data.Ids, data.ChatId, false)
 	if err!=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	chat_type, err:=db_work.GetChatType(f64_caht_id)
 	if err!=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	for _,v:=range data.Ids{
@@ -358,14 +358,14 @@ func recoveryUsers(w http.ResponseWriter, r *http.Request){
 	var data struct{Token string; Ids []float64; ChatId string}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	//fmt.Println(data)
 	user,err := methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil {
 		fmt.Println(err)
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token", 0,w)
 		return
 	}
 
@@ -377,12 +377,12 @@ func recoveryUsers(w http.ResponseWriter, r *http.Request){
 	}
 	err= db_work.CheckUserRightsInChat(user.ID, f64_caht_id)
 	if err !=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	err = db_work.RecoveryUsersInChat(data.Ids, data.ChatId)
 	if err!=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	for _,v:=range data.Ids{
@@ -419,14 +419,14 @@ func getSettings(w http.ResponseWriter, r *http.Request){
 	var data struct{Token string; ChatId string}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body", 0,w)
 		return
 	}
 	//fmt.Println(data)
 	user,err := methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil {
 		fmt.Println(err)
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token",0, w)
 		return
 	}
 
@@ -438,12 +438,12 @@ func getSettings(w http.ResponseWriter, r *http.Request){
 	}
 	err= db_work.CheckUserRightsInChat(user.ID, f64_caht_id)
 	if err !=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	name, moders, err := db_work.GetSettings(data.ChatId)
 	if err != nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	end:= struct {
@@ -454,7 +454,7 @@ func getSettings(w http.ResponseWriter, r *http.Request){
 	end.Moders = moders
 	final,err := json.Marshal(end)
 	if err != nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	fmt.Fprintf(w, string(final))
@@ -465,14 +465,14 @@ func setSettings(w http.ResponseWriter, r *http.Request){
 	var data struct{Token string; ChatId string; Name string}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body", 0,w)
 		return
 	}
 	//fmt.Println(data)
 	user,err := methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil {
 		fmt.Println(err)
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token", 0,w)
 		return
 	}
 
@@ -484,17 +484,17 @@ func setSettings(w http.ResponseWriter, r *http.Request){
 	}
 	err= db_work.CheckUserRightsInChat(user.ID, f64_caht_id)
 	if err !=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	err = db_work.SetNameChat(data.ChatId, data.Name)
 	if err !=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	chat_type, err:=db_work.GetChatType(f64_caht_id)
 	if err!=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	msg_content:= "переименовал чат в '"+data.Name+"'"
@@ -535,20 +535,20 @@ func deleteMessages(w http.ResponseWriter, r *http.Request){
 	var data struct{Token string; ChatId string; Ids []string}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body", 0,w)
 		return
 	}
 	//fmt.Println(data)
 	user,err := methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil {
 		//fmt.Println(err)
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token",0, w)
 		return
 	}
 	err = db_work.DeleteMessages(data.ChatId, user.ID, data.Ids)
 	if err != nil{
 		//fmt.Println(err)
-		methods.SendAnswerError("Failed exec db query", w)
+		methods.SendAnswerError("Failed exec db query",0, w)
 		return
 	}
 	finish:= make(map[string]string)
@@ -565,14 +565,14 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 	var data struct{Token string`json:"token"`; ChatId string`json:"chat_id"`}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	//fmt.Println(data)
 	user,err := methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil {
 		fmt.Println(err)
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token", 0,w)
 		return
 	}
 
@@ -589,13 +589,13 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 	//}
 	err = db_work.DeleteUsersInChat([]float64{user.ID}, data.ChatId, true)
 	if err!=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 
 	chat_type, err:=db_work.GetChatType(f64_caht_id)
 	if err!=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	if chat_type==2{
@@ -608,7 +608,7 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 	}
 	f_c_id,err:= strconv.ParseFloat(data.ChatId,64)
 	if err!= nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	dialog_users,err:=db_work.GetChatsUsers(f_c_id)
@@ -645,14 +645,14 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 	var data struct{Token string`json:"token"`; ChatId string`json:"chat_id"`}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	//fmt.Println(data)
 	user,err := methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil {
 		fmt.Println(err)
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token",0, w)
 		return
 	}
 
@@ -665,18 +665,18 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 	}
 	err= db_work.CheckUserInChatDelete(user.ID, f64_chat_id)
 	if err ==nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(),0, w)
 		return
 	}
 	err = db_work.RecoveryUsersInChat([]float64{user.ID}, data.ChatId)
 	if err!=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 
 	chat_type, err:=db_work.GetChatType(f64_chat_id)
 	if err!=nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	if chat_type==2{
@@ -689,7 +689,7 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 	}
 	f_c_id,err:= strconv.ParseFloat(data.ChatId,64)
 	if err!= nil{
-		methods.SendAnswerError(err.Error(), w)
+		methods.SendAnswerError(err.Error(), 0,w)
 		return
 	}
 	dialog_users,err:=db_work.GetChatsUsers(f_c_id)
@@ -727,24 +727,24 @@ func deleteFullUserFromChatDialog(w http.ResponseWriter, r *http.Request){
 	var data struct{Token string`json:"token"`; ChatId string`json:"chat_id"`}
 	err:=methods.GetJson(&data, r)
 	if err != nil {
-		methods.SendAnswerError("Failed decode r.Body", w)
+		methods.SendAnswerError("Failed decode r.Body",0, w)
 		return
 	}
 	//fmt.Println(data)
 	user,err := methods.OnlyDecodeToken(secret, data.Token)
 	if err != nil {
 		fmt.Println(err)
-		methods.SendAnswerError("Failed decode token", w)
+		methods.SendAnswerError("Failed decode token", 0,w)
 		return
 	}
 	f_c_id,err:= strconv.ParseFloat(data.ChatId, 64)
 	if err!=nil{
-		methods.SendAnswerError("Failed decode ChatId", w)
+		methods.SendAnswerError("Failed decode ChatId", 0,w)
 		return
 	}
 	err=db_work.FullDeleteUserFromChat(user.ID, f_c_id)
 	if err!= nil{
-		methods.SendAnswerError("Failed delete user: "+err.Error(), w)
+		methods.SendAnswerError("Failed delete user: "+err.Error(), 0,w)
 		return
 	}
 	engine.SendNotificationDeleteChat(user.ID)
