@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"bufio"
 	"github.com/Spatium-Messenger/Server/settings"
+	"github.com/Spatium-Messenger/Server/db_api"
 )
 var (
 	secret = settings.ServiceSettings.Server.SecretKeyForToken
@@ -193,7 +194,7 @@ func printLogo(){
 
 
 func main(){
-
+	db_api.BeginDB()
 	//go broadcaster()
 	engine.StartCoreMessenger()
 
@@ -239,6 +240,7 @@ func main(){
 	}
 	printLogo()
 	err = db_work.OpenDB()
+
 	if err!=nil{
 		fmt.Println(err.Error())
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
