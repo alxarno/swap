@@ -2,7 +2,7 @@ package db_api
 
 
 type User struct {
-	Id   int`orm:"auto"`
+	Id   int64`orm:"auto"`
 	Login string`orm:"size(32)"`
 	Name string`orm:"size(100)"`
 	Pass string`orm:"size(45)"`
@@ -17,7 +17,7 @@ func (u *User) TableName() string {
 }
 
 type Chat struct {
-	Id   int`orm:"auto"`
+	Id   int64`orm:"auto"`
 	Name string`orm:"size(100)"`
 	Author *User`orm:"rel(fk)"`
 	Type int`orm:"default(0)"`
@@ -31,7 +31,7 @@ func (u *Chat) TableName() string {
 
 
 type Chat_User struct {
-	Id   int`orm:"auto"`
+	Id   int64`orm:"auto"`
 	User *User`orm:"rel(fk)"`
 	Chat *Chat`orm:"rel(fk)"`
 	Start int`orm:"default(0)"`
@@ -47,7 +47,7 @@ func (u *Chat_User) TableName() string {
 
 
 type Message struct {
-	Id   int`orm:"auto"`
+	Id   int64`orm:"auto"`
 	Author *User`orm:"rel(fk)"`
 	Chat *Chat`orm:"rel(fk)"`
 	Content string
@@ -60,7 +60,7 @@ func (u *Message) TableName() string {
 }
 
 type File struct {
-	Id   int`orm:"auto"`
+	Id   int64`orm:"auto"`
 	Author *User`orm:"rel(fk)"`
 	Chat *Chat`orm:"rel(fk)"`
 	Name string

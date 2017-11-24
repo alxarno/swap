@@ -14,6 +14,7 @@ import (
 	"os"
 	"io"
 	"github.com/Spatium-Messenger/Server/models"
+	"github.com/Spatium-Messenger/Server/db_api"
 	"github.com/Spatium-Messenger/Server/settings"
 )
 type ProveConnection struct{

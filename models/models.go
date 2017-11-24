@@ -18,17 +18,17 @@ type Message struct {
 	Chat_Id float64
 }
 type UserChatInfo struct{
-	ID float64 `json:"id"`
+	ID int64 `json:"id"`
 	Name string `json:"name"`
-	Type int64 `json:"type"`
+	Type int `json:"type"`
 	//Addr_users []string
 	LastSender string `json:"last_sender"`
-	Admin_id float64 `json:"admin_id"`
-	Moders_ids []float64 `json:"moderators_ids"`
+	Admin_id int64 `json:"admin_id"`
+	//Moders_ids []float64 `json:"moderators_ids"`
 	LastMessage *MessageContent `json:"last_message"`
 	LastMessageTime int64 `json:"last_message_time"`
 	View int `json:"view"`
-	Delete int64 `json:"delete"`
+	Delete bool `json:"delete"`
 	Online int64 `json:"online"`
 }
 type MessageContent struct{
