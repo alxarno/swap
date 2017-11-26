@@ -22,6 +22,7 @@ func init() {
 	orm.RegisterModel(new(Chat_User))
 	orm.RegisterModel(new(Message))
 	orm.RegisterModel(new(File))
+	orm.RegisterModel(new(Dialog))
 
 	err := orm.RunSyncdb("default", true, false)
 	if err != nil {

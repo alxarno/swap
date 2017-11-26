@@ -159,25 +159,58 @@ func TestCheckUserRightsInChat(t *testing.T) {
 
 func TestDeleteUsersInChat(t *testing.T) {
 	ch:= Chat{Name:"Apollo", Author:&u}
-	ch_id,err:= o.Insert(&ch); if err!=nil{
+	ChId,err:= o.Insert(&ch); if err!=nil{
 		t.Error(err)
 		return
 	}
 	users:= []int64{}
+	UserChats := []int64{}
 	for i:=0;i<5;i++{
 		u1:= User{Name:"hello"}
 		id,err:= o.Insert(&u1); if err!=nil{
 			t.Error(err)
 			return
 		}
-		UserChat:= Chat_User{User:&u1, Chat:&Chat{Id: ch_id}}
-		_,err = o.Insert(&UserChat); if err!=nil{
+		UserChat:= Chat_User{User:&u1, Chat:&Chat{Id: ChId}}
+		id2,err := o.Insert(&UserChat); if err!=nil{
 			t.Error(err)
 			return
 		}
 		users= append(users, id)
+		UserChats=append(UserChats, id2)
+	}
+	err=DeleteUsersInChat(users, ChId, false); if err!=nil{
+		t.Error(err)
+		return
 	}
 
+	var UsersNew []int64
+	qb, _ := orm.NewQueryBuilder(driver)
+
+	qb.Select("user_id").
+		From("chat_users").
+		Where("chat_id = ?").
+		And("delete_last = 0").
+		Offset(0)
+
+	sql := qb.String()
+
+	o := orm.NewOrm()
+	o.Raw(sql, ChId).QueryRows(&UsersNew)
+	if len(UsersNew) !=0{
+		t.Error("Result wrong")
+	}
+
+	//	Delete all
+	for _,v :=range UserChats{
+		o.Delete(&Chat_User{Id: v})
+	}
+	for _,v :=range users{
+		o.Delete(&User{Id: v})
+	}
+	o.Delete(&Chat{Id: ChId})
 }
+
+
 
 
