@@ -13,4 +13,12 @@ func (c Chat_User) GetDeletePoints()([][]int64,error){
 	return points,nil
 }
 
+func (c Chat_User) SetDeletePoints(data [][]int64)(error){
+	m_data,err:= json.Marshal(data);if err!=nil{
+		return err
+	}
+	c.Delete_points = string(m_data)
+	return err
+}
+
 

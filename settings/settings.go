@@ -13,6 +13,7 @@ var (
 
 type Settings struct {
 	Server struct{
+		Test bool`json:"test"`
 		Encryption bool`json:"encryption"`
 		Cert_file string`json:"cert_file"`
 		Key_file string`json:"key_file"`
