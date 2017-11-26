@@ -3,30 +3,36 @@ import(
 	"github.com/astaxie/beego/orm"
 	_ "github.com/mattn/go-sqlite3"
 	//"fmt"
+	"github.com/Spatium-Messenger/Server/settings"
+	"fmt"
 )
 var(
 	o orm.Ormer
 )
-//func init() {
-//	// register model
-//
-//
-//	// set default database
-//	orm.RegisterDriver("sqlite3", orm.DRSqlite)
-//	orm.RegisterDataBase("default", "sqlite3", "file:data.db")
-//
-//	orm.RegisterModel(new(User))
-//	orm.RegisterModel(new(Chat))
-//	orm.RegisterModel(new(Chat_User))
-//	orm.RegisterModel(new(Message))
-//	orm.RegisterModel(new(File))
-//
-//	err := orm.RunSyncdb("default", true, false)
-//	if err != nil {
-//		fmt.Println(err)
-//	}
-//}
+func init() {
+	// register model
+	orm.RegisterDriver("sqlite3", orm.DRSqlite)
+	if settings.ServiceSettings.Server.Test {
+		orm.RegisterDataBase("default", "sqlite3", "file:test.db")
+	}else{
+		orm.RegisterDataBase("default", "sqlite3", "file:data.db")
+	}
+	orm.RegisterModel(new(User))
+	orm.RegisterModel(new(Chat))
+	orm.RegisterModel(new(Chat_User))
+	orm.RegisterModel(new(Message))
+	orm.RegisterModel(new(File))
+
+	err := orm.RunSyncdb("default", true, false)
+	if err != nil {
+		fmt.Println(err)
+	}
+	// set default database
+
+}
 
 func BeginDB(){
-	//o = orm.NewOrm()
+	//if !settings.Settings.Server.Test {
+		o = orm.NewOrm()
+	//}
 }

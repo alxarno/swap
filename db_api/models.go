@@ -34,7 +34,7 @@ type Chat_User struct {
 	Id   int64`orm:"auto"`
 	User *User`orm:"rel(fk)"`
 	Chat *Chat`orm:"rel(fk)"`
-	Start int`orm:"default(0)"`
+	Start int64`orm:"default(0)"`
 	Delete_last int64`orm:"default(0)"`
 	Delete_points string
 	Ban bool`orm:"default(false)"`

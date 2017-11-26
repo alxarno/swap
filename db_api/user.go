@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 )
+var Driver = "mysql"
 
 //import "fmt
 //import "github.com/Spatium-Messenger/Server/src/api/methods"
@@ -46,7 +47,7 @@ func CreateUser(login string, pass string, u_name string)(int64, error){
 		u.Pass = base64.StdEncoding.EncodeToString(h.Sum(nil))
 		u.Name = u_name
 		u.Login = login
-		id, err := o.Insert(u)
+		id, err := o.Insert(&u)
 		if err != nil {
 			Gologer.PError(err.Error())
 			return 0,err
@@ -74,7 +75,7 @@ func GetUserChats(user_id int64)([]*models.UserChatInfo, error){
 	}
 	var meesagesBuffer[]message
 	var ChatInfoBuffer []chatInfo
-	qb, _ := orm.NewQueryBuilder("sqlite3")
+	qb, _ := orm.NewQueryBuilder(Driver)
 	qb.Select("chats.id",
 		"chats.name",
 		"chats.author_id",
@@ -84,11 +85,11 @@ func GetUserChats(user_id int64)([]*models.UserChatInfo, error){
 		From("chat_users").
 		InnerJoin("chats").On("chat_users.chat_id = chats.id").
 		Where("list_invisible = false").
-		Where("user_id = ?").
+		And("user_id = ?").
 		Offset(0)
 	sql := qb.String()
 	o.Raw(sql, user_id).QueryRows(&ChatInfoBuffer)
-	msg, _ := orm.NewQueryBuilder("sqlite3")
+	msg, _ := orm.NewQueryBuilder(Driver)
 	msg.Select("messages.content",
 		"messages.time",
 		"users.name").
@@ -127,7 +128,7 @@ func GetUserChats(user_id int64)([]*models.UserChatInfo, error){
 
 func GetUsersChatsIds(user_id int64)([]int64, error){
 	var ids []int64
-	qb, _ := orm.NewQueryBuilder("sqlite3")
+	qb, _ := orm.NewQueryBuilder(Driver)
 	qb.Select("chat_id").
 		From("chat_users").
 		Where("user_id = ?")
@@ -149,14 +150,13 @@ func GetOnlineUsersIdsInChats(chats_id*[]int64, users_online *[]int64)([]int64, 
 	for _,v := range *chats_id{
 		chats_in_string = append(chats_in_string, strconv.FormatInt(v, 10))
 	}
-	s1:= strings.Join(users_in_strings, ",")
-	//s1= "("+s1+")"
+	s1:= strings.Join(chats_in_string, ",")
 
-	qb, err := orm.NewQueryBuilder("mysql")
+	qb, err := orm.NewQueryBuilder(Driver)
 	if err!= nil{
 		return nil,err
 	}
-	qb.Select("chat_id").
+	qb.Select("user_id").
 		From("chat_users").
 		Where("user_id").In(s).
 		And("ban = 0").
@@ -167,6 +167,28 @@ func GetOnlineUsersIdsInChats(chats_id*[]int64, users_online *[]int64)([]int64, 
 	o.Raw(sql).QueryRows(&final)
 	return final,nil
 }
+
+func GetUserSettings(user_id int64)(map[string]interface{}, error){
+	var final = map[string]interface{}{}
+	u:= User{Id: user_id}
+	err := o.Read(&u)
+	if err == orm.ErrNoRows {
+		return final,errors.New("User not found")
+	}
+	final["login"] = u.Login
+	final["name"]=u.Name
+
+	return final, nil
+}
+
+func SetUserSettings(user_id int64, name string)(error){
+	user := User{Id: user_id, Name: name }
+	if _, err := o.Update(&user); err == nil {
+		return err
+	}
+	return nil
+}
+
 
 
 
