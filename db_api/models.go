@@ -9,7 +9,8 @@ type User struct {
 	Chats []*Chat_User`orm:"reverse(many)"`
 	Messages []*Message`orm:"reverse(many)"`
 	Files []*File`orm:"reverse(many)"`
-	My_Chats []*Chat`orm:"reverse(many)"`
+	MyChats []*Chat`orm:"reverse(many)"`
+	Dialogs[]*Dialog`orm:"reverse(many)"`
 }
 
 func (u *User) TableName() string {
@@ -65,11 +66,23 @@ type File struct {
 	Chat *Chat`orm:"rel(fk)"`
 	Name string
 	Path string
-	Ratio_Size float64`orm:"default(0)"`
+	RatioSize float64`orm:"default(0)"`
 	Size int64`orm:"default(0)"`
 }
 
 func (u *File) TableName() string {
 	// db table name
 	return "files"
+}
+
+type Dialog struct{
+	Id   int64`orm:"auto"`
+	ChatId int64
+	User1 *User`orm:"rel(fk)"`
+	User2 *User`orm:"rel(fk)"`
+}
+
+func (u *Dialog) TableName() string {
+	// db table name
+	return "dialogs"
 }

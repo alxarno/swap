@@ -44,13 +44,13 @@ type User struct {
 }
 
 type NewMessageToUser struct{
-	ID *int64 `json:"id"`
-	Chat_Id *float64 `json:"chat_id"`
-	Content MessageContentToUser `json:"message"`
-	Author_id *float64 `json:"author_id"`
-	Author_Name *string `json:"author_name"`
-	Author_Login *string `json:"author_login"`
-	Time *int64 `json:"time"`
+	ID int64 `json:"id"`
+	ChatId int64 `json:"chat_id"`
+	Content *MessageContentToUser `json:"message"`
+	AuthorId int64 `json:"author_id"`
+	AuthorName string `json:"author_name"`
+	AuthorLogin string `json:"author_login"`
+	Time int64 `json:"time"`
 }
 
 type CreateDHData struct{
@@ -62,9 +62,9 @@ type CreateDHData struct{
 }
 
 type MessageContentToUser struct{
-	Message *string `json:"content"`
+	Message string `json:"content"`
 	Documents []interface{} `json:"documents"`
-	Type *string `json:"type"`
+	Type string `json:"type"`
 }
 type ForceMsgToUser struct{User_id float64; Msg NewMessageToUser}
 
