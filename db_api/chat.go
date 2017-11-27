@@ -39,7 +39,7 @@ func CreateChannel(name string, AuthorId int64)(int64,error){
 }
 
 func CheckUserInChatDelete(UserId int64, ChatId int64)(bool,error){
-	UserInChat := Chat_User{User:&User{Id: UserId}, Chat:&Chat{Id: ChatId}}
+	UserInChat := chatUser{User:&User{Id: UserId}, Chat:&Chat{Id: ChatId}}
 	err:= o.Read(&UserInChat);if err!=nil{
 		return false,err
 	}
@@ -50,7 +50,7 @@ func CheckUserInChatDelete(UserId int64, ChatId int64)(bool,error){
 }
 
 func InsertUserInChat(UserId int64, ChatId int64)(error){
-	ChatUser:= Chat_User{User:&User{Id:UserId}, Chat: &Chat{Id:ChatId}}
+	ChatUser:= chatUser{User:&User{Id:UserId}, Chat: &Chat{Id:ChatId}}
 	err:=o.Read(&ChatUser);if err==nil{
 		return errors.New("user already in chat")
 	}
@@ -134,7 +134,7 @@ func GetChatUserInfo(ChatId int64)(string,error){
 
 func DeleteUsersInChat(UserIds []int64, ChatId int64, DeleteYourself bool)(error){
 	for _,v:= range UserIds{
-		ch_u:= Chat_User{User: &User{Id: v}, Chat:&Chat{Id: ChatId}, Delete_last: 0}
+		ch_u:= chatUser{User: &User{Id: v}, Chat:&Chat{Id: ChatId}, Delete_last: 0}
 		err:= o.Read(&ch_u);if err!=nil{
 			Gologer.PError(err.Error())
 			continue
@@ -164,7 +164,7 @@ func DeleteUsersInChat(UserIds []int64, ChatId int64, DeleteYourself bool)(error
 
 func RecoveryUsersInChat(UserIds []int64, ChatId int64, RecoveryYourself bool)(error){
 	for _,v:= range UserIds{
-		ch_u:= Chat_User{User: &User{Id: v}, Chat:&Chat{Id: ChatId}}
+		ch_u:= chatUser{User: &User{Id: v}, Chat:&Chat{Id: ChatId}}
 		err:= o.Read(&ch_u);if err!=nil{
 			Gologer.PError(err.Error())
 			continue
@@ -225,7 +225,7 @@ func SetNameChat(ChatId int64, name string)(error){
 }
 
 func DeleteChatFromList(UserId int64, ChatId int64)(error){
-	chatUser := Chat_User{User:&User{Id: UserId}, Chat: &Chat{Id: ChatId}}
+	chatUser := chatUser{User:&User{Id: UserId}, Chat: &Chat{Id: ChatId}}
 	err:= o.Read(&chatUser);if err!=nil{
 		Gologer.PError(err.Error())
 		return err
@@ -245,7 +245,7 @@ func FullDeleteChat(ChatId int64)(error){
 	err:= o.Read(&ch); if err!=nil{
 		return err
 	}
-	ChatUser:= Chat_User{Chat:&ch, User:&User{Id: ch.Author.Id}}
+	ChatUser:= chatUser{Chat:&ch, User:&User{Id: ch.Author.Id}}
 	err= o.Read(&ChatUser); if err!=nil{
 		return err
 	}

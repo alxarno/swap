@@ -1,21 +1,25 @@
 package db_api
 
+import (
+
+)
 
 type User struct {
-	Id   int64`orm:"auto"`
-	Login string`orm:"size(32)"`
-	Name string`orm:"size(100)"`
-	Pass string`orm:"size(45)"`
-	Chats []*Chat_User`orm:"reverse(many)"`
-	Messages []*Message`orm:"reverse(many)"`
-	Files []*File`orm:"reverse(many)"`
-	MyChats []*Chat`orm:"reverse(many)"`
-	Dialogs[]*Dialog`orm:"reverse(many)"`
+	Id   int64          `orm:"auto"`
+	Login string        `orm:"size(32)"`
+	Name string         `orm:"size(100)"`
+	Pass string         `orm:"size(45)"`
+	Chats []*chatUser   `orm:"reverse(many)"`
+	Messages []*Message `orm:"reverse(many)"`
+	Files []*File       `orm:"reverse(many)"`
+	MyChats []*Chat     `orm:"reverse(many)"`
+	Dialogs[]*Dialog    `orm:"reverse(many)"`
 }
 
 func (u *User) TableName() string {
 	return "users"
 }
+
 
 type Chat struct {
 	Id   int64`orm:"auto"`
@@ -31,7 +35,7 @@ func (u *Chat) TableName() string {
 }
 
 
-type Chat_User struct {
+type chatUser struct {
 	Id   int64`orm:"auto"`
 	User *User`orm:"rel(fk)"`
 	Chat *Chat`orm:"rel(fk)"`
@@ -42,7 +46,7 @@ type Chat_User struct {
 	List_Invisible bool `orm:"default(false)"`
 }
 
-func (u *Chat_User) TableName() string {
+func (u *chatUser) TableName() string {
 	return "chat_users"
 }
 
