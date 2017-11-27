@@ -22,6 +22,13 @@ func sendAnswerError(eType string, errCode int, w http.ResponseWriter){
 	fmt.Fprintf(w, string(finish))
 }
 
+func sendAnswerSuccess(w http.ResponseWriter){
+	var x = make(map[string]string)
+	x["result"]="Success"
+	finish, _:=json.Marshal(x)
+	fmt.Fprintf(w, string(finish))
+}
+
 func generateToken(id int64) (string,error){
 	algorithm :=  jwt.HmacSha256(secret)
 	claims := jwt.NewClaim()

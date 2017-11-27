@@ -75,7 +75,7 @@ func GetChatType(ChatId int64)(int,error){
 func CheckUserRightsInChat(UserId int64, ChatId int64)(error){
 	c:= Chat{Id: ChatId}
 	err:= o.Read(&c);if err!=nil{
-		return nil
+		return err
 	}
 	if c.Author.Id != UserId{
 		return errors.New("user haven't rights")

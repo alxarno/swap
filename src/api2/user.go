@@ -131,10 +131,7 @@ func setSettings(w http.ResponseWriter, r *http.Request){
 	err= db_api.SetUserSettings(user.Id, data.Name);if err!=nil{
 		sendAnswerError(err.Error(),0,w); return
 	}
-	var answer = make(map[string]string)
-	answer["result"] = "Success"
-	finish, _:=json.Marshal(answer)
-	fmt.Fprintf(w, string(finish))
+	sendAnswerSuccess(w)
 }
 
 func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request) {
