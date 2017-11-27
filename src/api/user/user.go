@@ -14,7 +14,7 @@ import (
 	"os"
 	"io"
 	"github.com/Spatium-Messenger/Server/models"
-	"github.com/Spatium-Messenger/Server/db_api"
+	//"github.com/Spatium-Messenger/Server/db_api"
 	"github.com/Spatium-Messenger/Server/settings"
 )
 type ProveConnection struct{
@@ -68,7 +68,7 @@ func sendToken(id string, w http.ResponseWriter){
 	fmt.Fprintf(w, string(finish))
 	}
 
-	func getJson(target interface{}, r*http.Request) error {
+func getJson(target interface{}, r*http.Request) error {
 defer r.Body.Close()
 return json.NewDecoder(r.Body).Decode(target)
 }

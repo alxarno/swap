@@ -19,7 +19,7 @@ func init() {
 	}
 	orm.RegisterModel(new(User))
 	orm.RegisterModel(new(Chat))
-	orm.RegisterModel(new(Chat_User))
+	orm.RegisterModel(new(chatUser))
 	orm.RegisterModel(new(Message))
 	orm.RegisterModel(new(File))
 	orm.RegisterModel(new(Dialog))

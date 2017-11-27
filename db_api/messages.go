@@ -38,7 +38,7 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64)([]*model
 	templates := []MessageTemplate{}
 	final := []*models.NewMessageToUser{}
 	const MAX_TIME = 9999999999
-	chatUser := Chat_User{User:&User{Id: userId}, Chat:&Chat{Id:chatId}}
+	chatUser := chatUser{User:&User{Id: userId}, Chat:&Chat{Id:chatId}}
 	err:=o.Read(&chatUser);if err!=nil{
 		return final,errors.New("user is not in chat")
 	}

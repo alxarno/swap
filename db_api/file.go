@@ -65,7 +65,7 @@ func CheckFileRights(userId int64, fileId int64)(string,error){
 	err:=o.Read(&f);if err!=nil{
 		return "",err
 	}
-	userChats:=Chat_User{User:&User{Id:userId}, Chat:f.Chat}
+	userChats:= chatUser{User:&User{Id:userId}, Chat:f.Chat}
 	err=o.Read(&userChats);if err!=nil{
 		return "",err
 	}
