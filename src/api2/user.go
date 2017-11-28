@@ -47,7 +47,7 @@ func proveToken(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	var x = make(map[string]interface{})
-	_,err=testUserToken(userGetToken.Token);if err!=nil{
+	_,err= TestUserToken(userGetToken.Token);if err!=nil{
 		x["result"]="Success"
 	}else{
 		x["result"]="Error"
@@ -125,7 +125,7 @@ func setSettings(w http.ResponseWriter, r *http.Request){
 	err := decoder.Decode(&data);if err!=nil{
 		sendAnswerError(err.Error(),0,w); return
 	}
-	user,err:= testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0,w); return
 	}
 	err= db_api.SetUserSettings(user.Id, data.Name);if err!=nil{
@@ -134,7 +134,7 @@ func setSettings(w http.ResponseWriter, r *http.Request){
 	sendAnswerSuccess(w)
 }
 
-func MainUserApi(var1 string, w http.ResponseWriter, r *http.Request) {
+func UserApi(var1 string, w http.ResponseWriter, r *http.Request) {
 	switch var1 {
 	case "enter":
 		enter(w, r)

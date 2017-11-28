@@ -8,7 +8,7 @@ type Chat struct{
 	LastSender, LastMessage string
 }
 type MessageBlock struct {
-	Chat_Id  float64
+	chatId   int64
 	Messages []Message
 }
 type Message struct {
@@ -33,7 +33,7 @@ type UserChatInfo struct{
 }
 type MessageContent struct{
 	Message *string `json:"content"`
-	Documents *[]string `json:"documents"`
+	Documents *[]int64 `json:"documents"`
 	Type *string `json:"type"`
 }
 type User struct {
@@ -63,10 +63,12 @@ type CreateDHData struct{
 
 type MessageContentToUser struct{
 	Message string `json:"content"`
-	Documents []interface{} `json:"documents"`
+	Documents []int64 `json:"documents"`
 	Type string `json:"type"`
 }
-type ForceMsgToUser struct{User_id float64; Msg NewMessageToUser}
+type ForceMsgToUser struct{
+	UserId int64
+	Msg NewMessageToUser}
 
 
 func GetModels() string{
