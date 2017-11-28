@@ -45,7 +45,7 @@ func getJson(target interface{}, r*http.Request) error {
 	return json.NewDecoder(r.Body).Decode(target)
 }
 
-func testUserToken(token string)(*db_api.User,error){
+func TestUserToken(token string)(*db_api.User,error){
 	algorithm :=  jwt.HmacSha256(secret)
 	claims, err := algorithm.Decode(token);if err != nil {
 		return nil, errors.New("token is wrong")
@@ -73,7 +73,7 @@ func getUserByToken(r *http.Request)(*db_api.User,error){
 	err:=getJson(&data, r);if err!=nil{
 		return nil,err
 	}
-	u,err:= testUserToken(data.Token);if err!=nil{
+	u,err:= TestUserToken(data.Token);if err!=nil{
 		return nil,err
 	}
 	return u,nil

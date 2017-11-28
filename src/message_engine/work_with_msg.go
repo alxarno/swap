@@ -47,18 +47,17 @@ func UserMsg(msg string)(*models.NewMessageToUser, error){
 	if err !=nil{
 		return nil,err
 	}
-	now_time :=  time.Now().Unix()
-	message.Time =  &now_time
+	message.Time =  time.Now().Unix()
 	return &message,nil
 	//if err := json.Unmarshal([]byte(msg), &user_msg); err != nil {
 	//	//panic(err)
 	//	fmt.Println(err)
 	//	return nil,err
 	//}
-	////{"Chat_Id":2,"Content":{"Message":"...","Documents":["1","2"],"Type":"u_msg"},"Token":"eyJUeXA..."}
+	////{"chatId":2,"Content":{"Message":"...","Documents":["1","2"],"Type":"u_msg"},"Token":"eyJUeXA..."}
 	//user_s_msg := make(map[string]interface{})
 	//
-	//user_s_msg["Chat_Id"] = user_msg.Content.Chat_Id
+	//user_s_msg["chatId"] = user_msg.Content.chatId
 	//user_s_msg["Content"] = user_msg.Content.Content
 	//user_s_msg["Token"] = user_msg.Content.Token
 	//jsonMessageContent, err:= json.Marshal(user_s_msg)
@@ -70,3 +69,4 @@ func UserMsg(msg string)(*models.NewMessageToUser, error){
 
 
 }
+

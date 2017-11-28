@@ -51,7 +51,7 @@ func uploadFile(w http.ResponseWriter, r*http.Request){
 	buff.name = r.FormValue("fileName")
 	buff.fileType = r.FormValue("type")
 
-	user,err:= testUserToken(buff.token);if err!=nil{
+	user,err:= TestUserToken(buff.token);if err!=nil{
 		sendAnswerError(err.Error(),0,w);return
 	}
 	file, handler, err := r.FormFile("uploadfile")
@@ -87,7 +87,7 @@ func deleteFile(w http.ResponseWriter,r *http.Request){
 	err := decoder.Decode(&data);if err != nil {
 		sendAnswerError("Failed decode data",0, w);return
 	}
-	user,err:=testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError("Failed decode data",0, w);return
 	}
 	path,err:= db_api.DeleteFile(user.Id, data.FileId);if err!=nil{
@@ -113,7 +113,7 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
 	err := decoder.Decode(&data);if err != nil {
 		sendAnswerError("Failed decode r.Body",0, w);return
 	}
-	user,err:=testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
 	path,err := db_api.CheckFileRights(user.Id, data.FileId);if err!=nil{
@@ -145,7 +145,7 @@ func getFile(w http.ResponseWriter, r *http.Request){
 	err := decoder.Decode(&data);if err != nil {
 		sendAnswerError("Failed decode data",0, w);return
 	}
-	user,err:=testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
 	path,err := db_api.CheckFileRights(user.Id, data.FileId);if err!=nil{
@@ -165,7 +165,7 @@ func getFile(w http.ResponseWriter, r *http.Request){
 	return
 }
 
-func MainFileApi(var1 string, w http.ResponseWriter, r *http.Request) {
+func FileApi(var1 string, w http.ResponseWriter, r *http.Request) {
 	switch var1 {
 	case "uploadFile":
 		uploadFile(w, r)

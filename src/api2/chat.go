@@ -19,7 +19,7 @@ func create(w http.ResponseWriter, r *http.Request){
 	if len(data.Name)<3{
 		sendAnswerError("name less then 3 char",0, w);return
 	}
-	user,err:= testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError("name less then 3 char",0, w);return
 	}
 	if data.Type == "chat"{
@@ -43,7 +43,7 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 	err:= getJson(&data,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
-	user,err:= testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
 	res,err:=db_api.CheckUserInChatDelete(user.Id, data.ChatId);if err!=nil{
@@ -71,10 +71,10 @@ func getUsers(w http.ResponseWriter, r *http.Request){
 	err:=getJson(&data,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
-	_,err= testUserToken(data.Token);if err!=nil{
+	_,err= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
-	_,err=testUserToken(data.Token);if err!=nil{
+	_,err= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
 	users,err:=db_api.GetChatUserInfo(data.ChatId);if err!=nil{
@@ -92,7 +92,7 @@ func deleteUsers(w http.ResponseWriter, r *http.Request){
 	err:=getJson(&data,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
-	user,err:= testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
 	err=db_api.CheckUserRightsInChat(user.Id,data.ChatId);if err!=nil{
@@ -113,7 +113,7 @@ func recoveryUsers(w http.ResponseWriter, r *http.Request){
 	err:=getJson(&data,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
-	user,err:= testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
 	err=db_api.CheckUserRightsInChat(user.Id,data.ChatId);if err!=nil{
@@ -133,7 +133,7 @@ func getChatSettings(w http.ResponseWriter, r *http.Request){
 	err:=getJson(&data,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
-	user,err:=testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
 	err=db_api.CheckUserRightsInChat(user.Id,data.ChatId);if err!=nil{
@@ -156,7 +156,7 @@ func setChatSettings(w http.ResponseWriter, r *http.Request){
 	err:=getJson(&data,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
-	user,err:=testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
 	err= db_api.CheckUserRightsInChat(user.Id,data.ChatId);if err!=nil{
@@ -176,7 +176,7 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 	err:=getJson(&data,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
-	user,err:=testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
 	err=db_api.DeleteUsersInChat([]int64{user.Id}, data.ChatId,true);if err!=nil{
@@ -193,7 +193,7 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 	err:=getJson(&data,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
-	user,err:=testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
 	res,err:=db_api.CheckUserInChatDelete(user.Id,data.ChatId);if err!=nil{
@@ -216,7 +216,7 @@ func deleteChatFromList(w http.ResponseWriter, r *http.Request){
 	err:=getJson(&data,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
-	user,err:=testUserToken(data.Token);if err!=nil{
+	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
 	err=db_api.DeleteChatFromList(user.Id,data.ChatId);if err!=nil{
@@ -226,7 +226,7 @@ func deleteChatFromList(w http.ResponseWriter, r *http.Request){
 	sendAnswerSuccess(w)
 }
 
-func MainChatApi(var1 string, w http.ResponseWriter, r *http.Request){
+func ChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	switch var1 {
 	case "create":
