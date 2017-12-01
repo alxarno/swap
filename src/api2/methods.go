@@ -9,6 +9,8 @@ import (
 	"github.com/Spatium-Messenger/Server/settings"
 	"github.com/Spatium-Messenger/Server/db_api"
 	"errors"
+	"reflect"
+	"strconv"
 )
 
 var secret = settings.ServiceSettings.Server.SecretKeyForToken
@@ -78,3 +80,28 @@ func getUserByToken(r *http.Request)(*db_api.User,error){
 	}
 	return u,nil
 }
+
+func TypeChanger(receiver interface{}, sender interface{}){
+	for i:=0;i<reflect.TypeOf(receiver).NumField();i++{
+		switch reflect.ValueOf(receiver).FieldByIndex([]int{i}).Kind(){
+		case reflect.Float64:
+			fmt.Println("1")
+			rField :=reflect.ValueOf(sender).Elem().FieldByIndex([]int{i})
+			v:=int64(reflect.ValueOf(receiver).FieldByIndex([]int{i}).Float())
+			if rField.IsValid() {
+				rField.SetInt(v)
+
+			}
+		case reflect.String:
+			rField :=reflect.ValueOf(sender).Elem().FieldByIndex([]int{i})
+			v:=reflect.ValueOf(receiver).FieldByIndex([]int{i}).String()
+			if rField.IsValid() {
+				rField.SetString(v)
+
+			}
+		default:
+
+		}
+	}
+}
+
