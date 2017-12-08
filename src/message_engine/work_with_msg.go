@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Spatium-Messenger/Server/models"
-	"github.com/Spatium-Messenger/Server/src/api/methods"
-	messages_work "github.com/Spatium-Messenger/Server/src/messages"
+	"github.com/Spatium-Messenger/Server/src/api2"
+	messagesWork "github.com/Spatium-Messenger/Server/src/messages"
 	"time"
-	"github.com/Spatium-Messenger/Server/settings"
+	//"github.com/Spatium-Messenger/Server/settings"
 )
-var (
-	secret = settings.ServiceSettings.Server.SecretKeyForToken
-)
+//var (
+//	secret = settings.ServiceSettings.Server.SecretKeyForToken
+//)
 func SystemMsg(msg string)(map[string]interface{}, error){
 	var final = make(map[string]interface{})
 	var user_msg_sys = struct {
@@ -24,7 +24,7 @@ func SystemMsg(msg string)(map[string]interface{}, error){
 		return nil, err
 	}
 	if user_msg_sys.Content.Type == "authoriz"{
-		_,err:= methods.TestUserToken(secret, user_msg_sys.Content.Token)
+		_,err:= api2.TestUserToken(user_msg_sys.Content.Token)
 		if err!= nil{
 			fmt.Println(err)
 			return nil, err
@@ -43,7 +43,7 @@ func UserMsg(msg string)(*models.NewMessageToUser, error){
 	//	Content models
 	//}{}
 
-	message,err:= messages_work.NewMessageAnotherStruct(&msg)
+	message,err:= messagesWork.NewMessageAnotherStruct(&msg)
 	if err !=nil{
 		return nil,err
 	}
@@ -65,7 +65,7 @@ func UserMsg(msg string)(*models.NewMessageToUser, error){
 	//	return nil,err
 	//}
 	//s_js_msg := jsonMessageContent
-	//newMsgToUser,err:=messages_work.NewMessage([]byte(s_js_msg))
+	//newMsgToUser,err:=messagesWork.NewMessage([]byte(s_js_msg))
 
 
 }

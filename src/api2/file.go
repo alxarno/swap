@@ -73,6 +73,7 @@ func uploadFile(w http.ResponseWriter, r*http.Request){
 	}
 	defer f.Close()
 	io.Copy(f, file)
+	go compressionImage(fD.fileType,fD.ratioSize,path)
 	var x = make(map[string]string)
 	x["result"]="Success"
 	x["FileId"]= strconv.FormatInt(id,10)
@@ -81,12 +82,14 @@ func uploadFile(w http.ResponseWriter, r*http.Request){
 }
 
 func deleteFile(w http.ResponseWriter,r *http.Request){
+	var rData struct{Token string`json:"token"`; FileId float64`json:"file_id"`}
 	var data struct{Token string`json:"token"`; FileId int64`json:"file_id"`}
 	decoder:= json.NewDecoder(r.Body)
 	defer r.Body.Close()
-	err := decoder.Decode(&data);if err != nil {
+	err := decoder.Decode(&rData);if err != nil {
 		sendAnswerError("Failed decode data",0, w);return
 	}
+	TypeChanger(rData,&data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError("Failed decode data",0, w);return
 	}
@@ -106,13 +109,17 @@ func deleteFile(w http.ResponseWriter,r *http.Request){
 }
 
 func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
+	var rData struct{
+		Token string`json:"token"`;
+		FileId float64`json:"file_id"`}
 	var data struct{
 		Token string`json:"token"`;
 		FileId int64`json:"file_id"`}
 	decoder:= json.NewDecoder(r.Body);defer r.Body.Close()
-	err := decoder.Decode(&data);if err != nil {
+	err := decoder.Decode(&rData);if err != nil {
 		sendAnswerError("Failed decode r.Body",0, w);return
 	}
+	TypeChanger(rData, &data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
@@ -137,14 +144,19 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
 }
 
 func getFile(w http.ResponseWriter, r *http.Request){
+	var rData struct{
+		Token string`json:"token"`
+		FileId float64`json:"file_id"`
+		Min bool`json:"min"`}
 	var data struct{
 		Token string`json:"token"`
 		FileId int64`json:"file_id"`
 		Min bool`json:"min"`}
 	decoder:= json.NewDecoder(r.Body);defer r.Body.Close()
-	err := decoder.Decode(&data);if err != nil {
+	err := decoder.Decode(&rData);if err != nil {
 		sendAnswerError("Failed decode data",0, w);return
 	}
+	TypeChanger(rData,&data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}

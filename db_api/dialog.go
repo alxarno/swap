@@ -7,7 +7,6 @@ import (
 	"errors"
 )
 
-var driver = "mysql"
 
 func GetUsersForCreateDialog(userId int64, name string)([]map[string]interface{},error){
 	//user which have dialogs with our

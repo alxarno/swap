@@ -7,9 +7,9 @@ import (
 	"golang.org/x/net/websocket"
 	"encoding/json"
 	"github.com/robbert229/jwt"
-	db_work "github.com/Spatium-Messenger/Server/db_work"
-	models "github.com/Spatium-Messenger/Server/models"
-	api "github.com/Spatium-Messenger/Server/src/api"
+	"github.com/Spatium-Messenger/Server/models"
+	api "github.com/Spatium-Messenger/Server/src/api2"
+	dbApi "github.com/Spatium-Messenger/Server/db_api"
 	"github.com/gorilla/mux"
 	"time"
 	engine "github.com/Spatium-Messenger/Server/src/message_engine"
@@ -18,7 +18,6 @@ import (
 	"path/filepath"
 	"bufio"
 	"github.com/Spatium-Messenger/Server/settings"
-	"github.com/Spatium-Messenger/Server/db_api"
 )
 var (
 	secret = settings.ServiceSettings.Server.SecretKeyForToken
@@ -60,7 +59,7 @@ func proveConnect(w http.ResponseWriter, r *http.Request){
 		log.Println(err)
 	}
 	//fmt.Println(data)
-	_,err =db_work.GetUser("login" , map[string]string{"login":data.Login, "pass":data.Pass})
+	_,err = dbApi.GetUser("login" , map[string]interface{}{"login":data.Login, "pass":data.Pass})
 	if err!=nil{
 		fmt.Fprintf(w, "Error")
 		return
@@ -127,7 +126,7 @@ func fonts(w http.ResponseWriter, r *http.Request){
 func ApiRouter(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	vars:=mux.Vars(r)
-	api.MainApiRouter(vars["key"], vars["var1"], w, r)
+	api.Api(vars["key"], vars["var1"], w, r)
 }
 
 func RemoveContents(dir string) error {
@@ -194,7 +193,7 @@ func printLogo(){
 
 
 func main(){
-	db_api.BeginDB()
+	dbApi.BeginDB()
 	//go broadcaster()
 	engine.StartCoreMessenger()
 
@@ -239,13 +238,13 @@ func main(){
 		return
 	}
 	printLogo()
-	err = db_work.OpenDB()
+	//err = dbApi
 
-	if err!=nil{
-		fmt.Println(err.Error())
-		bufio.NewReader(os.Stdin).ReadBytes('\n')
-		return
-	}
+	//if err!=nil{
+	//	fmt.Println(err.Error())
+	//	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	//	return
+	//}
 	os.Stderr.WriteString("Spatium started on \t"+ my_addres+"\n")
 
 	if settings.ServiceSettings.Server.Encryption{

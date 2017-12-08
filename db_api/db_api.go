@@ -1,13 +1,15 @@
 package db_api
-import(
+
+import (
 	"github.com/astaxie/beego/orm"
 	_ "github.com/mattn/go-sqlite3"
-	//"fmt"
 	"github.com/Spatium-Messenger/Server/settings"
-	"fmt"
+	//"github.com/AlexeyArno/Gologer"
 )
+
 var(
 	o orm.Ormer
+	driver = "mysql"
 )
 func init() {
 	// register model
@@ -24,10 +26,11 @@ func init() {
 	orm.RegisterModel(new(File))
 	orm.RegisterModel(new(Dialog))
 
-	err := orm.RunSyncdb("default", true, false)
-	if err != nil {
-		fmt.Println(err)
-	}
+	//err := orm.RunSyncdb("default", true, false)
+	//if err != nil {
+	//	//fmt.Println(err)
+	//	Gologer.PError(err.Error())
+	//}
 	// set default database
 
 }

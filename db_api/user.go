@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 )
-var Driver = "mysql"
 
 //import "fmt
 //import "github.com/Spatium-Messenger/Server/src/api/methods"
@@ -20,18 +19,22 @@ func GetUser(sType string, data map[string]interface{})(*User, error){
 	if sType =="login"{
 		h := sha256.New()
 		h.Write([]byte(data["pass"].(string)))
-		u := User{
-			Login: data["login"].(string),
-			Pass: base64.StdEncoding.EncodeToString(h.Sum(nil))}
-		err := o.Read(&u)
+		u := User{}
+		qs:= o.QueryTable("users")
+		qs.Filter("login",data["login"])
+		qs.Filter("pass", base64.StdEncoding.EncodeToString(h.Sum(nil)))
+		err:=qs.One(&u)
 		if err!=nil{
 			return nil, err
 		}
 		return &u,nil
 	}else{
-		u := User{Id: data["id"].(int64)}
-		err := o.Read(&u)
+		u := User{}
+		qs:= o.QueryTable("users")
+		qs.Filter("id",data["id"])
+		err:=qs.One(&u)
 		if err!=nil{
+			Gologer.PError(err.Error())
 			return nil, err
 		}
 		return &u,nil
@@ -40,6 +43,7 @@ func GetUser(sType string, data map[string]interface{})(*User, error){
 
 func CreateUser(login string, pass string, uName string)(int64, error){
 	u:= User{Login: login}
+	//u.Login = login
 	err := o.Read(&u)
 	if err == orm.ErrNoRows {
 		h := sha256.New()
@@ -75,7 +79,7 @@ func GetUserChats(userId int64)([]*models.UserChatInfo, error){
 	}
 	var messagesBuffer []message
 	var ChatInfoBuffer []chatInfo
-	qb, _ := orm.NewQueryBuilder(Driver)
+	qb, _ := orm.NewQueryBuilder(driver)
 	qb.Select("chats.id",
 		"chats.name",
 		"chats.author_id",
@@ -84,12 +88,15 @@ func GetUserChats(userId int64)([]*models.UserChatInfo, error){
 		"chat_users.ban").
 		From("chat_users").
 		InnerJoin("chats").On("chat_users.chat_id = chats.id").
-		Where("list_invisible = false").
-		And("user_id = ?").
-		Offset(0)
+		Where("list__invisible = ?").
+		And("user_id = ?")
+		//Offset(0)
 	sql := qb.String()
-	o.Raw(sql, userId).QueryRows(&ChatInfoBuffer)
-	msg, _ := orm.NewQueryBuilder(Driver)
+	_,err:=o.Raw(sql,false, userId).QueryRows(&ChatInfoBuffer)
+	if err!=nil{
+		return final,err
+	}
+	msg, _ := orm.NewQueryBuilder(driver)
 	msg.Select("messagesBuffer.content",
 		"messagesBuffer.time",
 		"users.name").
@@ -100,15 +107,15 @@ func GetUserChats(userId int64)([]*models.UserChatInfo, error){
 	sql = msg.String()
 	for _,v:= range ChatInfoBuffer{
 		o.Raw(sql, v.Id).QueryRows(&messagesBuffer)
-		var msg_now models.MessageContent
-		err := json.Unmarshal([]byte(messagesBuffer[0].LastMessage), msg_now)
+		var msgNow models.MessageContent
+		err := json.Unmarshal([]byte(messagesBuffer[0].LastMessage), msgNow)
 		if err!=nil{
 			Gologer.PError(err.Error())
 			continue
 		}
-		var delete_v = true
+		var deleteV = true
 		if v.Ban == false && v.Delete_Last == 0{
-			delete_v = false
+			deleteV = false
 		}
 		final = append(final,
 			&models.UserChatInfo{
@@ -117,10 +124,10 @@ func GetUserChats(userId int64)([]*models.UserChatInfo, error){
 				Type:            v.Type,
 				LastSender:      messagesBuffer[0].LastSender,
 				Admin_id:        v.Author_Id,
-				LastMessage:     &msg_now,
+				LastMessage:     &msgNow,
 				LastMessageTime: messagesBuffer[0].LastMessageTime,
 				View:            0,
-				Delete:          delete_v,
+				Delete:          deleteV,
 				Online:          0})
 	}
 	return final, nil
@@ -128,7 +135,7 @@ func GetUserChats(userId int64)([]*models.UserChatInfo, error){
 
 func GetUsersChatsIds(userId int64)([]int64, error){
 	var ids []int64
-	qb, _ := orm.NewQueryBuilder(Driver)
+	qb, _ := orm.NewQueryBuilder(driver)
 	qb.Select("chat_id").
 		From("chat_users").
 		Where("userId = ?")
@@ -152,7 +159,7 @@ func GetOnlineUsersIdsInChats(chatsId *[]int64, usersOnline *[]int64)([]int64, e
 	}
 	s1:= strings.Join(chats_in_string, ",")
 
-	qb, err := orm.NewQueryBuilder(Driver)
+	qb, err := orm.NewQueryBuilder(driver)
 	if err!= nil{
 		return nil,err
 	}
