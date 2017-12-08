@@ -36,13 +36,19 @@ func create(w http.ResponseWriter, r *http.Request){
 }
 
 func addUsers(w http.ResponseWriter, r *http.Request){
+	var sData struct{
+		Token string
+		Ids []float64
+		ChatId float64
+	}
 	var data struct{
 		Token string
 		Ids []int64
 		ChatId int64}
-	err:= getJson(&data,r);if err!=nil{
+	err:= getJson(&sData,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
+	TypeChanger(sData, &data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
@@ -65,12 +71,17 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 }
 
 func getUsers(w http.ResponseWriter, r *http.Request){
-	var data struct{
+	var pData struct{
 		Token string`json:"token"`
-		ChatId int64`json:"chat_id"`}
-	err:=getJson(&data,r);if err!=nil{
+		ChatId float64`json:"chat_id"`}
+	var data struct{
+		Token string
+		ChatId int64
+	}
+	err:=getJson(&pData,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
+	TypeChanger(pData, &data)
 	_,err= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
@@ -85,13 +96,18 @@ func getUsers(w http.ResponseWriter, r *http.Request){
 }
 
 func deleteUsers(w http.ResponseWriter, r *http.Request){
+	var rData struct{
+		Token string`json:"token"`
+		Ids []float64`json:"ids"`
+		ChatId float64`json:"chat_id"`}
 	var data struct{
 		Token string`json:"token"`
 		Ids []int64`json:"ids"`
 		ChatId int64`json:"chat_id"`}
-	err:=getJson(&data,r);if err!=nil{
+	err:=getJson(&rData,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
+	TypeChanger(rData, &data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
@@ -106,13 +122,18 @@ func deleteUsers(w http.ResponseWriter, r *http.Request){
 }
 
 func recoveryUsers(w http.ResponseWriter, r *http.Request){
+	var rData struct{
+		Token string`json:"token"`
+		Ids []float64`json:"ids"`
+		ChatId float64`json:"chat_id"`}
 	var data struct{
 		Token string`json:"token"`
 		Ids []int64`json:"ids"`
 		ChatId int64`json:"chat_id"`}
-	err:=getJson(&data,r);if err!=nil{
+	err:=getJson(&rData,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
+	TypeChanger(rData, &data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
@@ -127,12 +148,16 @@ func recoveryUsers(w http.ResponseWriter, r *http.Request){
 }
 
 func getChatSettings(w http.ResponseWriter, r *http.Request){
+	var rData struct{
+		Token string`json:"token"`
+		ChatId float64`json:"chat_id"`}
 	var data struct{
 		Token string`json:"token"`
 		ChatId int64`json:"chat_id"`}
-	err:=getJson(&data,r);if err!=nil{
+	err:=getJson(&rData,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
+	TypeChanger(rData, &data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
@@ -149,13 +174,18 @@ func getChatSettings(w http.ResponseWriter, r *http.Request){
 }
 
 func setChatSettings(w http.ResponseWriter, r *http.Request){
+	var rData struct{
+		Token string`json:"token"`
+		ChatId float64`json:"chat_id"`
+		Name string`json:"name"`}
 	var data struct{
 		Token string`json:"token"`
 		ChatId int64`json:"chat_id"`
 		Name string`json:"name"`}
-	err:=getJson(&data,r);if err!=nil{
+	err:=getJson(&rData,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
+	TypeChanger(rData, &data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
@@ -170,12 +200,16 @@ func setChatSettings(w http.ResponseWriter, r *http.Request){
 }
 
 func deleteFromDialog(w http.ResponseWriter, r *http.Request){
+	var rData struct{
+		Token string`json:"token"`
+		ChatId float64`json:"chat_id"`}
 	var data struct{
 		Token string`json:"token"`
 		ChatId int64`json:"chat_id"`}
-	err:=getJson(&data,r);if err!=nil{
+	err:=getJson(&rData,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
+	TypeChanger(rData,&data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
@@ -187,12 +221,17 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request){
 }
 
 func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
+	var rData struct{
+		Token string`json:"token"`
+		ChatId float64`json:"chat_id"`
+	}
 	var data struct{
 		Token string`json:"token"`
 		ChatId int64`json:"chat_id"`}
-	err:=getJson(&data,r);if err!=nil{
+	err:=getJson(&rData,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
+	TypeChanger(rData, &data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
@@ -210,12 +249,16 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request){
 }
 
 func deleteChatFromList(w http.ResponseWriter, r *http.Request){
+	var rData struct{
+		Token string`json:"token"`
+		ChatId float64`json:"chat_id"`}
 	var data struct{
 		Token string`json:"token"`
 		ChatId int64`json:"chat_id"`}
-	err:=getJson(&data,r);if err!=nil{
+	err:=getJson(&rData,r);if err!=nil{
 		sendAnswerError("failed decode data",0, w);return
 	}
+	TypeChanger(rData,&data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}

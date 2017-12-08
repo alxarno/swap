@@ -10,7 +10,6 @@ import (
 	"github.com/AlexeyArno/Gologer"
 )
 
-var driver ="mysql"
 
 func AddMessage(userId int64, chatId int64, content string)(int64,error){
 	res,err:= CheckUserInChatDelete(userId, chatId);if err!=nil{

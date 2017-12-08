@@ -9,14 +9,20 @@ import (
 )
 
 func getMessages(w http.ResponseWriter, r *http.Request){
+	var rData struct{
+		Token string`json:"token"`
+		LastId float64`json:"last_id"`
+		ChatId float64`json:"chat_id"`
+	}
 	var data struct{
 		Token string`json:"token"`
 		LastId int64`json:"last_id"`
 		ChatId int64`json:"chat_id"`
 	}
-	err:=getJson(&data,r);if err!=nil{
+	err:=getJson(&rData,r);if err!=nil{
 		sendAnswerError(err.Error(),0,w);return
 	}
+	TypeChanger(rData,&data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0,w);return
 	}

@@ -1,15 +1,6 @@
-cd src/api/chat
+cd src/api2
 go install
 cd ..
-cd user
-go install
-cd ..
-cd methods
-go install
-cd ..
-go install
-cd ..
-go install
 cd messages
 go install
 cd ..
@@ -20,7 +11,7 @@ cd ..
 cd models
 go install
 cd ..
-cd db_work
+cd db_api
 go install
 cd ..
 cd settings

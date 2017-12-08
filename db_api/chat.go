@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 )
 
-var driver = "mysql"
 
 func CreateChat(name string, AuthorId int64)(int64,error){
 	u:= User{Id: AuthorId}

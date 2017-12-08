@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/Spatium-Messenger/Server/db_api"
 	"fmt"
+	"github.com/AlexeyArno/Gologer"
 )
 
 func enter(w http.ResponseWriter, r *http.Request){
@@ -16,26 +17,28 @@ func enter(w http.ResponseWriter, r *http.Request){
 		sendAnswerError("Wrong data", 0, w)
 		return
 	}
-	user, err:=db_api.GetUser("login", map[string]interface{}{"login": data.Login})
+	user, err:=db_api.GetUser("login", map[string]interface{}{"login": data.Login, "pass":data.Pass})
 	if err!=nil{
+		Gologer.PError(err.Error())
 		sendAnswerError("User not found", 0, w)
 		return
 	}
-	if user.CheckPass(data.Pass){
-		token,err:= generateToken(user.Id);if err!=nil{
-			sendAnswerError("Failed token generator", 0, w)
-			return
-		}
-		var x = make(map[string]string)
-		x["token"]=token
-		x["result"]="Success"
-		finish, _:=json.Marshal(x)
-		fmt.Fprintf(w, string(finish))
-		return
-	}else{
-		sendAnswerError("Pass is invalid", 0, w)
+
+	//if user.CheckPass(data.Pass){
+	token,err:= generateToken(user.Id);if err!=nil{
+		sendAnswerError("Failed token generator", 0, w)
 		return
 	}
+	var x = make(map[string]string)
+	x["token"]=token
+	x["result"]="Success"
+	finish, _:=json.Marshal(x)
+	fmt.Fprintf(w, string(finish))
+	return
+	//}else{
+	//	sendAnswerError("Pass is invalid", 0, w)
+	//	return
+	//}
 }
 
 func proveToken(w http.ResponseWriter, r *http.Request){
@@ -47,7 +50,7 @@ func proveToken(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	var x = make(map[string]interface{})
-	_,err= TestUserToken(userGetToken.Token);if err!=nil{
+	_,err= TestUserToken(userGetToken.Token);if err==nil{
 		x["result"]="Success"
 	}else{
 		x["result"]="Error"
@@ -93,7 +96,12 @@ func getMyChats(w http.ResponseWriter, r *http.Request){
 	chats,err:= db_api.GetUserChats(user.Id);if err!=nil{
 		sendAnswerError(err.Error(),0,w); return
 	}
-	finish, _:=json.Marshal(chats)
+	var finish []byte
+	if chats==nil{
+		finish=[]byte("[]")
+	}else{
+		finish, _=json.Marshal(chats)
+	}
 	fmt.Fprintf(w, string(finish))
 }
 
