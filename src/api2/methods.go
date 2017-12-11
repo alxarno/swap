@@ -13,7 +13,12 @@ import (
 	//"strconv"
 )
 
-var secret = settings.ServiceSettings.Server.SecretKeyForToken
+func getToken()(string,error){
+	secret,err := settings.GetSettings();if err!=nil{
+		return "",err
+	}
+	return secret.Server.SecretKeyForToken,nil
+}
 
 func sendAnswerError(eType string, errCode int, w http.ResponseWriter){
 	var answer = make(map[string]interface{})
@@ -32,6 +37,9 @@ func sendAnswerSuccess(w http.ResponseWriter){
 }
 
 func generateToken(id int64) (string,error){
+	secret,err:= getToken();if err!=nil{
+		return "",err
+	}
 	algorithm :=  jwt.HmacSha256(secret)
 	claims := jwt.NewClaim()
 	claims.Set("id", id)
@@ -48,6 +56,9 @@ func getJson(target interface{}, r*http.Request) error {
 }
 
 func TestUserToken(token string)(*db_api.User,error){
+	secret,err:= getToken();if err!=nil{
+		return nil,err
+	}
 	algorithm :=  jwt.HmacSha256(secret)
 	claims, err := algorithm.Decode(token);if err != nil {
 		return nil, errors.New("token is wrong")

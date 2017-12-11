@@ -18,12 +18,8 @@ import (
 	"path/filepath"
 	"bufio"
 	"github.com/Spatium-Messenger/Server/settings"
+	"flag"
 )
-var (
-	secret = settings.ServiceSettings.Server.SecretKeyForToken
-	//Nmessages =engine.Messages
-)
-
 
 
 
@@ -149,6 +145,10 @@ func RemoveContents(dir string) error {
 }
 
 func downloadFile(w http.ResponseWriter, r *http.Request){
+	sett,err:= settings.GetSettings();if err!=nil{
+		w.Write([]byte("Error with security"));return
+	}
+	secret := sett.Server.SecretKeyForToken
 	vars:=mux.Vars(r)
 	algorithm :=  jwt.HmacSha256(secret)
 	claims, err := algorithm.Decode(vars["link"])
@@ -193,7 +193,22 @@ func printLogo(){
 
 
 func main(){
-	dbApi.BeginDB()
+	test := flag.Bool("test", false, "a bool")
+	flag.Parse()
+	_,err := settings.GetSettings();if err!=nil{
+		fmt.Println(err.Error())
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+		return
+	}
+	if *test{
+		settings.SetTestVar(true)
+	}
+
+	err=dbApi.BeginDB();if err!=nil{
+		fmt.Println(err.Error())
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+		return
+	}
 	//go broadcaster()
 	engine.StartCoreMessenger()
 
@@ -220,24 +235,23 @@ func main(){
 		os.Stderr.WriteString("Oops: " + err.Error() + "\n")
 		os.Exit(1)
 	}
-	err = settings.LoadSettings()
 
+	var clearIps string
 	for _, a := range addrs {
 		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
 				my_addres+=ipnet.IP.String()
 				my_addres+=":"+settings.ServiceSettings.Server.Host+"\t"
+				if *test{
+					clearIps = ipnet.IP.String()+":"+settings.ServiceSettings.Server.Host
+				}
 			}
 		}
 	}
 
 
-	if err!=nil{
-		fmt.Println(err.Error())
-		bufio.NewReader(os.Stdin).ReadBytes('\n')
-		return
-	}
-	printLogo()
+
+
 	//err = dbApi
 
 	//if err!=nil{
@@ -245,13 +259,19 @@ func main(){
 	//	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	//	return
 	//}
-	os.Stderr.WriteString("Spatium started on \t"+ my_addres+"\n")
+	if *test{
+		os.Stderr.WriteString(clearIps)
+	}else{
+		printLogo()
+		os.Stderr.WriteString("Spatium started on \t"+ my_addres+"\n")
+	}
+
 
 	if settings.ServiceSettings.Server.Encryption{
 		log.Fatal("ListenAndServeTLS: ",http.ListenAndServeTLS(
 			":"+ settings.ServiceSettings.Server.Host,
-			settings.ServiceSettings.Server.Cert_file,
-			settings.ServiceSettings.Server.Key_file,
+			settings.ServiceSettings.Server.CertFile,
+			settings.ServiceSettings.Server.KeyFile,
 			myRouter))
 	}else{
 		log.Fatal("ListenAndServe: ", http.ListenAndServe(

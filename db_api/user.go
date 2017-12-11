@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"fmt"
 )
 
 //import "fmt
@@ -32,9 +33,7 @@ func GetUser(sType string, data map[string]interface{})(*User, error){
 		u := User{}
 		qs:= o.QueryTable("users")
 		qs.Filter("id",data["id"])
-		err:=qs.One(&u)
-		if err!=nil{
-			Gologer.PError(err.Error())
+		err:=qs.One(&u);if err!=nil{
 			return nil, err
 		}
 		return &u,nil
@@ -42,17 +41,17 @@ func GetUser(sType string, data map[string]interface{})(*User, error){
 }
 
 func CreateUser(login string, pass string, uName string)(int64, error){
-	u:= User{Login: login}
-	//u.Login = login
-	err := o.Read(&u)
+	u:= User{}
+	qs:= o.QueryTable("users")
+	qs.Filter("login",login)
+	err:=qs.One(&u)
 	if err == orm.ErrNoRows {
 		h := sha256.New()
 		h.Write([]byte(pass))
 		u.Pass = base64.StdEncoding.EncodeToString(h.Sum(nil))
 		u.Name = uName
 		u.Login = login
-		id, err := o.Insert(&u)
-		if err != nil {
+		id, err := o.Insert(&u);if err != nil {
 			Gologer.PError(err.Error())
 			return 0,err
 		}
@@ -72,12 +71,11 @@ func GetUserChats(userId int64)([]*models.UserChatInfo, error){
 		Ban bool
 	}
 	type message struct{
-		Chat_id int64
 		LastSender string
 		LastMessage string
 		LastMessageTime int64
 	}
-	var messagesBuffer []message
+	var messagesBuffer []orm.Params
 	var ChatInfoBuffer []chatInfo
 	qb, _ := orm.NewQueryBuilder(driver)
 	qb.Select("chats.id",
@@ -97,18 +95,22 @@ func GetUserChats(userId int64)([]*models.UserChatInfo, error){
 		return final,err
 	}
 	msg, _ := orm.NewQueryBuilder(driver)
-	msg.Select("messagesBuffer.content",
-		"messagesBuffer.time",
+	msg.Select("messages.content",
+		"messages.time",
 		"users.name").
-		From("messagesBuffer").
+		From("messages").
 		InnerJoin("users").
-		On("messagesBuffer.author_id = users.id").
-		Where("messagesBuffer.chat_id = ?").OrderBy("messagesBuffer.time").Desc().Limit(1)
+		On("messages.author_id = users.id").
+		Where("messages.chat_id = ?").OrderBy("messages.time").Desc().Limit(1)
 	sql = msg.String()
 	for _,v:= range ChatInfoBuffer{
-		o.Raw(sql, v.Id).QueryRows(&messagesBuffer)
+		o.Raw(sql, v.Id).Values(&messagesBuffer)
+		if len(messagesBuffer)==0{
+			continue
+		}
+		fmt.Println(messagesBuffer)
 		var msgNow models.MessageContent
-		err := json.Unmarshal([]byte(messagesBuffer[0].LastMessage), msgNow)
+		err := json.Unmarshal([]byte(messagesBuffer[0]["content"].(string)), &msgNow)
 		if err!=nil{
 			Gologer.PError(err.Error())
 			continue
@@ -117,15 +119,18 @@ func GetUserChats(userId int64)([]*models.UserChatInfo, error){
 		if v.Ban == false && v.Delete_Last == 0{
 			deleteV = false
 		}
+		t, err := strconv.ParseInt( messagesBuffer[0]["time"].(string), 10, 64); if err!=nil{
+			continue
+		}
 		final = append(final,
 			&models.UserChatInfo{
 				ID:              v.Id,
 				Name:            v.Name,
 				Type:            v.Type,
-				LastSender:      messagesBuffer[0].LastSender,
+				LastSender:      messagesBuffer[0]["name"].(string),
 				Admin_id:        v.Author_Id,
 				LastMessage:     &msgNow,
-				LastMessageTime: messagesBuffer[0].LastMessageTime,
+				LastMessageTime: t,
 				View:            0,
 				Delete:          deleteV,
 				Online:          0})

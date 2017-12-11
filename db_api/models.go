@@ -9,7 +9,7 @@ type User struct {
 	Login string        `orm:"size(32)"`
 	Name string         `orm:"size(100)"`
 	Pass string         `orm:"size(45)"`
-	Chats []*chatUser   `orm:"reverse(many)"`
+	Chats []*ChatUser   `orm:"reverse(many)"`
 	Messages []*Message `orm:"reverse(many)"`
 	Files []*File       `orm:"reverse(many)"`
 	MyChats []*Chat     `orm:"reverse(many)"`
@@ -35,7 +35,7 @@ func (u *Chat) TableName() string {
 }
 
 
-type chatUser struct {
+type ChatUser struct {
 	Id   int64`orm:"auto"`
 	User *User`orm:"rel(fk)"`
 	Chat *Chat`orm:"rel(fk)"`
@@ -46,7 +46,7 @@ type chatUser struct {
 	List_Invisible bool `orm:"default(false)"`
 }
 
-func (u *chatUser) TableName() string {
+func (c *ChatUser) TableName() string {
 	return "chat_users"
 }
 
@@ -89,4 +89,15 @@ type Dialog struct{
 func (u *Dialog) TableName() string {
 	// db table name
 	return "dialogs"
+}
+
+type System struct{
+	Id   int64`orm:"auto"`
+	Date int64`orm:"default(0)"`
+	Version string
+}
+
+func (u *System) TableName() string {
+	// db table name
+	return "sys"
 }

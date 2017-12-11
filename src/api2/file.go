@@ -126,6 +126,10 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
 	path,err := db_api.CheckFileRights(user.Id, data.FileId);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
+	sett,err:= settings.GetSettings();if err!=nil{
+		sendAnswerError(err.Error(),0, w);return
+	}
+	secret := sett.Server.SecretKeyForToken
 	algorithm :=  jwt.HmacSha256(secret)
 	claims := jwt.NewClaim()
 	claims.Set("path", path)

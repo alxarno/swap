@@ -65,7 +65,7 @@ func TestInsertUserInChat(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	ChatUser:= chatUser{User: &User{Id:UId}, Chat:&Chat{Id:id}}
+	ChatUser:= ChatUser{User: &User{Id:UId}, Chat:&Chat{Id:id}}
 	err = o.Read(ChatUser); if err!=nil{
 		t.Error(err)
 		return
@@ -91,7 +91,7 @@ func TestCheckUserInChatDelete(t *testing.T) {
 	if res{
 		t.Error("wrong answer, user is undeleted")
 	}
-	ChatUser:= chatUser{User:&u,Chat:&Chat{Id: ch.Id}}
+	ChatUser:= ChatUser{User:&u,Chat:&Chat{Id: ch.Id}}
 	err=o.Read(&ChatUser);if err!=nil{
 		t.Error(err)
 	}
@@ -171,7 +171,7 @@ func TestDeleteUsersInChat(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		UserChat:= chatUser{User:&u1, Chat:&Chat{Id: ChId}}
+		UserChat:= ChatUser{User:&u1, Chat:&Chat{Id: ChId}}
 		id2,err := o.Insert(&UserChat); if err!=nil{
 			t.Error(err)
 			return
@@ -203,7 +203,7 @@ func TestDeleteUsersInChat(t *testing.T) {
 
 	//	Delete all
 	for _,v :=range UserChats{
-		o.Delete(&chatUser{Id: v})
+		o.Delete(&ChatUser{Id: v})
 	}
 	for _,v :=range users{
 		o.Delete(&User{Id: v})
