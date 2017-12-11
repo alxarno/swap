@@ -42,7 +42,7 @@ func TestGetOnlineUsersIdsInChats(t *testing.T) {
 			return
 		}
 
-		cu := chatUser{User: &u, Chat: &c}
+		cu := ChatUser{User: &u, Chat: &c}
 		cu_id, err := o.Insert(&cu)
 		if err != nil {
 			Gologer.PError("Failed insert")
@@ -69,7 +69,7 @@ func TestGetOnlineUsersIdsInChats(t *testing.T) {
 		}
 	}
 	for _,v := range cus{
-		o.Delete(&chatUser{Id: v})
+		o.Delete(&ChatUser{Id: v})
 	}
 	for _,v := range chats{
 		o.Delete(&Chat{Id: v})
@@ -95,7 +95,7 @@ func TestGetUsersChatsIds(t *testing.T) {
 			Gologer.PError("Failed insert")
 			return
 		}
-		cu := chatUser{User: &u, Chat: &c}
+		cu := ChatUser{User: &u, Chat: &c}
 		cu_id, err := o.Insert(&cu)
 		if err != nil {
 			Gologer.PError("Failed insert")
@@ -120,7 +120,7 @@ func TestGetUsersChatsIds(t *testing.T) {
 		}
 	}
 	for _,v := range cus{
-		o.Delete(&chatUser{Id: v})
+		o.Delete(&ChatUser{Id: v})
 	}
 	for _,v := range chats{
 		o.Delete(&Chat{Id: v})

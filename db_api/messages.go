@@ -11,7 +11,7 @@ import (
 )
 
 
-func AddMessage(userId int64, chatId int64, content string)(int64,error){
+func addMessage(userId int64, chatId int64, content string)(int64,error){
 	res,err:= CheckUserInChatDelete(userId, chatId);if err!=nil{
 		return 0,err
 	}
@@ -34,10 +34,10 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64)([]*model
 		Login string
 		Time int64
 	}
-	templates := []MessageTemplate{}
-	final := []*models.NewMessageToUser{}
-	const MAX_TIME = 9999999999
-	chatUser := chatUser{User:&User{Id: userId}, Chat:&Chat{Id:chatId}}
+	var templates []MessageTemplate
+	var final []*models.NewMessageToUser
+	const MAXTIME = 9999999999
+	chatUser := ChatUser{User:&User{Id: userId}, Chat:&Chat{Id:chatId}}
 	err:=o.Read(&chatUser);if err!=nil{
 		return final,errors.New("user is not in chat")
 	}
@@ -59,18 +59,14 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64)([]*model
 	if chatUser.Chat.Type!=2{
 		for i := 0; i < len(deltimes); i++ {
 			if i == 0 && deltimes[0][0] == 0 {
-				//messages_queries = append(messages_queries, fmt.Sprintf("((messages.time>=%d) and  (messages.time<=%d)) ", i_start, MAX_TIME))
-				qb.And(fmt.Sprintf("((messages.time>=%d) and  (messages.time<=%d)) ", chatUser.Start, MAX_TIME))
+				qb.And(fmt.Sprintf("((messages.time>=%d) and  (messages.time<=%d)) ", chatUser.Start, MAXTIME))
 			} else {
 				if i == 0 {
-					//messages_queries = append(messages_queries, fmt.Sprintf("((messages.time>=%d) and (messages.time<=%d)) ", i_start, r_deltimes[i][0]))
 					qb.And(fmt.Sprintf("((messages.time>=%d) and  (messages.time<=%d)) ", chatUser.Start, deltimes[i][0]))
 					} else if i > 0 {
-					//messages_queries = append(messages_queries, fmt.Sprintf("((messages.time>=%d) and (messages.time<=%d)) ", r_deltimes[i-1][1], r_deltimes[i][0]))
 					qb.And(fmt.Sprintf("((messages.time>=%d) and  (messages.time<=%d)) ", deltimes[i-1][1], deltimes[i][0]))
 					if deltimes[i][0] == 0 {
-						//messages_queries = append(messages_queries, fmt.Sprintf("((messages.time>=%d) and (messages.time<=%d)) ", r_deltimes[i-1][1], MAX_TIME))
-						qb.And(fmt.Sprintf("((messages.time>=%d) and  (messages.time<=%d)) ", deltimes[i-1][1], MAX_TIME))
+						qb.And(fmt.Sprintf("((messages.time>=%d) and  (messages.time<=%d)) ", deltimes[i-1][1], MAXTIME))
 					}
 				}
 			}

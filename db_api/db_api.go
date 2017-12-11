@@ -4,39 +4,59 @@ import (
 	"github.com/astaxie/beego/orm"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/Spatium-Messenger/Server/settings"
-	//"github.com/AlexeyArno/Gologer"
+	"time"
+	"fmt"
 )
 
 var(
 	o orm.Ormer
 	driver = "mysql"
 )
-func init() {
+func LoadDb() {
 	// register model
+
+}
+
+func createDB()(error){
+	err := orm.RunSyncdb("default", true, false);if err != nil {
+		return err
+	}
+	o=orm.NewOrm()
+	var sys System
+	sys.Date = time.Now().Unix()
+	sys.Version = "0.0.1"
+	_, err = o.Insert(&sys);if err == nil {
+		return err
+	}
+	return nil
+}
+
+func BeginDB()(error){
 	orm.RegisterDriver("sqlite3", orm.DRSqlite)
-	if settings.ServiceSettings.Server.Test {
+	sett,err:=settings.GetSettings();if err!=nil{
+		panic(err)
+	}
+	fmt.Println( sett.Server.Test)
+	if sett.Server.Test{
+		orm.Debug = true
 		orm.RegisterDataBase("default", "sqlite3", "file:test.db")
 	}else{
 		orm.RegisterDataBase("default", "sqlite3", "file:data.db")
 	}
 	orm.RegisterModel(new(User))
 	orm.RegisterModel(new(Chat))
-	orm.RegisterModel(new(chatUser))
+	orm.RegisterModel(new(ChatUser))
 	orm.RegisterModel(new(Message))
 	orm.RegisterModel(new(File))
+	orm.RegisterModel(new(System))
 	orm.RegisterModel(new(Dialog))
 
-	//err := orm.RunSyncdb("default", true, false)
-	//if err != nil {
-	//	//fmt.Println(err)
-	//	Gologer.PError(err.Error())
-	//}
-	// set default database
-
-}
-
-func BeginDB(){
-	//if !settings.Settings.Server.Test {
-		o = orm.NewOrm()
-	//}
+	o = orm.NewOrm()
+	sys:= System{}
+	err = o.QueryTable("sys").Filter("id",1).One(&sys);if err != nil{
+		err=createDB();if err!=nil{
+			return err
+		}
+	}
+	return nil
 }

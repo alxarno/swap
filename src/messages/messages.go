@@ -3,12 +3,11 @@ package messages
 import (
 	"encoding/json"
 	"github.com/Spatium-Messenger/Server/models"
-	"github.com/Spatium-Messenger/Server/settings"
 	"fmt"
 	"github.com/Spatium-Messenger/Server/src/api2"
 	"github.com/Spatium-Messenger/Server/db_api"
 )
-var secret = settings.ServiceSettings.Server.SecretKeyForToken
+
 
 
 type NewMessageFormUser struct{
@@ -54,7 +53,7 @@ func NewMessage(userQuest *string)(models.NewMessageToUser, error){
 	if err!=nil{
 		return  send,err
 	}
-	messageId,err:= db_api.AddMessage(user.Id, data.chatId, string(content))
+	messageId,err:= db_api.SendMessage(user.Id, data.chatId, string(content), 0)
 	if err != nil{
 		return send,err
 	}
@@ -119,7 +118,7 @@ func NewMessageAnotherStruct(userQuest *string)(models.NewMessageToUser, error){
 		fmt.Println("113")
 		return  send,err
 	}
-	mId,err:= db_api.AddMessage(user.Id, data.Content.chatId, string(content))
+	mId,err:= db_api.SendMessage(user.Id, data.Content.chatId, string(content),0)
 	//f_m_id:= float64(mId)
 	if err != nil{
 		fmt.Println(err.Error())

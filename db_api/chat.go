@@ -11,8 +11,9 @@ import (
 
 
 func CreateChat(name string, AuthorId int64)(int64,error){
-	u:= User{Id: AuthorId}
-	err:= o.Read(&u);if err!=nil{
+	u:= User{}
+	qs:= o.QueryTable("users").Filter("id",AuthorId)
+	err:=qs.One(&u);if err!=nil{
 		return 0,err
 	}
 	c:= Chat{Name: name, Author: &u, Type: 0}
@@ -26,8 +27,9 @@ func CreateChat(name string, AuthorId int64)(int64,error){
 }
 
 func CreateChannel(name string, AuthorId int64)(int64,error){
-	u:= User{Id: AuthorId}
-	err:= o.Read(&u);if err!=nil{
+	u:= User{}
+	qs:= o.QueryTable("users").Filter("id",AuthorId)
+	err:=qs.One(&u);if err!=nil{
 		return 0,err
 	}
 	c:= Chat{Name: name, Author: &u, Type: 2}
@@ -38,26 +40,40 @@ func CreateChannel(name string, AuthorId int64)(int64,error){
 }
 
 func CheckUserInChatDelete(UserId int64, ChatId int64)(bool,error){
-	UserInChat := chatUser{User:&User{Id: UserId}, Chat:&Chat{Id: ChatId}}
-	err:= o.Read(&UserInChat);if err!=nil{
+	var cUser ChatUser
+	qs := o.QueryTable("chat_users").Filter("user_id", UserId)
+	err:=qs.Filter("chat_id", ChatId).One(&cUser);if err!=nil{
 		return false,err
 	}
-	if UserInChat.List_Invisible|| UserInChat.Delete_last !=0{
+	if cUser.List_Invisible|| cUser.Delete_last !=0{
 		return true,nil
 	}
 	return false,nil
 }
 
 func InsertUserInChat(UserId int64, ChatId int64)(error){
-	ChatUser:= chatUser{User:&User{Id:UserId}, Chat: &Chat{Id:ChatId}}
-	err:=o.Read(&ChatUser);if err==nil{
+	var cUser ChatUser
+	qs := o.QueryTable("chat_users").Filter("user_id", UserId)
+	err:=qs.Filter("chat_id", ChatId).One(&cUser);if err==nil{
 		return errors.New("user already in chat")
 	}
-	DeletePoints := make([][]int64, 0)
-	DeletePoints[0] = []int64{0,0}
-	ChatUser.Start = time.Now().Unix()
-	ChatUser.SetDeletePoints(DeletePoints)
-	_,err = o.Insert(&ChatUser);if err!=nil{
+
+	cUser.User = &User{Id: UserId}
+	cUser.Chat = &Chat{Id: ChatId}
+
+	var DeletePoints [][]int64
+	DeletePoints = append(DeletePoints, []int64{0,0})
+	cUser.Start = time.Now().Unix()
+	cUser.SetDeletePoints(DeletePoints)
+	_,err = o.Insert(&cUser);if err!=nil{
+		return err
+	}
+	content:= cUser.User.Name+" создал(а) беседу"
+	if cUser.Chat.Type == 2{
+		content= cUser.User.Name+" создал(а) канал"
+	}
+	_,err=SendMessage(ChatId,UserId,content,1);if err!=nil{
+		Gologer.PError(err.Error())
 		return err
 	}
 	return nil
@@ -133,7 +149,7 @@ func GetChatUserInfo(ChatId int64)(string,error){
 
 func DeleteUsersInChat(UserIds []int64, ChatId int64, DeleteYourself bool)(error){
 	for _,v:= range UserIds{
-		ch_u:= chatUser{User: &User{Id: v}, Chat:&Chat{Id: ChatId}, Delete_last: 0}
+		ch_u:= ChatUser{User: &User{Id: v}, Chat:&Chat{Id: ChatId}, Delete_last: 0}
 		err:= o.Read(&ch_u);if err!=nil{
 			Gologer.PError(err.Error())
 			continue
@@ -163,7 +179,7 @@ func DeleteUsersInChat(UserIds []int64, ChatId int64, DeleteYourself bool)(error
 
 func RecoveryUsersInChat(UserIds []int64, ChatId int64, RecoveryYourself bool)(error){
 	for _,v:= range UserIds{
-		ch_u:= chatUser{User: &User{Id: v}, Chat:&Chat{Id: ChatId}}
+		ch_u:= ChatUser{User: &User{Id: v}, Chat:&Chat{Id: ChatId}}
 		err:= o.Read(&ch_u);if err!=nil{
 			Gologer.PError(err.Error())
 			continue
@@ -224,7 +240,7 @@ func SetNameChat(ChatId int64, name string)(error){
 }
 
 func DeleteChatFromList(UserId int64, ChatId int64)(error){
-	chatUser := chatUser{User:&User{Id: UserId}, Chat: &Chat{Id: ChatId}}
+	chatUser := ChatUser{User:&User{Id: UserId}, Chat: &Chat{Id: ChatId}}
 	err:= o.Read(&chatUser);if err!=nil{
 		Gologer.PError(err.Error())
 		return err
@@ -244,7 +260,7 @@ func FullDeleteChat(ChatId int64)(error){
 	err:= o.Read(&ch); if err!=nil{
 		return err
 	}
-	ChatUser:= chatUser{Chat:&ch, User:&User{Id: ch.Author.Id}}
+	ChatUser:= ChatUser{Chat:&ch, User:&User{Id: ch.Author.Id}}
 	err= o.Read(&ChatUser); if err!=nil{
 		return err
 	}
