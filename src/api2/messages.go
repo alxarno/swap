@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"encoding/json"
 	"github.com/Spatium-Messenger/Server/models"
+	//"github.com/AlexeyArno/Gologer"
 )
 
 func getMessages(w http.ResponseWriter, r *http.Request){
 	var rData struct{
 		Token string`json:"token"`
-		LastId float64`json:"last_id"`
+		LastId float64`json:"last_index"`
 		ChatId float64`json:"chat_id"`
 	}
 	var data struct{
 		Token string`json:"token"`
-		LastId int64`json:"last_id"`
+		LastId int64`json:"last_index"`
 		ChatId int64`json:"chat_id"`
 	}
 	err:=getJson(&rData,r);if err!=nil{
@@ -26,11 +27,9 @@ func getMessages(w http.ResponseWriter, r *http.Request){
 	user,err:= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0,w);return
 	}
-	_,err=db_api.CheckUserInChatDelete(user.Id, data.ChatId);if err!=nil{
-		sendAnswerError(err.Error(),0,w);return
-	}
+	//There is no need check user is in chat, because func "GetMessage" check it auto
 	var mes []*models.NewMessageToUser
-	if data.LastId!=0{
+	if data.LastId==0{
 		mes,err=db_api.GetMessages(user.Id,data.ChatId,false,0);if err!=nil{
 			sendAnswerError(err.Error(),0,w);return
 		}

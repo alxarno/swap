@@ -43,7 +43,7 @@ func UserMsg(msg string)(*models.NewMessageToUser, error){
 	//	Content models
 	//}{}
 
-	message,err:= messagesWork.NewMessageAnotherStruct(&msg)
+	message,err:= messagesWork.NewMessageAnother(&msg)
 	if err !=nil{
 		return nil,err
 	}

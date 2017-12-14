@@ -66,6 +66,7 @@ type MessageContentToUser struct{
 	Documents []int64 `json:"documents"`
 	Type string `json:"type"`
 }
+
 type ForceMsgToUser struct{
 	UserId int64
 	Msg NewMessageToUser}

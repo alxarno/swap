@@ -7,6 +7,7 @@ import (
 	"time"
 	"github.com/astaxie/beego/orm"
 	"encoding/json"
+	"strconv"
 )
 
 
@@ -40,6 +41,8 @@ func CreateChannel(name string, AuthorId int64)(int64,error){
 }
 
 func CheckUserInChatDelete(UserId int64, ChatId int64)(bool,error){
+	Gologer.PInfo(strconv.FormatInt(UserId,10))
+	Gologer.PInfo(strconv.FormatInt(ChatId,10))
 	var cUser ChatUser
 	qs := o.QueryTable("chat_users").Filter("user_id", UserId)
 	err:=qs.Filter("chat_id", ChatId).One(&cUser);if err!=nil{
@@ -80,16 +83,18 @@ func InsertUserInChat(UserId int64, ChatId int64)(error){
 }
 
 func GetChatType(ChatId int64)(int,error){
-	c:=Chat{Id: ChatId}
-	err:=o.Read(&c);if err!=nil{
+	var c Chat
+	qs := o.QueryTable("chat_users").Filter("id", ChatId)
+	err:=qs.Filter("chat_id", ChatId).One(&c);if err!=nil{
 		return 0,err
 	}
 	return c.Type,nil
 }
 
 func CheckUserRightsInChat(UserId int64, ChatId int64)(error){
-	c:= Chat{Id: ChatId}
-	err:= o.Read(&c);if err!=nil{
+	var c Chat
+	qs := o.QueryTable("chat_users").Filter("id", ChatId)
+	err:=qs.Filter("chat_id", ChatId).One(&c);if err!=nil{
 		return err
 	}
 	if c.Author.Id != UserId{
@@ -104,8 +109,7 @@ func GetChatsUsers(ChatId int64)([]int64,error){
 
 	qb.Select("user_id").
 		From("chat_users").
-		Where("chat_id = ?").
-		Offset(0)
+		Where("chat_id = ?")
 
 	sql := qb.String()
 
@@ -149,25 +153,31 @@ func GetChatUserInfo(ChatId int64)(string,error){
 
 func DeleteUsersInChat(UserIds []int64, ChatId int64, DeleteYourself bool)(error){
 	for _,v:= range UserIds{
-		ch_u:= ChatUser{User: &User{Id: v}, Chat:&Chat{Id: ChatId}, Delete_last: 0}
-		err:= o.Read(&ch_u);if err!=nil{
+		//c := ChatUser{User: &User{Id: v}, Chat:&Chat{Id: ChatId}, Delete_last: 0}
+		//err:= o.Read(&c);if err!=nil{
+		//	Gologer.PError(err.Error())
+		//	continue
+		//}
+		var c ChatUser
+		qs := o.QueryTable("chat_users").Filter("user_id", v)
+		err:=qs.Filter("chat_id", ChatId).Filter("delete_last",0).One(&c);if err!=nil{
 			Gologer.PError(err.Error())
 			continue
 		}
-		data_points,err:= ch_u.GetDeletePoints();if err!=nil{
-			Gologer.PError(err.Error()+" in user data :"+ch_u.Delete_points)
+		dataPoints,err:= c.GetDeletePoints();if err!=nil{
+			Gologer.PError(err.Error()+" in user data :"+ c.Delete_points)
 			continue
 		}
-		if data_points[len(data_points)-1][0]==0 {
-			data_points[len(data_points)-1][0] = time.Now().Unix()
-			ch_u.Delete_last = data_points[len(data_points)-1][0]
+		if dataPoints[len(dataPoints)-1][0]==0 {
+			dataPoints[len(dataPoints)-1][0] = time.Now().Unix()
+			c.Delete_last = dataPoints[len(dataPoints)-1][0]
 			//fmt.Println(query)
 			if DeleteYourself{
-				ch_u.Ban = false
+				c.Ban = false
 			}else{
-				ch_u.Ban = true
+				c.Ban = true
 			}
-			err := ch_u.SetDeletePoints(data_points);if err!=nil{
+			err := c.SetDeletePoints(dataPoints);if err!=nil{
 				Gologer.PError("fail set delete points: "+err.Error())
 				continue
 			}
@@ -179,33 +189,34 @@ func DeleteUsersInChat(UserIds []int64, ChatId int64, DeleteYourself bool)(error
 
 func RecoveryUsersInChat(UserIds []int64, ChatId int64, RecoveryYourself bool)(error){
 	for _,v:= range UserIds{
-		ch_u:= ChatUser{User: &User{Id: v}, Chat:&Chat{Id: ChatId}}
-		err:= o.Read(&ch_u);if err!=nil{
+		var c ChatUser
+		qs := o.QueryTable("chat_users").Filter("user_id", v)
+		err:=qs.Filter("chat_id", ChatId).Filter("delete_last",0).One(&c);if err!=nil{
 			Gologer.PError(err.Error())
 			continue
 		}
 		if RecoveryYourself{
-			if ch_u.Ban{
+			if c.Ban{
 				continue
 			}
 		}else{
-			ch_u.Ban = false
+			c.Ban = false
 		}
 
-		delete_points,err:= ch_u.GetDeletePoints();if err!=nil{
-			Gologer.PError(err.Error()+" in user data :"+ch_u.Delete_points)
+		deletePoints,err:= c.GetDeletePoints();if err!=nil{
+			Gologer.PError(err.Error()+" in user data :"+ c.Delete_points)
 			continue
 		}
-		if delete_points[len(delete_points)-1][1]==0 {
-			delete_points[len(delete_points)-1][1] = time.Now().Unix()
-			delete_points = append(delete_points, []int64{0,0})
-			ch_u.Delete_last = 0
+		if deletePoints[len(deletePoints)-1][1]==0 {
+			deletePoints[len(deletePoints)-1][1] = time.Now().Unix()
+			deletePoints = append(deletePoints, []int64{0,0})
+			c.Delete_last = 0
 			//fmt.Println(query)
-			err := ch_u.SetDeletePoints(delete_points);if err!=nil{
+			err := c.SetDeletePoints(deletePoints);if err!=nil{
 				Gologer.PError("fail set delete points: "+err.Error())
 				continue
 			}
-			_,err=o.Update(&ch_u);if err !=nil{
+			_,err=o.Update(&c);if err !=nil{
 				Gologer.PError("fail update user in chat info: "+err.Error())
 				continue
 			}
@@ -240,49 +251,52 @@ func SetNameChat(ChatId int64, name string)(error){
 }
 
 func DeleteChatFromList(UserId int64, ChatId int64)(error){
-	chatUser := ChatUser{User:&User{Id: UserId}, Chat: &Chat{Id: ChatId}}
-	err:= o.Read(&chatUser);if err!=nil{
+	var c ChatUser
+	qs := o.QueryTable("chat_users").Filter("user_id",UserId)
+	err:=qs.Filter("chat_id", ChatId).Filter("delete_last",0).One(&c);if err!=nil{
 		Gologer.PError(err.Error())
 		return err
 	}
 	res,err:= CheckUserInChatDelete(UserId,ChatId);if err==nil && !res{
 		return errors.New("user yet not delete")
 	}
-	chatUser.List_Invisible = true
-	_,err=o.Update(chatUser);if err!=nil{
+	c.List_Invisible = true
+	_,err=o.Update(c);if err!=nil{
 		return err
 	}
 	return nil
 }
 
 func FullDeleteChat(ChatId int64)(error){
-	ch:= Chat{Id: ChatId}
-	err:= o.Read(&ch); if err!=nil{
+	var c Chat
+	qs := o.QueryTable("chats").Filter("id",ChatId)
+	err:=qs.Filter("chat_id", ChatId).Filter("delete_last",0).RelatedSel().One(&c);if err!=nil{
+		Gologer.PError(err.Error())
 		return err
 	}
-	ChatUser:= ChatUser{Chat:&ch, User:&User{Id: ch.Author.Id}}
-	err= o.Read(&ChatUser); if err!=nil{
+	var cu ChatUser
+	qs = o.QueryTable("chat_users").Filter("user_id",c.Author.Id)
+	err=qs.Filter("chat_id", ChatId).Filter("delete_last",0).One(&cu);if err!=nil{
+		Gologer.PError(err.Error())
 		return err
 	}
-	o.Delete(ChatUser)
+	o.Delete(cu)
 	qb, _ := orm.NewQueryBuilder(driver)
 	//Delete users in caht
 	qb.Delete().
 		From("chat_users").
-		Where("chat_id = ?").
-		Offset(0)
+		Where("chat_id = ?")
 	sql := qb.String()
 	o.Raw(sql, ChatId).Exec()
 	//Delete messages
 	qb.Delete().
 		From("messages").
-		Where("chat_id = ?").
-		Offset(0)
+		Where("chat_id = ?")
 	sql = qb.String()
 	o.Raw(sql, ChatId).Exec()
 	//Need delete files
 
-	o.Delete(&ch)
+	o.Delete(&c)
 	return nil
 }
 

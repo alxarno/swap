@@ -5,7 +5,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/Spatium-Messenger/Server/settings"
 	"time"
-	"fmt"
 )
 
 var(
@@ -36,7 +35,6 @@ func BeginDB()(error){
 	sett,err:=settings.GetSettings();if err!=nil{
 		panic(err)
 	}
-	fmt.Println( sett.Server.Test)
 	if sett.Server.Test{
 		orm.Debug = true
 		orm.RegisterDataBase("default", "sqlite3", "file:test.db")

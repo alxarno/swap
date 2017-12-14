@@ -143,7 +143,7 @@ func GetUsersChatsIds(userId int64)([]int64, error){
 	qb, _ := orm.NewQueryBuilder(driver)
 	qb.Select("chat_id").
 		From("chat_users").
-		Where("userId = ?")
+		Where("user_id = ?")
 	sql := qb.String()
 	o.Raw(sql, userId).QueryRows(&ids)
 	return ids,nil
@@ -185,7 +185,7 @@ func GetUserSettings(userId int64)(map[string]interface{}, error){
 	u:= User{Id: userId}
 	err := o.Read(&u)
 	if err == orm.ErrNoRows {
-		return final,errors.New("User not found")
+		return final,errors.New("user not found")
 	}
 	final["login"] = u.Login
 	final["name"]=u.Name

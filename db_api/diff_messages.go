@@ -3,6 +3,7 @@ package db_api
 import (
 	"github.com/Spatium-Messenger/Server/models"
 	"encoding/json"
+	//"github.com/AlexeyArno/Gologer"
 )
 
 func SendMessage(ChatId int64, UserId int64, Content string, Type int)(int64,error){
@@ -19,6 +20,14 @@ func SendMessage(ChatId int64, UserId int64, Content string, Type int)(int64,err
 		return -1,err
 	}
 	lastId,err:=addMessage(UserId,ChatId,string(res));if err!=nil{
+
+		return -1,err
+	}
+	return lastId,nil
+}
+
+func SendClearMessage(ChatId int64, UserId int64, Content string)(int64,error){
+	lastId,err:=addMessage(UserId,ChatId,Content);if err!=nil{
 		return -1,err
 	}
 	return lastId,nil
