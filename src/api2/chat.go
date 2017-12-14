@@ -57,8 +57,8 @@ func addUsers(w http.ResponseWriter, r *http.Request){
 	}
 	if res{sendAnswerError(err.Error(),0, w);return}
 
-	failed := []int64{}
-	successAdd := []int64{}
+	var failed []int64
+	var successAdd []int64
 	for i:=0;i<len(data.Ids);i++{
 		err:= db_api.InsertUserInChat(data.Ids[i], data.ChatId)
 		if err!=nil{

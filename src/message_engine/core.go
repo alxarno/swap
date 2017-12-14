@@ -24,6 +24,7 @@ import(
 	//"github.com/Spatium-Messenger/Server/src/api/methods"
 	"github.com/Spatium-Messenger/Server/db_api"
 	"github.com/Spatium-Messenger/Server/src/api2"
+	"github.com/AlexeyArno/Gologer"
 )
 
 type ConnectionSpatium struct {
@@ -90,8 +91,7 @@ func UserMove(userId int64, mType string){
 func writerUserSys(ws *websocket.Conn,  sysCh<-chan string){
 	for sysMsg := range sysCh{
 		if err := websocket.Message.Send(ws, string(sysMsg)); err != nil {
-			fmt.Println("Can't send")
-			fmt.Println(err)
+			Gologer.PError(err.Error())
 			break
 		}
 	}
@@ -101,12 +101,11 @@ func writerUser(ws *websocket.Conn, ch <-chan models.NewMessageToUser){
 	for msg := range ch{
 		nowMessage, err := json.Marshal(msg)
 		if err != nil {
-			fmt.Println("Fail Marshaling in function wruteUser :104")
+			Gologer.PError(err.Error())
 			return
 		}
 		if err := websocket.Message.Send(ws, string(nowMessage)); err != nil {
-			fmt.Println("Can't send")
-			fmt.Println(err)
+			Gologer.PError(err.Error())
 			break
 		}
 	}
@@ -132,7 +131,7 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium){
 			user, err:=api2.TestUserToken(token)
 			var answer = make(map[string]interface{})
 			if err!=nil{
-				fmt.Println(err)
+				Gologer.PError(err.Error())
 				answer["type_a"]="system"
 				answer["result"]="Error"
 				answer["action"]="authoriz"
@@ -151,9 +150,8 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium){
 		}
 
 	}else{
-		messageToUser,err := UserMsg(msg)
-		if err!=nil{
-			fmt.Println(err.Error())
+		messageToUser,err := UserMsg(msg);if err!=nil{
+			Gologer.PError(err.Error())
 			return
 		}
 		sendMessages <-*messageToUser
@@ -247,7 +245,7 @@ func broadcaster(){
 		case msg:=<-sendMessages:
 			chatsUsers,err:= db_api.GetChatsUsers(msg.ChatId)
 			if err!=nil{
-				fmt.Println(err)
+				Gologer.PError(err.Error())
 				continue
 			}
 			for _,user  := range users{

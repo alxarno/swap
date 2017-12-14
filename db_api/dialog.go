@@ -10,19 +10,18 @@ import (
 
 func GetUsersForCreateDialog(userId int64, name string)([]map[string]interface{},error){
 	//user which have dialogs with our
-	final := []map[string]interface{}{}
-	userBuf:=[]User{}
-	occupyUsers:= []int64{}
-	userDialogs:= []int64{}
-	occupyUsersStrings:= []string{}
-	userDialogsStrings:= []string{}
+	var final []map[string]interface{}
+	var userBuf []User
+	var occupyUsers []int64
+	var userDialogs []int64
+	var occupyUsersStrings []string
+	var userDialogsStrings []string
 	qb, _ := orm.NewQueryBuilder(driver)
 	//Delete users in caht
 	qb.Select("chat_users.chat_id").
 		From("chat_users").
 		InnerJoin("chats").On("chats.id = chat_users.chat_id").
-		Where("chats.type = 1").
-		Offset(0)
+		Where("chats.type = 1")
 	sql := qb.String()
 	o.Raw(sql).QueryRows(&userDialogs)
 
@@ -37,8 +36,7 @@ func GetUsersForCreateDialog(userId int64, name string)([]map[string]interface{}
 		From("chat_users").
 		Where("chat_users.chat_id").In(s1).
 		And("chat_users.list__invisible = 0").
-		And("chat_users.user_id = ?").
-		Offset(0)
+		And("chat_users.user_id = ?")
 	sql = qb.String()
 	o.Raw(sql, userId).QueryRows(&occupyUsers)
 	for _,v :=range occupyUsers{
@@ -52,8 +50,7 @@ func GetUsersForCreateDialog(userId int64, name string)([]map[string]interface{}
 		Where("id not").In(s1).
 		And("chat_users.user_id <> ?").
 		And("name LIKE ?").
-		Or("login LIKE ?").
-		Offset(0)
+		Or("login LIKE ?")
 	sql = qb.String()
 	o.Raw(sql, userId, name,name).QueryRows(&userBuf)
 
@@ -71,8 +68,7 @@ func HaveAlreadyDialog(userId int64, anotherUserId int64)(int64,error){
 	qb.Select("chat_id").
 		From("dialogs").
 		Where("user1 = ? and user2=?").
-		Or("user2 = ? and user1=?").
-		Offset(0)
+		Or("user2 = ? and user1=?")
 	sql := qb.String()
 	o.Raw(sql,userId,anotherUserId,userId,anotherUserId).QueryRow(&final)
 	return final,nil
