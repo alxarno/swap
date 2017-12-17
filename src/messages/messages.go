@@ -78,11 +78,22 @@ func NewMessage(userQuest *string)(models.NewMessageToUser, error){
 	//	return  send,err
 	//}
 	//fmt.Println(newContent)
+
+	//Get file information
+	var documents []map[string]interface{}
+
+	for _,v:=range data.Content.Documents{
+		doc,err:= db_api.GetFileInformation(v);if err!=nil{
+			continue
+		}
+		documents = append(documents,doc)
+	}
+
 	var newMess models.MessageContentToUser
 
-	newMess.Message = *data.Content.Message
-	newMess.Type = *data.Content.Type
-	newMess.Documents = *data.Content.Documents
+	newMess.Message = data.Content.Message
+	newMess.Type = data.Content.Type
+	newMess.Documents = documents
 
 
 	send.ID = messageId
@@ -133,6 +144,7 @@ func NewMessageAnother(userQuest *string)(models.NewMessageToUser, error){
 		return send, err
 	}
 
+
 	Gologer.PInfo(strconv.FormatInt(user.Id,10))
 	//content,err:= json.Marshal(*data.Content.Content);if err!=nil{
 	//	//Gologer.PError(err.Error())
@@ -152,15 +164,21 @@ func NewMessageAnother(userQuest *string)(models.NewMessageToUser, error){
 	//	return  send,err
 	//}
 	//fmt.Println(newContent)
-	var docs []int64
+	var documents []map[string]interface{}
+
 	for _,v := range dataReceive.Content.Content.Documents{
-		docs = append(docs, int64(v))
+		doc,err:= db_api.GetFileInformation(int64(v));if err!=nil{
+			continue
+		}
+		documents = append(documents,doc)
 	}
+
+
 	var newMess models.MessageContentToUser
 
 	newMess.Message = dataReceive.Content.Content.Message
 	newMess.Type = dataReceive.Content.Content.Type
-	newMess.Documents = docs
+	newMess.Documents = documents
 
 
 	send.ID = mId

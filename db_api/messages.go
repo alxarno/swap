@@ -48,7 +48,7 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64)([]*model
 		return final,errors.New("cant decode delete points")
 	}
 	qb, _ := orm.NewQueryBuilder(driver)
-
+	//Get message from db
 	qb.Select("messages.id",
 		"messages.content",
 		"messages.author_id",
@@ -81,12 +81,32 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64)([]*model
 	sql:=qb.String()
 	o.Raw(sql, chatId).QueryRows(&templates)
 
+	//Get Content and File information
 	for _,v:= range templates{
-		var Content models.MessageContentToUser
+		type ContentFirst struct{
+			Message string `json:"content"`
+			Documents []int64 `json:"documents"`
+			Type string `json:"type"`
+		}
+
+		var Content ContentFirst
 		err:= json.Unmarshal([]byte(v.Content), &Content); if err!=nil{
 			Gologer.PError("Fail unmarshal : "+v.Content)
 			continue
 		}
+		var docs []map[string]interface{}
+		for _,v:= range Content.Documents{
+			doc,err:= GetFileInformation(v);if err!=nil{
+				continue
+			}
+			docs = append(docs, doc)
+		}
+		var mes models.MessageContentToUser
+
+		mes.Documents = docs
+		mes.Message = Content.Message
+		mes.Type = Content.Type
+
 		final = append(final, &models.NewMessageToUser{
 			ID: v.Id,
 			ChatId: chatId,
@@ -94,7 +114,7 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64)([]*model
 			AuthorName:v.Name,
 			AuthorLogin:v.Login,
 			Time:v.Time,
-			Content: &Content})
+			Content: &mes})
 	}
 	return final,nil
 }

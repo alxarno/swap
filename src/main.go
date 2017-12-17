@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"github.com/Spatium-Messenger/Server/settings"
 	"flag"
+	"github.com/AlexeyArno/Gologer"
 )
 
 
@@ -151,24 +152,22 @@ func downloadFile(w http.ResponseWriter, r *http.Request){
 	secret := sett.Server.SecretKeyForToken
 	vars:=mux.Vars(r)
 	algorithm :=  jwt.HmacSha256(secret)
-	claims, err := algorithm.Decode(vars["link"])
-	if err != nil {
+	Gologer.PInfo(vars["link"])
+	claims, err := algorithm.Decode(vars["link"]);if err != nil {
 		w.Write([]byte("Fail decode link"))
 	}
-	n_time,err :=claims.Get("time")
-	if err != nil{
+	nTime,err :=claims.Get("time");if err != nil{
 		w.Write([]byte("Fail get time"))
 	}
-	path, err:= claims.Get("path")
-	if err != nil{
+	path, err:= claims.Get("path");if err != nil{
 		w.Write([]byte("Fail get path"))
 	}
-	s_path := path.(string)
-	i_time := n_time.(float64)
-	if  int64(i_time)<time.Now().Unix(){
+	sPath := path.(string)
+	iTime := nTime.(float64)
+	if  int64(iTime)<time.Now().Unix(){
 		w.Write([]byte("Link is unavailable"))
 	}
-	file := "./public/files/"+s_path
+	file := "./public/files/"+ sPath
 	http.ServeFile(w,r,file)
 }
 
@@ -213,7 +212,7 @@ func main(){
 	engine.StartCoreMessenger()
 
 	RemoveContents("./public/files")
-	os.MkdirAll("./public/files/min", os.ModePerm)
+	os.Mkdir("./public/files/min", os.ModePerm)
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", stand)
 	myRouter.HandleFunc("/login", stand)

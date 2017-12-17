@@ -32,9 +32,9 @@ type UserChatInfo struct{
 	Online int64 `json:"online"`
 }
 type MessageContent struct{
-	Message *string `json:"content"`
-	Documents *[]int64 `json:"documents"`
-	Type *string `json:"type"`
+	Message string `json:"content"`
+	Documents []int64 `json:"documents"`
+	Type string `json:"type"`
 }
 type User struct {
 	ID float64
@@ -63,9 +63,17 @@ type CreateDHData struct{
 
 type MessageContentToUser struct{
 	Message string `json:"content"`
-	Documents []int64 `json:"documents"`
+	Documents []map[string]interface{} `json:"documents"`
 	Type string `json:"type"`
 }
+
+//type MessageContent struct{
+//	Message string `json:"content"`
+//	Documents []int64 `json:"documents"`
+//	Type string `json:"type"`
+//}
+
+
 
 type ForceMsgToUser struct{
 	UserId int64

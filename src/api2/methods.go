@@ -115,6 +115,12 @@ func TypeChanger(receiver interface{}, sender interface{}){
 			if rField.IsValid() {
 				rField.SetString(v)
 			}
+		case reflect.Bool:
+			rField :=reflect.ValueOf(sender).Elem().FieldByIndex([]int{i})
+			v:=reflect.ValueOf(receiver).FieldByIndex([]int{i}).Bool()
+			if rField.IsValid() {
+				rField.SetBool(v)
+			}
 		case reflect.Slice:
 			rField :=reflect.ValueOf(sender).Elem().FieldByIndex([]int{i})
 			v:=reflect.ValueOf(receiver)

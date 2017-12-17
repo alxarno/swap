@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"time"
 	"github.com/robbert229/jwt"
+	"github.com/AlexeyArno/Gologer"
 )
 
 type fileInfo struct{
@@ -39,6 +40,8 @@ func rebuildFileDataTypes(buff fileInfoBuff) (fileInfo,error){
 		return res,err
 	}
 	res.chatId = cid
+	res.name = buff.name
+	res.fileType = buff.fileType
 	return res,nil
 }
 
@@ -48,32 +51,35 @@ func uploadFile(w http.ResponseWriter, r*http.Request){
 	buff.ratioSize = r.FormValue("ratio_size")
 	buff.token = r.FormValue("token")
 	buff.chatId = r.FormValue("chat_id")
-	buff.name = r.FormValue("fileName")
+	buff.name = r.FormValue("name")
 	buff.fileType = r.FormValue("type")
 
 	user,err:= TestUserToken(buff.token);if err!=nil{
 		sendAnswerError(err.Error(),0,w);return
 	}
-	file, handler, err := r.FormFile("uploadfile")
+	file, handler, err := r.FormFile("file")
 	if err != nil {
-		sendAnswerError(err.Error(),0, w);return
+		sendAnswerError(err.Error(),1, w);return
 	}
 	defer file.Close()
 	fD,err:=rebuildFileDataTypes(buff);if err!=nil{
-		sendAnswerError(err.Error(),0, w);return
+		sendAnswerError(err.Error(),2, w);return
 	}
 	id,path,err:=db_api.CreateFile(fD.name, handler.Size, user.Id,fD.chatId,fD.ratioSize);if err!=nil{
-		sendAnswerError(err.Error(),0, w);return
+		sendAnswerError(err.Error(),3, w);return
 	}
 	f, err := os.OpenFile("./public/files/"+path, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
-		sendAnswerError(err.Error(), 0,w)
+		sendAnswerError(err.Error(), 4,w)
 		fmt.Println(err)
 		return
 	}
 	defer f.Close()
 	io.Copy(f, file)
-	go compressionImage(fD.fileType,fD.ratioSize,path)
+	err=compressionImage(fD.fileType,fD.ratioSize,path); if err!=nil{
+		Gologer.PError(err.Error())
+		sendAnswerError(err.Error(), 5,w);return
+	}
 	var x = make(map[string]string)
 	x["result"]="Success"
 	x["FileId"]= strconv.FormatInt(id,10)
@@ -110,10 +116,10 @@ func deleteFile(w http.ResponseWriter,r *http.Request){
 
 func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
 	var rData struct{
-		Token string`json:"token"`;
+		Token string`json:"token"`
 		FileId float64`json:"file_id"`}
 	var data struct{
-		Token string`json:"token"`;
+		Token string`json:"token"`
 		FileId int64`json:"file_id"`}
 	decoder:= json.NewDecoder(r.Body);defer r.Body.Close()
 	err := decoder.Decode(&rData);if err != nil {
@@ -121,13 +127,13 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
 	}
 	TypeChanger(rData, &data)
 	user,err:= TestUserToken(data.Token);if err!=nil{
-		sendAnswerError(err.Error(),0, w);return
+		sendAnswerError(err.Error(),1, w);return
 	}
 	path,err := db_api.CheckFileRights(user.Id, data.FileId);if err!=nil{
-		sendAnswerError(err.Error(),0, w);return
+		sendAnswerError(err.Error(),2, w);return
 	}
 	sett,err:= settings.GetSettings();if err!=nil{
-		sendAnswerError(err.Error(),0, w);return
+		sendAnswerError(err.Error(),3, w);return
 	}
 	secret := sett.Server.SecretKeyForToken
 	algorithm :=  jwt.HmacSha256(secret)
@@ -135,8 +141,8 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request){
 	claims.Set("path", path)
 	claims.Set("user_id", user.Id)
 	claims.Set("time", time.Now().Unix()+60)
-	link, err := algorithm.Encode(claims)
-	if err!=nil{
+	link, err := algorithm.Encode(claims);if err!=nil{
+		sendAnswerError(err.Error(),4, w)
 		fmt.Fprintf(w, "%s","failed encode link");return
 	}
 	var x = make(map[string]string)
@@ -165,8 +171,10 @@ func getFile(w http.ResponseWriter, r *http.Request){
 		sendAnswerError(err.Error(),0, w);return
 	}
 	path,err := db_api.CheckFileRights(user.Id, data.FileId);if err!=nil{
+		Gologer.PInfo(err.Error())
 		sendAnswerError(err.Error(),0, w);return
 	}
+	Gologer.PInfo(strconv.FormatBool(data.Min))
 	file := "./public/files/"+path
 	if data.Min{
 		file =	"./public/files/min/"+path
