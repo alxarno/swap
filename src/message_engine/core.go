@@ -35,7 +35,7 @@ type ConnectionSpatium struct {
 }
 
 
-type client chan<-models.NewMessageToUser
+//type client chan<-models.NewMessageToUser
 var(
 	users 			  = []*ConnectionSpatium{}
 	//online_users_ids = make(map[int64]interface{})

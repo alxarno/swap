@@ -10,33 +10,28 @@ import (
 	"errors"
 	//"github.com/disintegration/imaging"
 	"github.com/disintegration/imaging"
+
 )
 
 func compressionImage(iType string, ratio float64,  path string)(error){
 	file, err := os.Open("./public/files/"+path)
-	if err != nil {
-		file.Close()
+	defer file.Close();if err != nil {
 		return err
 	}
 	var nowImage image.Image
 	nowImage = nil
 	if iType == "png"{
-		nowImage, err = png.Decode(file)
-		if err != nil {
-			file.Close()
+		nowImage, err = png.Decode(file);if err != nil {
 			return err
 		}
 	}
 	if iType == "jpeg" || iType == "jpg"{
-		nowImage, err = jpeg.Decode(file)
-		if err != nil {
-			file.Close()
+		nowImage, err = jpeg.Decode(file);if err != nil {
 			return err
 		}
 	}
 	if nowImage == nil{
-		file.Close()
-		return  errors.New("Failed type")
+		return  errors.New("failed type")
 	}
 	file.Close()
 	g := nowImage.Bounds()
@@ -45,8 +40,7 @@ func compressionImage(iType string, ratio float64,  path string)(error){
 	//fmt.Println("Width = ", width)
 	//fmt.Println("Height = ", height)
 	//fmt.Println("Ratio size = ", ratio_size)
-	out, err := os.Create("./public/files/min/"+path)
-	if err != nil {
+	out, err := os.Create("./public/files/min/"+path);if err != nil {
 		return err
 	}
 	defer out.Close()
@@ -66,7 +60,7 @@ func compressionImage(iType string, ratio float64,  path string)(error){
 			png.Encode(out, dstImage)
 		}
 		if iType == "jpeg" || iType == "jpg"{
-			Options:=jpeg.Options{70}
+			Options:=jpeg.Options{Quality:70}
 			jpeg.Encode(out, dstImage,&Options)
 		}
 
@@ -76,7 +70,7 @@ func compressionImage(iType string, ratio float64,  path string)(error){
 			png.Encode(out, nowImage)
 		}
 		if iType == "jpeg" || iType == "jpg"{
-			Options:=jpeg.Options{70}
+			Options:=jpeg.Options{Quality:70}
 			jpeg.Encode(out, nowImage, &Options)
 		}
 	}

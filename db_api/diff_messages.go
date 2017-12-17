@@ -6,8 +6,8 @@ import (
 	//"github.com/AlexeyArno/Gologer"
 )
 
-func SendMessage(ChatId int64, UserId int64, Content string, Type int)(int64,error){
-	var newContent models.MessageContentToUser
+func SendMessage(UserId int64, ChatId int64, Content string, Type int)(int64,error){
+	var newContent models.MessageContent
 	if Type==1{
 		newContent.Type = "a_msg"
 	}else{
@@ -26,7 +26,7 @@ func SendMessage(ChatId int64, UserId int64, Content string, Type int)(int64,err
 	return lastId,nil
 }
 
-func SendClearMessage(ChatId int64, UserId int64, Content string)(int64,error){
+func SendClearMessage(UserId int64, ChatId int64, Content string)(int64,error){
 	lastId,err:=addMessage(UserId,ChatId,Content);if err!=nil{
 		return -1,err
 	}
