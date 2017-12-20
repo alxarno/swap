@@ -153,6 +153,7 @@ func downloadFile(w http.ResponseWriter, r *http.Request){
 	vars:=mux.Vars(r)
 	algorithm :=  jwt.HmacSha256(secret)
 	Gologer.PInfo(vars["link"])
+
 	claims, err := algorithm.Decode(vars["link"]);if err != nil {
 		w.Write([]byte("Fail decode link"))
 	}
@@ -167,6 +168,7 @@ func downloadFile(w http.ResponseWriter, r *http.Request){
 	if  int64(iTime)<time.Now().Unix(){
 		w.Write([]byte("Link is unavailable"))
 	}
+	Gologer.PInfo(sPath)
 	file := "./public/files/"+ sPath
 	http.ServeFile(w,r,file)
 }
@@ -201,6 +203,9 @@ func main(){
 	}
 	if *test{
 		settings.SetTestVar(true)
+	}else{
+		//RemoveContents("./public/files")
+		//os.Mkdir("./public/files/min", os.ModePerm)
 	}
 
 	err=dbApi.BeginDB();if err!=nil{
@@ -211,8 +216,7 @@ func main(){
 	//go broadcaster()
 	engine.StartCoreMessenger()
 
-	RemoveContents("./public/files")
-	os.Mkdir("./public/files/min", os.ModePerm)
+
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", stand)
 	myRouter.HandleFunc("/login", stand)

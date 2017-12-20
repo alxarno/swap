@@ -79,5 +79,7 @@ func MessagesApi(var1 string, w http.ResponseWriter, r *http.Request) {
 	switch var1 {
 	case "getMessages":
 		getMessages(w, r)
+	default:
+		sendAnswerError("Not found",0,w)
 	}
 }

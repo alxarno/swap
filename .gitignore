@@ -6,6 +6,7 @@ public
 security
 app.db
 data.db
+test.db
 integration_tests/venv
 /integration_tests/venv
 integration_tests/src/.idea

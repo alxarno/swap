@@ -199,5 +199,7 @@ func FileApi(var1 string, w http.ResponseWriter, r *http.Request) {
 		getFile(w, r)
 	case "getFileLink":
 		getDisposableFileLink(w, r)
+	default:
+		sendAnswerError("Not found",0,w)
 	}
 }

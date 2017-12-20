@@ -70,15 +70,16 @@ func createUser(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	if data.Login == "" || data.Pass == ""{
-		sendAnswerError("Haven't all fields (Login,Pass)",0, w)
+		sendAnswerError("Haven't all fields (Login,Pass)",1, w)
 		return
 	}
 	id,err:=db_api.CreateUser(data.Login, data.Pass,data.Login);if err!=nil{
-		sendAnswerError("Failed create user", 0, w)
+		Gologer.PError(err.Error())
+		sendAnswerError("Failed create user", 2, w)
 		return
 	}
 	token,err:= generateToken(id);if err!=nil{
-		sendAnswerError("Failed token generator", 0, w)
+		sendAnswerError("Failed token generator", 3, w)
 		return
 	}
 	var x = make(map[string]string)
@@ -158,5 +159,7 @@ func UserApi(var1 string, w http.ResponseWriter, r *http.Request) {
 		getSettings(w, r)
 	case "setSettings":
 		setSettings(w, r)
+	default:
+		sendAnswerError("Not found",0,w)
 	}
 }

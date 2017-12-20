@@ -85,14 +85,43 @@ func getUsers(w http.ResponseWriter, r *http.Request){
 	_,err= TestUserToken(data.Token);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
-	_,err= TestUserToken(data.Token);if err!=nil{
-		sendAnswerError(err.Error(),0, w);return
-	}
 	users,err:=db_api.GetChatUserInfo(data.ChatId);if err!=nil{
 		sendAnswerError(err.Error(),0, w);return
 	}
 	fmt.Fprintf(w, string(users))
 	return
+}
+
+func getUsersForAdd(w http.ResponseWriter, r *http.Request){
+	var pData struct{
+		Token string`json:"token"`
+		ChatId float64`json:"chat_id"`
+		Name string`json:"name"`}
+	var data struct{
+		Token string
+		ChatId int64
+		Name string
+	}
+	err:=getJson(&pData,r);if err!=nil{
+		sendAnswerError("failed decode data",0, w);return
+	}
+	TypeChanger(pData, &data)
+	_,err= TestUserToken(data.Token);if err!=nil{
+		sendAnswerError(err.Error(),1, w);return
+	}
+	users,err:= db_api.GetUsersForAddByName(data.ChatId,data.Name);if err!=nil{
+		sendAnswerError(err.Error(),2, w);return
+	}
+	var finish []byte
+	var x = make(map[string]interface{})
+	x["result"]="Success"
+	if users == nil{
+		x["users"] = [0]map[string]interface{}{}
+	}else{
+		x["users"] = users
+	}
+	finish, _=json.Marshal(x)
+	fmt.Fprintf(w, string(finish))
 }
 
 func deleteUsers(w http.ResponseWriter, r *http.Request){
@@ -276,6 +305,8 @@ func ChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 		create(w,r)
 	case "addUsersInChat":
 		addUsers(w,r)
+	case "getUsersForAdd":
+		getUsersForAdd(w,r)
 	case "getUsers":
 		getUsers(w,r)
 	case "deleteUsers":
@@ -292,5 +323,7 @@ func ChatApi(var1 string, w http.ResponseWriter, r *http.Request){
 		recoveryUserInDialog(w,r)
 	case "deleteFromList":
 		deleteChatFromList(w,r)
+	default:
+		sendAnswerError("Not found",0,w)
 	}
 }
