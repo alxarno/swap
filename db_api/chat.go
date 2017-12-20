@@ -2,19 +2,19 @@ package db_api
 
 import (
 	"errors"
-	//"github.com/astaxie/beego/orm"
 	"github.com/AlexeyArno/Gologer"
 	"time"
 	"github.com/astaxie/beego/orm"
 	"encoding/json"
+	strings "strings"
 	"strconv"
 )
 
 
 func CreateChat(name string, AuthorId int64)(int64,error){
 	u:= User{}
-	qs:= o.QueryTable("users").Filter("id",AuthorId)
-	err:=qs.One(&u);if err!=nil{
+	err:= o.QueryTable("users").Filter("id",AuthorId).
+	One(&u);if err!=nil{
 		return 0,err
 	}
 	c:= Chat{Name: name, Author: &u, Type: 0}
@@ -29,8 +29,8 @@ func CreateChat(name string, AuthorId int64)(int64,error){
 
 func CreateChannel(name string, AuthorId int64)(int64,error){
 	u:= User{}
-	qs:= o.QueryTable("users").Filter("id",AuthorId)
-	err:=qs.One(&u);if err!=nil{
+	err:= o.QueryTable("users").Filter("id",AuthorId).One(&u)
+	if err!=nil{
 		return 0,err
 	}
 	c:= Chat{Name: name, Author: &u, Type: 2}
@@ -41,11 +41,11 @@ func CreateChannel(name string, AuthorId int64)(int64,error){
 }
 
 func CheckUserInChatDelete(UserId int64, ChatId int64)(bool,error){
-	Gologer.PInfo(strconv.FormatInt(UserId,10))
-	Gologer.PInfo(strconv.FormatInt(ChatId,10))
+	//Gologer.PInfo(strconv.FormatInt(UserId,10))
+	//Gologer.PInfo(strconv.FormatInt(ChatId,10))
 	var cUser ChatUser
-	qs := o.QueryTable("chat_users").Filter("user_id", UserId)
-	err:=qs.Filter("chat_id", ChatId).One(&cUser);if err!=nil{
+	err := o.QueryTable("chat_users").Filter("user_id", UserId).Filter("chat_id", ChatId).One(&cUser)
+	if err!=nil{
 		return false,err
 	}
 	if cUser.List_Invisible|| cUser.Delete_last !=0{
@@ -56,8 +56,8 @@ func CheckUserInChatDelete(UserId int64, ChatId int64)(bool,error){
 
 func InsertUserInChat(UserId int64, ChatId int64)(error){
 	var cUser ChatUser
-	qs := o.QueryTable("chat_users").Filter("user_id", UserId)
-	err:=qs.Filter("chat_id", ChatId).One(&cUser);if err==nil{
+	err := o.QueryTable("chat_users").Filter("user_id", UserId).Filter("chat_id", ChatId).One(&cUser)
+	if err==nil{
 		return errors.New("user already in chat")
 	}
 
@@ -84,8 +84,8 @@ func InsertUserInChat(UserId int64, ChatId int64)(error){
 
 func GetChatType(ChatId int64)(int,error){
 	var c Chat
-	qs := o.QueryTable("chat_users").Filter("id", ChatId)
-	err:=qs.Filter("chat_id", ChatId).One(&c);if err!=nil{
+	err := o.QueryTable("chat_users").Filter("id", ChatId).Filter("chat_id", ChatId).One(&c)
+	if err!=nil{
 		return 0,err
 	}
 	return c.Type,nil
@@ -93,8 +93,8 @@ func GetChatType(ChatId int64)(int,error){
 
 func CheckUserRightsInChat(UserId int64, ChatId int64)(error){
 	var c Chat
-	qs := o.QueryTable("chat_users").Filter("id", ChatId)
-	err:=qs.Filter("chat_id", ChatId).One(&c);if err!=nil{
+	err := o.QueryTable("chat_users").Filter("id", ChatId).Filter("chat_id", ChatId).One(&c)
+	if err!=nil{
 		return err
 	}
 	if c.Author.Id != UserId{
@@ -159,8 +159,9 @@ func DeleteUsersInChat(UserIds []int64, ChatId int64, DeleteYourself bool)(error
 		//	continue
 		//}
 		var c ChatUser
-		qs := o.QueryTable("chat_users").Filter("user_id", v)
-		err:=qs.Filter("chat_id", ChatId).Filter("delete_last",0).One(&c);if err!=nil{
+		err := o.QueryTable("chat_users").Filter("user_id", v).
+		Filter("chat_id", ChatId).Filter("delete_last",0).One(&c)
+		if err!=nil{
 			Gologer.PError(err.Error())
 			continue
 		}
@@ -190,8 +191,8 @@ func DeleteUsersInChat(UserIds []int64, ChatId int64, DeleteYourself bool)(error
 func RecoveryUsersInChat(UserIds []int64, ChatId int64, RecoveryYourself bool)(error){
 	for _,v:= range UserIds{
 		var c ChatUser
-		qs := o.QueryTable("chat_users").Filter("user_id", v)
-		err:=qs.Filter("chat_id", ChatId).Filter("delete_last",0).One(&c);if err!=nil{
+		err := o.QueryTable("chat_users").Filter("user_id", v).
+		Filter("chat_id", ChatId).Filter("delete_last",0).One(&c);if err!=nil{
 			Gologer.PError(err.Error())
 			continue
 		}
@@ -252,8 +253,8 @@ func SetNameChat(ChatId int64, name string)(error){
 
 func DeleteChatFromList(UserId int64, ChatId int64)(error){
 	var c ChatUser
-	qs := o.QueryTable("chat_users").Filter("user_id",UserId)
-	err:=qs.Filter("chat_id", ChatId).Filter("delete_last",0).One(&c);if err!=nil{
+	err := o.QueryTable("chat_users").Filter("user_id",UserId).
+	Filter("chat_id", ChatId).Filter("delete_last",0).One(&c);if err!=nil{
 		Gologer.PError(err.Error())
 		return err
 	}
@@ -269,26 +270,26 @@ func DeleteChatFromList(UserId int64, ChatId int64)(error){
 
 func FullDeleteChat(ChatId int64)(error){
 	var c Chat
-	qs := o.QueryTable("chats").Filter("id",ChatId)
-	err:=qs.Filter("chat_id", ChatId).Filter("delete_last",0).RelatedSel().One(&c);if err!=nil{
+	err := o.QueryTable("chats").Filter("id",ChatId).
+	Filter("chat_id", ChatId).Filter("delete_last",0).RelatedSel().One(&c);if err!=nil{
 		Gologer.PError(err.Error())
 		return err
 	}
 	var cu ChatUser
-	qs = o.QueryTable("chat_users").Filter("user_id",c.Author.Id)
-	err=qs.Filter("chat_id", ChatId).Filter("delete_last",0).One(&cu);if err!=nil{
+	err = o.QueryTable("chat_users").Filter("user_id",c.Author.Id).
+	Filter("chat_id", ChatId).Filter("delete_last",0).One(&cu);if err!=nil{
 		Gologer.PError(err.Error())
 		return err
 	}
 	o.Delete(cu)
 	qb, _ := orm.NewQueryBuilder(driver)
-	//Delete users in caht
+
 	qb.Delete().
 		From("chat_users").
 		Where("chat_id = ?")
 	sql := qb.String()
 	o.Raw(sql, ChatId).Exec()
-	//Delete messages
+
 	qb.Delete().
 		From("messages").
 		Where("chat_id = ?")
@@ -300,6 +301,34 @@ func FullDeleteChat(ChatId int64)(error){
 	return nil
 }
 
+func GetUsersForAddByName(chatId int64, name string)([]map[string]interface{},error){
+	var findUsers []User
+	var final []map[string]interface{}
+	otherUsersIds,err:=GetChatsUsers(chatId);if err!=nil{
+		Gologer.PError(err.Error())
+		return final,err
+	}
 
+	var stringOtherUsersIds []string
+	for _,v:=range otherUsersIds{
+		stringOtherUsersIds = append(stringOtherUsersIds, strconv.FormatInt(v,10))
+	}
+
+
+	_,err = o.Raw("SELECT id, name,login FROM users WHERE id NOT IN (?) and ((name LIKE ?) or (login Like ?))",
+		strings.Join(stringOtherUsersIds[:],","), "%"+name+"%","%"+name+"%").QueryRows(&findUsers)
+
+	if err!=nil{
+		Gologer.PError(err.Error())
+		return final,err
+	}
+	for i,v:=range findUsers{
+		final = append(final,map[string]interface{}{})
+		final[i]["name"] = v.Name
+		final[i]["login"] = v.Login
+		final[i]["id"] = v.Id
+	}
+	return final,nil
+}
 
 

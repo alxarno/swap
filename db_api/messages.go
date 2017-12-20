@@ -39,8 +39,8 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64)([]*model
 	var final []*models.NewMessageToUser
 	const MAXTIME = 9999999999
 	var cUser ChatUser
-	qs := o.QueryTable("chat_users").Filter("user_id", userId)
-	err:=qs.Filter("chat_id", chatId).RelatedSel().One(&cUser);if err!=nil{
+	err := o.QueryTable("chat_users").Filter("user_id", userId).
+	Filter("chat_id", chatId).RelatedSel().One(&cUser);if err!=nil{
 		return final,errors.New("user is not in chat")
 	}
 

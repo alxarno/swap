@@ -21,19 +21,20 @@ func GetUser(sType string, data map[string]interface{})(*User, error){
 		h := sha256.New()
 		h.Write([]byte(data["pass"].(string)))
 		u := User{}
-		qs:= o.QueryTable("users")
-		qs.Filter("login",data["login"])
-		qs.Filter("pass", base64.StdEncoding.EncodeToString(h.Sum(nil)))
-		err:=qs.One(&u)
+		err:= o.QueryTable("users").
+		Filter("login",data["login"]).
+		Filter("pass", base64.StdEncoding.EncodeToString(h.Sum(nil))).
+		One(&u)
+		Gologer.PInfo(u.Name)
 		if err!=nil{
 			return nil, err
 		}
 		return &u,nil
 	}else{
 		u := User{}
-		qs:= o.QueryTable("users")
-		qs.Filter("id",data["id"])
-		err:=qs.One(&u);if err!=nil{
+		err:= o.QueryTable("users").
+		Filter("id",data["id"]).
+		One(&u);if err!=nil{
 			return nil, err
 		}
 		return &u,nil
@@ -42,8 +43,8 @@ func GetUser(sType string, data map[string]interface{})(*User, error){
 
 func CreateUser(login string, pass string, uName string)(int64, error){
 	u:= User{}
-	qs:= o.QueryTable("users")
-	qs.Filter("login",login)
+	qs:= o.QueryTable("users").Filter("login",login)
+	Gologer.PInfo(login)
 	err:=qs.One(&u)
 	if err == orm.ErrNoRows {
 		h := sha256.New()
@@ -51,13 +52,12 @@ func CreateUser(login string, pass string, uName string)(int64, error){
 		u.Pass = base64.StdEncoding.EncodeToString(h.Sum(nil))
 		u.Name = uName
 		u.Login = login
-		id, err := o.Insert(&u);if err != nil {
-			Gologer.PError(err.Error())
-			return 0,err
-		}
+		id, err := o.Insert(&u);if err != nil {return 0,err}
 		return id,nil
+	}else{
+		Gologer.PInfo(u.Name)
+		return 0, errors.New("user with this login already created")
 	}
-	return 0, errors.New("user with this login already created")
 }
 
 func GetUserChats(userId int64)([]*models.UserChatInfo, error){
