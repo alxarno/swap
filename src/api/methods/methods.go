@@ -57,7 +57,6 @@ func TestUserToken(secret string, token_line string)(*models.User,  error){
 	claims, err := algorithm.Decode(token_line)
 	if err != nil {
 		return nil, errors.New("Token is failed")
-
 	}
 	id,err :=claims.Get("id")
 	if err != nil{

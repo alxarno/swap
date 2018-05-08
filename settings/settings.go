@@ -8,16 +8,17 @@ import (
 )
 
 var (
-	ServiceSettings Settings
+	ServiceSettings *Settings
 )
 
 type Settings struct {
 	Server struct{
-		Encryption bool`json:"encryption"`
-		Cert_file string`json:"cert_file"`
-		Key_file string`json:"key_file"`
-		Host string`json:"host"`
-		SecretKeyForToken string`json:"secret_key_for_token"`
+		Test bool `json:"test"`
+		Encryption        bool   `json:"encryption"`
+		CertFile          string `json:"cert_file"`
+		KeyFile           string `json:"key_file"`
+		Host              string `json:"host"`
+		SecretKeyForToken string `json:"secret_key_for_token"`
 	}`json:"server"`
 	Service struct{
 		MaxFileSize int64 `json:"max_file_size_byte"`
@@ -28,6 +29,10 @@ type Settings struct {
 			Path string`json:"file_path"`
 		}`json:"sqlite"`
 	}`json:"db"`
+}
+
+func SetTestVar(test bool){
+	ServiceSettings.Server.Test = test
 }
 
 func LoadSettings()(error){
@@ -58,6 +63,11 @@ func LoadSettings()(error){
 	return nil
 }
 
-func GetSettings()(Settings){
-	return ServiceSettings
+func GetSettings()(*Settings,error){
+	if ServiceSettings == nil{
+		err:=LoadSettings();if err!=nil{
+			return nil,err
+		}
+	}
+	return ServiceSettings,nil
 }

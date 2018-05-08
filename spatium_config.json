@@ -1,5 +1,6 @@
 {
 	"server": {
+		"test": false,
 		"encryption":false,
 		"cert_file": "",
 		"key_file": "",

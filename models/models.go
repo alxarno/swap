@@ -8,7 +8,7 @@ type Chat struct{
 	LastSender, LastMessage string
 }
 type MessageBlock struct {
-	Chat_Id  float64
+	chatId   int64
 	Messages []Message
 }
 type Message struct {
@@ -18,23 +18,23 @@ type Message struct {
 	Chat_Id float64
 }
 type UserChatInfo struct{
-	ID float64 `json:"id"`
+	ID int64 `json:"id"`
 	Name string `json:"name"`
-	Type int64 `json:"type"`
+	Type int `json:"type"`
 	//Addr_users []string
 	LastSender string `json:"last_sender"`
-	Admin_id float64 `json:"admin_id"`
-	Moders_ids []float64 `json:"moderators_ids"`
+	Admin_id int64 `json:"admin_id"`
+	//Moders_ids []float64 `json:"moderators_ids"`
 	LastMessage *MessageContent `json:"last_message"`
 	LastMessageTime int64 `json:"last_message_time"`
 	View int `json:"view"`
-	Delete int64 `json:"delete"`
+	Delete bool `json:"delete"`
 	Online int64 `json:"online"`
 }
 type MessageContent struct{
-	Message *string `json:"content"`
-	Documents *[]string `json:"documents"`
-	Type *string `json:"type"`
+	Message string `json:"content"`
+	Documents []int64 `json:"documents"`
+	Type string `json:"type"`
 }
 type User struct {
 	ID float64
@@ -44,13 +44,13 @@ type User struct {
 }
 
 type NewMessageToUser struct{
-	ID *int64 `json:"id"`
-	Chat_Id *float64 `json:"chat_id"`
-	Content MessageContentToUser `json:"message"`
-	Author_id *float64 `json:"author_id"`
-	Author_Name *string `json:"author_name"`
-	Author_Login *string `json:"author_login"`
-	Time *int64 `json:"time"`
+	ID int64 `json:"id"`
+	ChatId int64 `json:"chat_id"`
+	Content *MessageContentToUser `json:"message"`
+	AuthorId int64 `json:"author_id"`
+	AuthorName string `json:"author_name"`
+	AuthorLogin string `json:"author_login"`
+	Time int64 `json:"time"`
 }
 
 type CreateDHData struct{
@@ -62,11 +62,22 @@ type CreateDHData struct{
 }
 
 type MessageContentToUser struct{
-	Message *string `json:"content"`
-	Documents []interface{} `json:"documents"`
-	Type *string `json:"type"`
+	Message string `json:"content"`
+	Documents []map[string]interface{} `json:"documents"`
+	Type string `json:"type"`
 }
-type ForceMsgToUser struct{User_id float64; Msg NewMessageToUser}
+
+//type MessageContent struct{
+//	Message string `json:"content"`
+//	Documents []int64 `json:"documents"`
+//	Type string `json:"type"`
+//}
+
+
+
+type ForceMsgToUser struct{
+	UserId int64
+	Msg NewMessageToUser}
 
 
 func GetModels() string{

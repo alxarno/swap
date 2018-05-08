@@ -7,9 +7,9 @@ import (
 	"golang.org/x/net/websocket"
 	"encoding/json"
 	"github.com/robbert229/jwt"
-	db_work "github.com/Spatium-Messenger/Server/db_work"
-	models "github.com/Spatium-Messenger/Server/models"
-	api "github.com/Spatium-Messenger/Server/src/api"
+	"github.com/Spatium-Messenger/Server/models"
+	api "github.com/Spatium-Messenger/Server/src/api2"
+	dbApi "github.com/Spatium-Messenger/Server/db_api"
 	"github.com/gorilla/mux"
 	"time"
 	engine "github.com/Spatium-Messenger/Server/src/message_engine"
@@ -18,12 +18,9 @@ import (
 	"path/filepath"
 	"bufio"
 	"github.com/Spatium-Messenger/Server/settings"
+	"flag"
+	"github.com/AlexeyArno/Gologer"
 )
-var (
-	secret = settings.ServiceSettings.Server.SecretKeyForToken
-	//Nmessages =engine.Messages
-)
-
 
 
 
@@ -59,7 +56,7 @@ func proveConnect(w http.ResponseWriter, r *http.Request){
 		log.Println(err)
 	}
 	//fmt.Println(data)
-	_,err =db_work.GetUser("login" , map[string]string{"login":data.Login, "pass":data.Pass})
+	_,err = dbApi.GetUser("login" , map[string]interface{}{"login":data.Login, "pass":data.Pass})
 	if err!=nil{
 		fmt.Fprintf(w, "Error")
 		return
@@ -126,7 +123,7 @@ func fonts(w http.ResponseWriter, r *http.Request){
 func ApiRouter(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	vars:=mux.Vars(r)
-	api.MainApiRouter(vars["key"], vars["var1"], w, r)
+	api.Api(vars["key"], vars["var1"], w, r)
 }
 
 func RemoveContents(dir string) error {
@@ -149,26 +146,30 @@ func RemoveContents(dir string) error {
 }
 
 func downloadFile(w http.ResponseWriter, r *http.Request){
+	sett,err:= settings.GetSettings();if err!=nil{
+		w.Write([]byte("Error with security"));return
+	}
+	secret := sett.Server.SecretKeyForToken
 	vars:=mux.Vars(r)
 	algorithm :=  jwt.HmacSha256(secret)
-	claims, err := algorithm.Decode(vars["link"])
-	if err != nil {
+	Gologer.PInfo(vars["link"])
+
+	claims, err := algorithm.Decode(vars["link"]);if err != nil {
 		w.Write([]byte("Fail decode link"))
 	}
-	n_time,err :=claims.Get("time")
-	if err != nil{
+	nTime,err :=claims.Get("time");if err != nil{
 		w.Write([]byte("Fail get time"))
 	}
-	path, err:= claims.Get("path")
-	if err != nil{
+	path, err:= claims.Get("path");if err != nil{
 		w.Write([]byte("Fail get path"))
 	}
-	s_path := path.(string)
-	i_time := n_time.(float64)
-	if  int64(i_time)<time.Now().Unix(){
+	sPath := path.(string)
+	iTime := nTime.(float64)
+	if  int64(iTime)<time.Now().Unix(){
 		w.Write([]byte("Link is unavailable"))
 	}
-	file := "./public/files/"+s_path
+	Gologer.PInfo(sPath)
+	file := "./public/files/"+ sPath
 	http.ServeFile(w,r,file)
 }
 
@@ -193,12 +194,29 @@ func printLogo(){
 
 
 func main(){
+	test := flag.Bool("test", false, "a bool")
+	flag.Parse()
+	_,err := settings.GetSettings();if err!=nil{
+		fmt.Println(err.Error())
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+		return
+	}
+	if *test{
+		settings.SetTestVar(true)
+	}else{
+		//RemoveContents("./public/files")
+		//os.Mkdir("./public/files/min", os.ModePerm)
+	}
 
+	err=dbApi.BeginDB();if err!=nil{
+		fmt.Println(err.Error())
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+		return
+	}
 	//go broadcaster()
 	engine.StartCoreMessenger()
 
-	RemoveContents("./public/files")
-	os.MkdirAll("./public/files/min", os.ModePerm)
+
 	myRouter := mux.NewRouter().StrictSlash(true)
 	myRouter.HandleFunc("/", stand)
 	myRouter.HandleFunc("/login", stand)
@@ -220,37 +238,43 @@ func main(){
 		os.Stderr.WriteString("Oops: " + err.Error() + "\n")
 		os.Exit(1)
 	}
-	err = settings.LoadSettings()
 
+	var clearIps string
 	for _, a := range addrs {
 		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
 				my_addres+=ipnet.IP.String()
 				my_addres+=":"+settings.ServiceSettings.Server.Host+"\t"
+				if *test{
+					clearIps = ipnet.IP.String()+":"+settings.ServiceSettings.Server.Host
+				}
 			}
 		}
 	}
 
 
-	if err!=nil{
-		fmt.Println(err.Error())
-		bufio.NewReader(os.Stdin).ReadBytes('\n')
-		return
+
+
+	//err = dbApi
+
+	//if err!=nil{
+	//	fmt.Println(err.Error())
+	//	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	//	return
+	//}
+	if *test{
+		os.Stderr.WriteString(clearIps)
+	}else{
+		printLogo()
+		os.Stderr.WriteString("Spatium started on \t"+ my_addres+"\n")
 	}
-	printLogo()
-	err = db_work.OpenDB()
-	if err!=nil{
-		fmt.Println(err.Error())
-		bufio.NewReader(os.Stdin).ReadBytes('\n')
-		return
-	}
-	os.Stderr.WriteString("Spatium started on \t"+ my_addres+"\n")
+
 
 	if settings.ServiceSettings.Server.Encryption{
 		log.Fatal("ListenAndServeTLS: ",http.ListenAndServeTLS(
 			":"+ settings.ServiceSettings.Server.Host,
-			settings.ServiceSettings.Server.Cert_file,
-			settings.ServiceSettings.Server.Key_file,
+			settings.ServiceSettings.Server.CertFile,
+			settings.ServiceSettings.Server.KeyFile,
 			myRouter))
 	}else{
 		log.Fatal("ListenAndServe: ", http.ListenAndServe(
