@@ -14,14 +14,14 @@ var (
 const fileName string = "./swap.json"
 
 type Settings struct {
-	Server struct {
+	Backend struct {
 		Test              bool   `json:"test"`
 		Encryption        bool   `json:"encryption"`
 		CertFile          string `json:"cert_file"`
 		KeyFile           string `json:"key_file"`
 		Host              string `json:"host"`
 		SecretKeyForToken string `json:"secret_key_for_token"`
-	} `json:"server"`
+	} `json:"Backend"`
 	Service struct {
 		MaxFileSize int64 `json:"max_file_size_byte"`
 	} `json:"service"`
@@ -34,7 +34,7 @@ type Settings struct {
 }
 
 func SetTestVar(test bool) {
-	ServiceSettings.Server.Test = test
+	ServiceSettings.Backend.Test = test
 }
 
 func LoadSettings() error {
@@ -48,7 +48,7 @@ func LoadSettings() error {
 				return err
 			}
 
-			default_config := `{	"server": {		"encryption":false,		"cert_file": "",		"key_file": "",		"host": "1234",		"secret_key_for_token": "MY SECRET"	},	"service":{		"max_file_size_byte": 104857600	}}`
+			default_config := `{	"Backend": {		"encryption":false,		"cert_file": "",		"key_file": "",		"host": "1234",		"secret_key_for_token": "MY SECRET"	},	"service":{		"max_file_size_byte": 104857600	}}`
 
 			_, err = f.Write([]byte(default_config))
 			if err != nil {

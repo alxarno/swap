@@ -1,11 +1,11 @@
-package api2
+package api
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"github.com/Spatium-Messenger/Server/db"
+	"github.com/swap-messenger/Backend/db"
 )
 
 func create(w http.ResponseWriter, r *http.Request) {

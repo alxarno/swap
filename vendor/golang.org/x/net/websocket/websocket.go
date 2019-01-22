@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package websocket implements a client and server for the WebSocket protocol
+// Package websocket implements a client and Backend for the WebSocket protocol
 // as specified in RFC 6455.
 //
 // This package currently lacks some features found in an alternative
@@ -80,7 +80,7 @@ func (addr *Addr) Network() string { return "websocket" }
 
 // Config is a WebSocket configuration
 type Config struct {
-	// A WebSocket server address.
+	// A WebSocket Backend address.
 	Location *url.URL
 
 	// A Websocket client origin.
@@ -104,8 +104,8 @@ type Config struct {
 	handshakeData map[string]string
 }
 
-// serverHandshaker is an interface to handle WebSocket server side handshake.
-type serverHandshaker interface {
+// BackendHandshaker is an interface to handle WebSocket Backend side handshake.
+type BackendHandshaker interface {
 	// ReadHandshake reads handshake request message from client.
 	// Returns http response code and error if any.
 	ReadHandshake(buf *bufio.Reader, req *http.Request) (code int, err error)
@@ -114,8 +114,8 @@ type serverHandshaker interface {
 	// handshake response back to client.
 	AcceptHandshake(buf *bufio.Writer) (err error)
 
-	// NewServerConn creates a new WebSocket connection.
-	NewServerConn(buf *bufio.ReadWriter, rwc io.ReadWriteCloser, request *http.Request) (conn *Conn)
+	// NewBackendConn creates a new WebSocket connection.
+	NewBackendConn(buf *bufio.ReadWriter, rwc io.ReadWriteCloser, request *http.Request) (conn *Conn)
 }
 
 // frameReader is an interface to read a WebSocket frame.
@@ -244,11 +244,11 @@ func (ws *Conn) Close() error {
 // IsClientConn reports whether ws is a client-side connection.
 func (ws *Conn) IsClientConn() bool { return ws.request == nil }
 
-// IsServerConn reports whether ws is a server-side connection.
-func (ws *Conn) IsServerConn() bool { return ws.request != nil }
+// IsBackendConn reports whether ws is a Backend-side connection.
+func (ws *Conn) IsBackendConn() bool { return ws.request != nil }
 
 // LocalAddr returns the WebSocket Origin for the connection for client, or
-// the WebSocket location for server.
+// the WebSocket location for Backend.
 func (ws *Conn) LocalAddr() net.Addr {
 	if ws.IsClientConn() {
 		return &Addr{ws.config.Origin}
@@ -257,7 +257,7 @@ func (ws *Conn) LocalAddr() net.Addr {
 }
 
 // RemoteAddr returns the WebSocket location for the connection for client, or
-// the Websocket Origin for server.
+// the Websocket Origin for Backend.
 func (ws *Conn) RemoteAddr() net.Addr {
 	if ws.IsClientConn() {
 		return &Addr{ws.config.Location}

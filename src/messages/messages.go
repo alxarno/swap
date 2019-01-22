@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 
 	// "github.com/AlexeyArno/Gologer"
-	"github.com/Spatium-Messenger/Server/db"
-	"github.com/Spatium-Messenger/Server/models"
-	"github.com/Spatium-Messenger/Server/src/api"
+	"github.com/swap-messenger/Backend/db"
+	"github.com/swap-messenger/Backend/models"
+	"github.com/swap-messenger/Backend/src/api"
 )
 
 type NewMessageFormUser struct {
@@ -55,7 +55,7 @@ func NewMessage(userQuest *string) (models.NewMessageToUser, error) {
 	//	return send, errors.New("Content.Type is missing or null!")
 	//}
 	//token := *data.Token
-	user, err := api2.TestUserToken(data.Token)
+	user, err := api.TestUserToken(data.Token)
 	if err != nil {
 		// Gologer.PError(err.Error())
 		return send, err
@@ -134,7 +134,7 @@ func NewMessageAnother(userQuest *string) (models.NewMessageToUser, error) {
 	//	return send, errors.New("Content.Type is missing or null!")
 	//}
 	//token := *data.Content.Token
-	user, err := api2.TestUserToken(dataReceive.Content.Token)
+	user, err := api.TestUserToken(dataReceive.Content.Token)
 	if err != nil {
 		// Gologer.PError(err.Error())
 		return send, err

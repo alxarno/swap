@@ -1,11 +1,11 @@
-package api2
+package api
 
 import (
 	"net/http"
-	"github.com/Spatium-Messenger/Server/db"
+	"github.com/swap-messenger/Backend/db"
 	"fmt"
 	"encoding/json"
-	"github.com/Spatium-Messenger/Server/models"
+	"github.com/swap-messenger/Backend/models"
 	//"github.com/AlexeyArno/Gologer"
 )
 

@@ -3,7 +3,7 @@ package db
 import (
 	"github.com/astaxie/beego/orm"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/Spatium-Messenger/Server/settings"
+	"github.com/swap-messenger/Backend/settings"
 	"time"
 )
 
@@ -35,7 +35,7 @@ func BeginDB()(error){
 	sett,err:=settings.GetSettings();if err!=nil{
 		panic(err)
 	}
-	if sett.Server.Test{
+	if sett.Backend.Test{
 		orm.Debug = true
 		orm.RegisterDataBase("default", "sqlite3", "file:test.db")
 	}else{

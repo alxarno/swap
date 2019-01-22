@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	db "github.com/Spatium-Messenger/Server/db"
-	"github.com/Spatium-Messenger/Server/settings"
-	api "github.com/Spatium-Messenger/Server/src/api"
-	engine "github.com/Spatium-Messenger/Server/src/message_engine"
+	db "github.com/swap-messenger/Backend/db"
+	"github.com/swap-messenger/Backend/settings"
+	api "github.com/swap-messenger/Backend/src/api"
+	engine "github.com/swap-messenger/Backend/src/message_engine"
 	"github.com/gorilla/mux"
 	"github.com/robbert229/jwt"
 	"golang.org/x/net/websocket"
@@ -90,7 +90,7 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Error with security"))
 		return
 	}
-	secret := sett.Server.SecretKeyForToken
+	secret := sett.Backend.SecretKeyForToken
 	vars := mux.Vars(r)
 	algorithm := jwt.HmacSha256(secret)
 	// Gologer.PInfo(vars["link"])

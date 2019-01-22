@@ -1,4 +1,4 @@
-package api2
+package api
 
 import (
 	"encoding/json"
@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Spatium-Messenger/Server/db"
-	"github.com/Spatium-Messenger/Server/settings"
+	"github.com/swap-messenger/Backend/db"
+	"github.com/swap-messenger/Backend/settings"
 	"github.com/robbert229/jwt"
 )
 
@@ -173,7 +173,7 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(err.Error(), 3, w)
 		return
 	}
-	secret := sett.Server.SecretKeyForToken
+	secret := sett.Backend.SecretKeyForToken
 	algorithm := jwt.HmacSha256(secret)
 	claims := jwt.NewClaim()
 	claims.Set("path", path)

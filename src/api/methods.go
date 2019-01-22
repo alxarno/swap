@@ -1,4 +1,4 @@
-package api2
+package api
 
 import (
 	"encoding/json"
@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/Spatium-Messenger/Server/db"
-	"github.com/Spatium-Messenger/Server/settings"
+	"github.com/swap-messenger/Backend/db"
+	"github.com/swap-messenger/Backend/settings"
 	"github.com/robbert229/jwt"
 	//"strconv"
 )
@@ -19,7 +19,7 @@ func getToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return secret.Server.SecretKeyForToken, nil
+	return secret.Backend.SecretKeyForToken, nil
 }
 
 func sendAnswerError(eType string, errCode int, w http.ResponseWriter) {

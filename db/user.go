@@ -10,12 +10,12 @@ import (
 	"strings"
 
 	// "github.com/AlexeyArno/Gologer"
-	"github.com/Spatium-Messenger/Server/models"
+	"github.com/swap-messenger/Backend/models"
 	"github.com/astaxie/beego/orm"
 )
 
 //import "fmt
-//import "github.com/Spatium-Messenger/Server/src/api/methods"
+//import "github.com/swap-messenger/Backend/src/api/methods"
 
 func GetUser(sType string, data map[string]interface{}) (*User, error) {
 	if sType == "login" {

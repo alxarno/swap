@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Spatium-Messenger/Server/models"
+	"github.com/swap-messenger/Backend/models"
 	"github.com/astaxie/beego/orm"
 	// "github.com/AlexeyArno/Gologer"
 )

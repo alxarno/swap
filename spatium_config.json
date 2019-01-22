@@ -1,0 +1,19 @@
+{
+	"Backend": {
+		"test": false,
+		"encryption":false,
+		"cert_file": "",
+		"key_file": "",
+		"host": "1234",
+		"secret_key_for_token": "89189365083"
+	},
+    "db":{
+        "db_type": "l",
+        "sqlite":{
+            "file_path": "./app.db"
+        }
+    },
+	"service": {
+		"max_file_size_byte": 104857600
+	}
+}

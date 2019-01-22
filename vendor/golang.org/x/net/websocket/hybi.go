@@ -265,14 +265,14 @@ type hybiFrameHandler struct {
 }
 
 func (handler *hybiFrameHandler) HandleFrame(frame frameReader) (frameReader, error) {
-	if handler.conn.IsServerConn() {
-		// The client MUST mask all frames sent to the server.
+	if handler.conn.IsBackendConn() {
+		// The client MUST mask all frames sent to the Backend.
 		if frame.(*hybiFrameReader).header.MaskingKey == nil {
 			handler.WriteClose(closeStatusProtocolError)
 			return nil, io.EOF
 		}
 	} else {
-		// The server MUST NOT mask all frames.
+		// The Backend MUST NOT mask all frames.
 		if frame.(*hybiFrameReader).header.MaskingKey != nil {
 			handler.WriteClose(closeStatusProtocolError)
 			return nil, io.EOF
@@ -481,13 +481,13 @@ func newHybiClientConn(config *Config, buf *bufio.ReadWriter, rwc io.ReadWriteCl
 	return newHybiConn(config, buf, rwc, nil)
 }
 
-// A HybiServerHandshaker performs a server handshake using hybi draft protocol.
-type hybiServerHandshaker struct {
+// A HybiBackendHandshaker performs a Backend handshake using hybi draft protocol.
+type hybiBackendHandshaker struct {
 	*Config
 	accept []byte
 }
 
-func (c *hybiServerHandshaker) ReadHandshake(buf *bufio.Reader, req *http.Request) (code int, err error) {
+func (c *hybiBackendHandshaker) ReadHandshake(buf *bufio.Reader, req *http.Request) (code int, err error) {
 	c.Version = ProtocolVersionHybi13
 	if req.Method != "GET" {
 		return http.StatusMethodNotAllowed, ErrBadRequestMethod
@@ -529,7 +529,7 @@ func (c *hybiServerHandshaker) ReadHandshake(buf *bufio.Reader, req *http.Reques
 	}
 	c.accept, err = getNonceAccept([]byte(key))
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return http.StatusInternalBackendError, err
 	}
 	return http.StatusSwitchingProtocols, nil
 }
@@ -548,10 +548,10 @@ func Origin(config *Config, req *http.Request) (*url.URL, error) {
 	return url.ParseRequestURI(origin)
 }
 
-func (c *hybiServerHandshaker) AcceptHandshake(buf *bufio.Writer) (err error) {
+func (c *hybiBackendHandshaker) AcceptHandshake(buf *bufio.Writer) (err error) {
 	if len(c.Protocol) > 0 {
 		if len(c.Protocol) != 1 {
-			// You need choose a Protocol in Handshake func in Server.
+			// You need choose a Protocol in Handshake func in Backend.
 			return ErrBadWebSocketProtocol
 		}
 	}
@@ -573,11 +573,11 @@ func (c *hybiServerHandshaker) AcceptHandshake(buf *bufio.Writer) (err error) {
 	return buf.Flush()
 }
 
-func (c *hybiServerHandshaker) NewServerConn(buf *bufio.ReadWriter, rwc io.ReadWriteCloser, request *http.Request) *Conn {
-	return newHybiServerConn(c.Config, buf, rwc, request)
+func (c *hybiBackendHandshaker) NewBackendConn(buf *bufio.ReadWriter, rwc io.ReadWriteCloser, request *http.Request) *Conn {
+	return newHybiBackendConn(c.Config, buf, rwc, request)
 }
 
-// newHybiServerConn returns a new WebSocket connection speaking hybi draft protocol.
-func newHybiServerConn(config *Config, buf *bufio.ReadWriter, rwc io.ReadWriteCloser, request *http.Request) *Conn {
+// newHybiBackendConn returns a new WebSocket connection speaking hybi draft protocol.
+func newHybiBackendConn(config *Config, buf *bufio.ReadWriter, rwc io.ReadWriteCloser, request *http.Request) *Conn {
 	return newHybiConn(config, buf, rwc, request)
 }

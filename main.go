@@ -10,11 +10,11 @@ import (
 	"os"
 	"path/filepath"
 
-	db "github.com/Spatium-Messenger/Server/db"
-	"github.com/Spatium-Messenger/Server/models"
-	"github.com/Spatium-Messenger/Server/settings"
+	db "github.com/swap-messenger/Backend/db"
+	"github.com/swap-messenger/Backend/models"
+	"github.com/swap-messenger/Backend/settings"
 
-	engine "github.com/Spatium-Messenger/Server/src/message_engine"
+	engine "github.com/swap-messenger/Backend/src/message_engine"
 	// "github.com/AlexeyArno/Gologer"
 )
 
@@ -55,7 +55,7 @@ func removeContents(dir string) error {
 }
 
 // func redirectToHttps(w http.ResponseWriter, r *http.Request) {
-// 	// Redirect the incoming HTTP request. Note that "127.0.0.1:8081" will only work if you are accessing the server from your local machine.
+// 	// Redirect the incoming HTTP request. Note that "127.0.0.1:8081" will only work if you are accessing the Backend from your local machine.
 // 	http.Redirect(w, r, "https://192.168.56.1:1235"+r.RequestURI, http.StatusMovedPermanently)
 // }
 
@@ -98,9 +98,9 @@ func main() {
 		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
 				myAddres += ipnet.IP.String()
-				myAddres += ":" + settings.ServiceSettings.Server.Host + "\t"
+				myAddres += ":" + settings.ServiceSettings.Backend.Host + "\t"
 				if *test {
-					clearIPs = ipnet.IP.String() + ":" + settings.ServiceSettings.Server.Host
+					clearIPs = ipnet.IP.String() + ":" + settings.ServiceSettings.Backend.Host
 				}
 			}
 		}
@@ -113,15 +113,15 @@ func main() {
 		os.Stderr.WriteString("Swap started on \t" + myAddres + "\n")
 	}
 
-	if settings.ServiceSettings.Server.Encryption {
+	if settings.ServiceSettings.Backend.Encryption {
 		log.Fatal("ListenAndServeTLS: ", http.ListenAndServeTLS(
-			":"+settings.ServiceSettings.Server.Host,
-			settings.ServiceSettings.Server.CertFile,
-			settings.ServiceSettings.Server.KeyFile,
+			":"+settings.ServiceSettings.Backend.Host,
+			settings.ServiceSettings.Backend.CertFile,
+			settings.ServiceSettings.Backend.KeyFile,
 			router))
 	} else {
 		log.Fatal("ListenAndServe: ", http.ListenAndServe(
-			":"+settings.ServiceSettings.Server.Host,
+			":"+settings.ServiceSettings.Backend.Host,
 			router))
 	}
 

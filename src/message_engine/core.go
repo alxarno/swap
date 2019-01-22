@@ -17,15 +17,15 @@ package message_engine
 //
 //
 import (
-	//methods "github.com/Spatium-Messenger/Server/src/api/methods"
+	//methods "github.com/swap-messenger/Backend/src/api/methods"
 	"encoding/json"
 	"fmt"
 
-	models "github.com/Spatium-Messenger/Server/models"
+	models "github.com/swap-messenger/Backend/models"
+	"github.com/swap-messenger/Backend/src/api"
 	"golang.org/x/net/websocket"
-	//"github.com/Spatium-Messenger/Server/src/api/methods"
-	"github.com/Spatium-Messenger/Server/db"
-	"github.com/Spatium-Messenger/Server/src/api"
+	//"github.com/swap-messenger/Backend/src/api/methods"
+	"github.com/swap-messenger/Backend/db"
 	// "github.com/AlexeyArno/Gologer"
 )
 
@@ -127,7 +127,7 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium) {
 		}
 		if action["Action"] == "Authoriz" {
 			token := action["Payload"].(string)
-			user, err := api2.TestUserToken(token)
+			user, err := api.TestUserToken(token)
 			var answer = make(map[string]interface{})
 			if err != nil {
 				// Gologer.PError(err.Error())

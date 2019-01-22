@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Spatium-Messenger/Server/models"
-	"github.com/Spatium-Messenger/Server/src/api"
-	messagesWork "github.com/Spatium-Messenger/Server/src/messages"
-	//"github.com/Spatium-Messenger/Server/settings"
+	messagesWork "github.com/swap-messenger/Backend/src/messages"
+	"github.com/swap-messenger/Backend/models"
+	"github.com/swap-messenger/Backend/src/api"
+	//"github.com/swap-messenger/Backend/settings"
 )
 
 //var (
-//	secret = settings.ServiceSettings.Server.SecretKeyForToken
+//	secret = settings.ServiceSettings.Backend.SecretKeyForToken
 //)
 func SystemMsg(msg string) (map[string]interface{}, error) {
 	var final = make(map[string]interface{})
@@ -29,7 +29,7 @@ func SystemMsg(msg string) (map[string]interface{}, error) {
 		return nil, err
 	}
 	if user_msg_sys.Content.Type == "authoriz" {
-		_, err := api2.TestUserToken(user_msg_sys.Content.Token)
+		_, err := api.TestUserToken(user_msg_sys.Content.Token)
 		if err != nil {
 			fmt.Println(err)
 			return nil, err

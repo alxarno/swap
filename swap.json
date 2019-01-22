@@ -1,5 +1,5 @@
 {
-	"server": {
+	"Backend": {
 		"test": false,
 		"encryption":false,
 		"cert_file": "",
