@@ -1,73 +1,76 @@
 package settings
 
 import (
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"fmt"
-	"encoding/json"
 )
 
 var (
 	ServiceSettings *Settings
 )
 
+const fileName string = "./swap.json"
+
 type Settings struct {
-	Server struct{
-		Test bool `json:"test"`
+	Backend struct {
+		Test              bool   `json:"test"`
 		Encryption        bool   `json:"encryption"`
 		CertFile          string `json:"cert_file"`
 		KeyFile           string `json:"key_file"`
 		Host              string `json:"host"`
 		SecretKeyForToken string `json:"secret_key_for_token"`
-	}`json:"server"`
-	Service struct{
+	} `json:"Backend"`
+	Service struct {
 		MaxFileSize int64 `json:"max_file_size_byte"`
-	}`json:"service"`
-	DB struct{
-		DataBaseType string`json:"db_type"`
-		SQLite struct{
-			Path string`json:"file_path"`
-		}`json:"sqlite"`
-	}`json:"db"`
+	} `json:"service"`
+	DB struct {
+		DataBaseType string `json:"db_type"`
+		SQLite       struct {
+			Path string `json:"file_path"`
+		} `json:"sqlite"`
+	} `json:"db"`
 }
 
-func SetTestVar(test bool){
-	ServiceSettings.Server.Test = test
+func SetTestVar(test bool) {
+	ServiceSettings.Backend.Test = test
 }
 
-func LoadSettings()(error){
+func LoadSettings() error {
 	//Read settings file
-	b, err := ioutil.ReadFile("./spatium_config.json") // just pass the file name
+	b, err := ioutil.ReadFile(fileName) // just pass the file name
 	if err != nil {
-		if _, err := os.Stat("./spatium_config.json"); os.IsNotExist(err) {
-			f, err := os.Create("./spatium_config.json")
-			if err!=nil{
+		if _, err := os.Stat(fileName); os.IsNotExist(err) {
+			f, err := os.Create(fileName)
+			if err != nil {
 				fmt.Println("Create config error")
 				return err
 			}
 
-			default_config := `{	"server": {		"encryption":false,		"cert_file": "",		"key_file": "",		"host": "1234",		"secret_key_for_token": "MY SECRET"	},	"service":{		"max_file_size_byte": 104857600	}}`
+			default_config := `{	"Backend": {		"encryption":false,		"cert_file": "",		"key_file": "",		"host": "1234",		"secret_key_for_token": "MY SECRET"	},	"service":{		"max_file_size_byte": 104857600	}}`
 
 			_, err = f.Write([]byte(default_config))
-			if err!=nil{
+			if err != nil {
 				return err
 			}
 		}
 		return err
 	}
-	err = json.Unmarshal(b,&ServiceSettings)
-	if err!=nil{
+	err = json.Unmarshal(b, &ServiceSettings)
+	if err != nil {
 		fmt.Println("Config unmarshaling error")
 		return err
 	}
 	return nil
 }
 
-func GetSettings()(*Settings,error){
-	if ServiceSettings == nil{
-		err:=LoadSettings();if err!=nil{
-			return nil,err
+func GetSettings() (*Settings, error) {
+	if ServiceSettings == nil {
+		err := LoadSettings()
+		if err != nil {
+			return nil, err
 		}
 	}
-	return ServiceSettings,nil
+	return ServiceSettings, nil
 }

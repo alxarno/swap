@@ -1,19 +1,16 @@
 package api
 
-import (
-	"net/http"
-	chat "github.com/Spatium-Messenger/Server/src/api/chat"
-	user "github.com/Spatium-Messenger/Server/src/api/user"
+import "net/http"
 
-)
-
-
-
-func MainApiRouter(key string, var1 string, w http.ResponseWriter, r *http.Request){
+func Api(key string, var1 string, w http.ResponseWriter, r *http.Request) {
 	switch key {
-		case "user":
-			user.MainUserApi(var1, w , r )
-		case "chat":
-			chat.MainChatApi(var1, w , r )
-		}
+	case "user":
+		UserApi(var1, w, r)
+	case "chat":
+		ChatApi(var1, w, r)
+	case "file":
+		FileApi(var1, w, r)
+	case "messages":
+		MessagesApi(var1, w, r)
+	}
 }
