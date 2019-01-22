@@ -3,52 +3,57 @@ package message_engine
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Spatium-Messenger/Server/models"
-	"github.com/Spatium-Messenger/Server/src/api2"
-	messagesWork "github.com/Spatium-Messenger/Server/src/messages"
 	"time"
+
+	"github.com/Spatium-Messenger/Server/models"
+	"github.com/Spatium-Messenger/Server/src/api"
+	messagesWork "github.com/Spatium-Messenger/Server/src/messages"
 	//"github.com/Spatium-Messenger/Server/settings"
 )
+
 //var (
 //	secret = settings.ServiceSettings.Server.SecretKeyForToken
 //)
-func SystemMsg(msg string)(map[string]interface{}, error){
+func SystemMsg(msg string) (map[string]interface{}, error) {
 	var final = make(map[string]interface{})
 	var user_msg_sys = struct {
-		Type string
-		Content struct{Type string; Token string}
+		Type    string
+		Content struct {
+			Type  string
+			Token string
+		}
 	}{}
 	if err := json.Unmarshal([]byte(msg), &user_msg_sys); err != nil {
 		//panic(err)
 		fmt.Println(err)
 		return nil, err
 	}
-	if user_msg_sys.Content.Type == "authoriz"{
-		_,err:= api2.TestUserToken(user_msg_sys.Content.Token)
-		if err!= nil{
+	if user_msg_sys.Content.Type == "authoriz" {
+		_, err := api2.TestUserToken(user_msg_sys.Content.Token)
+		if err != nil {
 			fmt.Println(err)
 			return nil, err
 		}
 		final["Action"] = "Authoriz"
 		final["Payload"] = user_msg_sys.Content.Token
-		return final,nil
+		return final, nil
 
 	}
-	return nil,nil
+	return nil, nil
 }
 
-func UserMsg(msg string)(*models.NewMessageToUser, error){
+func UserMsg(msg string) (*models.NewMessageToUser, error) {
 	//var user_msg = struct {
 	//	Type string
 	//	Content models
 	//}{}
 
-	message,err:= messagesWork.NewMessageAnother(&msg)
-	if err !=nil{
-		return nil,err
+	message, err := messagesWork.NewMessageAnother(&msg)
+	if err != nil {
+		return nil, err
 	}
-	message.Time =  time.Now().Unix()
-	return &message,nil
+	message.Time = time.Now().Unix()
+	return &message, nil
 	//if err := json.Unmarshal([]byte(msg), &user_msg); err != nil {
 	//	//panic(err)
 	//	fmt.Println(err)
@@ -67,6 +72,4 @@ func UserMsg(msg string)(*models.NewMessageToUser, error){
 	//s_js_msg := jsonMessageContent
 	//newMsgToUser,err:=messagesWork.NewMessage([]byte(s_js_msg))
 
-
 }
-
