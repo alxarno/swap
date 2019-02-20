@@ -12,7 +12,7 @@ import (
 	"net/url"
 )
 
-// DialError is an error that occurs while dialling a websocket Backend.
+// DialError is an error that occurs while dialling a websocket server.
 type DialError struct {
 	*Config
 	Err error
@@ -23,10 +23,10 @@ func (e *DialError) Error() string {
 }
 
 // NewConfig creates a new WebSocket config for client connection.
-func NewConfig(Backend, origin string) (config *Config, err error) {
+func NewConfig(server, origin string) (config *Config, err error) {
 	config = new(Config)
 	config.Version = ProtocolVersionHybi13
-	config.Location, err = url.ParseRequestURI(Backend)
+	config.Location, err = url.ParseRequestURI(server)
 	if err != nil {
 		return
 	}

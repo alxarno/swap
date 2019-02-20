@@ -196,12 +196,12 @@ func main() {
     r := mux.NewRouter()
 
     // This will serve files under http://localhost:8000/static/<filename>
-    r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileBackend(http.Dir(dir))))
+    r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
 
-    srv := &http.Backend{
+    srv := &http.Server{
         Handler:      r,
         Addr:         "127.0.0.1:8000",
-        // Good practice: enforce timeouts for Backends you create!
+        // Good practice: enforce timeouts for servers you create!
         WriteTimeout: 15 * time.Second,
         ReadTimeout:  15 * time.Second,
     }
@@ -348,7 +348,7 @@ func main() {
 
 ### Graceful Shutdown
 
-Go 1.8 introduced the ability to [gracefully shutdown](https://golang.org/doc/go1.8#http_shutdown) a `*http.Backend`. Here's how to do that alongside `mux`:
+Go 1.8 introduced the ability to [gracefully shutdown](https://golang.org/doc/go1.8#http_shutdown) a `*http.Server`. Here's how to do that alongside `mux`:
 
 ```go
 package main
@@ -367,13 +367,13 @@ import (
 
 func main() {
     var wait time.Duration
-    flag.DurationVar(&wait, "graceful-timeout", time.Second * 15, "the duration for which the Backend gracefully wait for existing connections to finish - e.g. 15s or 1m")
+    flag.DurationVar(&wait, "graceful-timeout", time.Second * 15, "the duration for which the server gracefully wait for existing connections to finish - e.g. 15s or 1m")
     flag.Parse()
 
     r := mux.NewRouter()
     // Add your routes as needed
 
-    srv := &http.Backend{
+    srv := &http.Server{
         Addr:         "0.0.0.0:8080",
         // Good practice to set timeouts to avoid Slowloris attacks.
         WriteTimeout: time.Second * 15,
@@ -382,7 +382,7 @@ func main() {
         Handler: r, // Pass our instance of gorilla/mux in.
     }
 
-    // Run our Backend in a goroutine so that it doesn't block.
+    // Run our server in a goroutine so that it doesn't block.
     go func() {
         if err := srv.ListenAndServe(); err != nil {
             log.Println(err)
@@ -619,7 +619,7 @@ func TestMetricsHandler(t *testing.T) {
 
 ## Full Example
 
-Here's a complete, runnable example of a small `mux` based Backend:
+Here's a complete, runnable example of a small `mux` based server:
 
 ```go
 package main

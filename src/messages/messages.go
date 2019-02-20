@@ -2,6 +2,7 @@ package messages
 
 import (
 	"encoding/json"
+	"log"
 
 	// "github.com/AlexeyArno/Gologer"
 	"github.com/swap-messenger/Backend/db"
@@ -103,6 +104,7 @@ func NewMessage(userQuest *string) (models.NewMessageToUser, error) {
 }
 
 func NewMessageAnother(userQuest *string) (models.NewMessageToUser, error) {
+	log.Println(*userQuest)
 	var send models.NewMessageToUser
 	var dataReceive struct {
 		Type    string

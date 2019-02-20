@@ -13,7 +13,7 @@ import "net/http"
 // This API should only be used for testing purposes; it provides a way to
 // inject variables into the request context. Alternatively, URL variables
 // can be set by making a route that captures the required variables,
-// starting a Backend and sending the request to that Backend.
+// starting a server and sending the request to that server.
 func SetURLVars(r *http.Request, val map[string]string) *http.Request {
 	return setVars(r, val)
 }

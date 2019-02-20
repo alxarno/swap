@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	// "github.com/AlexeyArno/Gologer"
 	"encoding/json"
@@ -336,14 +337,16 @@ func GetUsersForAddByName(chatId int64, name string) ([]map[string]interface{}, 
 	for _, v := range otherUsersIds {
 		stringOtherUsersIds = append(stringOtherUsersIds, strconv.FormatInt(v, 10))
 	}
-
-	_, err = o.Raw("SELECT id, name,login FROM users WHERE id NOT IN (?) and ((name LIKE ?) or (login Like ?))",
-		strings.Join(stringOtherUsersIds[:], ","), "%"+name+"%", "%"+name+"%").QueryRows(&findUsers)
+	query := "SELECT id, name, login FROM users WHERE (id NOT IN (%s)) and ((name LIKE ?) or (login LIKE ?))"
+	query = fmt.Sprintf(query, strings.Join(stringOtherUsersIds[:], ","))
+	_, err = o.Raw(query, "%"+name+"%", "%"+name+"%").QueryRows(&findUsers)
 
 	if err != nil {
 		// Gologer.PError(err.Error())
 		return final, err
 	}
+
+	fmt.Println(findUsers)
 	for i, v := range findUsers {
 		final = append(final, map[string]interface{}{})
 		final[i]["name"] = v.Name

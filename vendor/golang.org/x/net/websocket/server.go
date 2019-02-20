@@ -11,8 +11,8 @@ import (
 	"net/http"
 )
 
-func newBackendConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Request, config *Config, handshake func(*Config, *http.Request) error) (conn *Conn, err error) {
-	var hs BackendHandshaker = &hybiBackendHandshaker{Config: config}
+func newServerConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Request, config *Config, handshake func(*Config, *http.Request) error) (conn *Conn, err error) {
+	var hs serverHandshaker = &hybiServerHandshaker{Config: config}
 	code, err := hs.ReadHandshake(buf.Reader, req)
 	if err == ErrBadWebSocketVersion {
 		fmt.Fprintf(buf, "HTTP/1.1 %03d %s\r\n", code, http.StatusText(code))
@@ -47,12 +47,12 @@ func newBackendConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Req
 		buf.Flush()
 		return
 	}
-	conn = hs.NewBackendConn(buf, rwc, req)
+	conn = hs.NewServerConn(buf, rwc, req)
 	return
 }
 
-// Backend represents a Backend of a WebSocket.
-type Backend struct {
+// Server represents a server of a WebSocket.
+type Server struct {
 	// Config is a WebSocket configuration for new WebSocket connection.
 	Config
 
@@ -66,20 +66,20 @@ type Backend struct {
 }
 
 // ServeHTTP implements the http.Handler interface for a WebSocket
-func (s Backend) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (s Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	s.serveWebSocket(w, req)
 }
 
-func (s Backend) serveWebSocket(w http.ResponseWriter, req *http.Request) {
+func (s Server) serveWebSocket(w http.ResponseWriter, req *http.Request) {
 	rwc, buf, err := w.(http.Hijacker).Hijack()
 	if err != nil {
 		panic("Hijack failed: " + err.Error())
 	}
-	// The Backend should abort the WebSocket connection if it finds
+	// The server should abort the WebSocket connection if it finds
 	// the client did not send a handshake that matches with protocol
 	// specification.
 	defer rwc.Close()
-	conn, err := newBackendConn(rwc, buf, req, &s.Config, s.Handshake)
+	conn, err := newServerConn(rwc, buf, req, &s.Config, s.Handshake)
 	if err != nil {
 		return
 	}
@@ -92,10 +92,10 @@ func (s Backend) serveWebSocket(w http.ResponseWriter, req *http.Request) {
 // Handler is a simple interface to a WebSocket browser client.
 // It checks if Origin header is valid URL by default.
 // You might want to verify websocket.Conn.Config().Origin in the func.
-// If you use Backend instead of Handler, you could call websocket.Origin and
+// If you use Server instead of Handler, you could call websocket.Origin and
 // check the origin in your Handshake func. So, if you want to accept
 // non-browser clients, which do not send an Origin header, set a
-// Backend.Handshake that does not check the origin.
+// Server.Handshake that does not check the origin.
 type Handler func(*Conn)
 
 func checkOrigin(config *Config, req *http.Request) (err error) {
@@ -108,6 +108,6 @@ func checkOrigin(config *Config, req *http.Request) (err error) {
 
 // ServeHTTP implements the http.Handler interface for a WebSocket
 func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	s := Backend{Handler: h, Handshake: checkOrigin}
+	s := Server{Handler: h, Handshake: checkOrigin}
 	s.serveWebSocket(w, req)
 }

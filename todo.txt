@@ -1,1 +1,2 @@
 Dev mode
+Change delete file request args

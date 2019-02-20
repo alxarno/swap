@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/robbert229/jwt"
 	"github.com/swap-messenger/Backend/db"
 	"github.com/swap-messenger/Backend/settings"
-	"github.com/robbert229/jwt"
 )
 
 type fileInfo struct {
@@ -48,7 +49,11 @@ func rebuildFileDataTypes(buff fileInfoBuff) (fileInfo, error) {
 }
 
 func uploadFile(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(settings.ServiceSettings.Service.MaxFileSize)
+	err := r.ParseMultipartForm(settings.ServiceSettings.Service.MaxFileSize)
+	if err != nil {
+		sendAnswerError(err.Error(), 0, w)
+		return
+	}
 	var buff fileInfoBuff
 	buff.ratioSize = r.FormValue("ratio_size")
 	buff.token = r.FormValue("token")
@@ -56,41 +61,44 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	buff.name = r.FormValue("name")
 	buff.fileType = r.FormValue("type")
 
+	fmt.Println(buff)
+
 	user, err := TestUserToken(buff.token)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		log.Println(err)
+		sendAnswerError(err.Error(), 1, w)
 		return
 	}
 	file, handler, err := r.FormFile("file")
 	if err != nil {
-		sendAnswerError(err.Error(), 1, w)
+		sendAnswerError(err.Error(), 2, w)
 		return
 	}
 	defer file.Close()
 	fD, err := rebuildFileDataTypes(buff)
 	if err != nil {
-		sendAnswerError(err.Error(), 2, w)
+		sendAnswerError(err.Error(), 3, w)
 		return
 	}
 	id, path, err := db.CreateFile(fD.name, handler.Size, user.Id, fD.chatId, fD.ratioSize)
 	if err != nil {
-		sendAnswerError(err.Error(), 3, w)
+		sendAnswerError(err.Error(), 4, w)
 		return
 	}
 	f, err := os.OpenFile("./public/files/"+path, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
-		sendAnswerError(err.Error(), 4, w)
+		sendAnswerError(err.Error(), 5, w)
 		fmt.Println(err)
 		return
 	}
 	defer f.Close()
 	io.Copy(f, file)
-	err = compressionImage(fD.fileType, fD.ratioSize, path)
-	if err != nil {
-		// Gologer.PError(err.Error())
-		sendAnswerError(err.Error(), 5, w)
-		return
-	}
+	compressionImage(fD.fileType, fD.ratioSize, path)
+	// if err != nil {
+	// 	// Gologer.PError(err.Error())
+	// 	sendAnswerError(err.Error(), 6, w)
+	// 	return
+	// }
 	var x = make(map[string]string)
 	x["result"] = "Success"
 	x["FileId"] = strconv.FormatInt(id, 10)
@@ -214,13 +222,13 @@ func getFile(w http.ResponseWriter, r *http.Request) {
 	TypeChanger(rData, &data)
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(err.Error(), 1, w)
 		return
 	}
 	path, err := db.CheckFileRights(user.Id, data.FileId)
 	if err != nil {
 		// Gologer.PInfo(err.Error())
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(err.Error(), 2, w)
 		return
 	}
 	// Gologer.PInfo(strconv.FormatBool(data.Min))

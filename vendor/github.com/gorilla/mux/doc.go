@@ -157,12 +157,12 @@ request that matches "/static/*". This makes it easy to serve static files with 
 		r := mux.NewRouter()
 
 		// This will serve files under http://localhost:8000/static/<filename>
-		r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileBackend(http.Dir(dir))))
+		r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
 
-		srv := &http.Backend{
+		srv := &http.Server{
 			Handler:      r,
 			Addr:         "127.0.0.1:8000",
-			// Good practice: enforce timeouts for Backends you create!
+			// Good practice: enforce timeouts for servers you create!
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
 		}

@@ -7251,7 +7251,7 @@ SQLITE_API int sqlite3_test_control(int op, ...);
 ** <li> Put all identifier names inside double-quotes.  This is the official
 **      SQL way to escape identifier names.
 ** <li> Put identifier names inside &#91;...&#93;.  This is not standard SQL,
-**      but it is what SQL Backend does and so lots of programmers use this
+**      but it is what SQL Server does and so lots of programmers use this
 **      technique.
 ** <li> Begin every identifier with the letter "Z" as no SQL keywords start
 **      with "Z".

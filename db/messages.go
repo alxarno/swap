@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/swap-messenger/Backend/models"
 	"github.com/astaxie/beego/orm"
+	"github.com/swap-messenger/Backend/models"
 	// "github.com/AlexeyArno/Gologer"
 )
 

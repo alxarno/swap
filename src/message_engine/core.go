@@ -20,6 +20,7 @@ import (
 	//methods "github.com/swap-messenger/Backend/src/api/methods"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	models "github.com/swap-messenger/Backend/models"
 	"github.com/swap-messenger/Backend/src/api"
@@ -113,7 +114,6 @@ func writerUser(ws *websocket.Conn, ch <-chan models.NewMessageToUser) {
 
 func decodeNewMessage(msg string, connect *ConnectionSpatium) {
 	var data = make(map[string]interface{})
-
 	if err := json.Unmarshal([]byte(msg), &data); err != nil {
 		//panic(err)
 		fmt.Println(err)
@@ -151,7 +151,7 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium) {
 	} else {
 		messageToUser, err := UserMsg(msg)
 		if err != nil {
-			// Gologer.PError(err.Error())
+			log.Println(err)
 			return
 		}
 		sendMessages <- *messageToUser

@@ -8,9 +8,9 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/robbert229/jwt"
 	"github.com/swap-messenger/Backend/db"
 	"github.com/swap-messenger/Backend/settings"
-	"github.com/robbert229/jwt"
 	//"strconv"
 )
 
@@ -67,15 +67,15 @@ func TestUserToken(token string) (*db.User, error) {
 	algorithm := jwt.HmacSha256(secret)
 	claims, err := algorithm.Decode(token)
 	if err != nil {
-		return nil, errors.New("token is wrong")
+		return nil, errors.New("token is wrong 1")
 	}
 	id, err := claims.Get("id")
 	if err != nil {
-		return nil, errors.New("token is wrong")
+		return nil, errors.New("token is wrong 2")
 	}
 	tokenTime, err := claims.Get("time")
 	if err != nil {
-		return nil, errors.New("token is wrong")
+		return nil, errors.New("token is wrong 3")
 	}
 
 	if int64(tokenTime.(float64)) > time.Now().Unix() {
@@ -133,7 +133,7 @@ func TypeChanger(receiver interface{}, sender interface{}) {
 			}
 		case reflect.Slice:
 			rField := reflect.ValueOf(sender).Elem().FieldByIndex([]int{i})
-			v := reflect.ValueOf(receiver)
+			v := reflect.ValueOf(receiver).FieldByIndex([]int{i})
 			slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(int64(0))), v.Len(), v.Len())
 			rField.Set(slice)
 			for i := 0; i < v.Len(); i++ {

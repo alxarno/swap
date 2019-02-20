@@ -25,7 +25,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError("name less then 3 char", 0, w)
+		sendAnswerError("token is invalid", 0, w)
 		return
 	}
 	if data.Type == "chat" {
@@ -47,9 +47,9 @@ func create(w http.ResponseWriter, r *http.Request) {
 
 func addUsers(w http.ResponseWriter, r *http.Request) {
 	var sData struct {
-		Token  string
-		Ids    []float64
-		ChatId float64
+		Token  string    `json:"token"`
+		Ids    []float64 `json:"users"`
+		ChatId float64   `json:"chat_id"`
 	}
 	var data struct {
 		Token  string
@@ -64,16 +64,16 @@ func addUsers(w http.ResponseWriter, r *http.Request) {
 	TypeChanger(sData, &data)
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(err.Error(), 1, w)
 		return
 	}
 	res, err := db.CheckUserInChatDelete(user.Id, data.ChatId)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(err.Error(), 2, w)
 		return
 	}
 	if res {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(err.Error(), 3, w)
 		return
 	}
 
@@ -107,12 +107,12 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 	TypeChanger(pData, &data)
 	_, err = TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(err.Error(), 1, w)
 		return
 	}
 	users, err := db.GetChatUserInfo(data.ChatId)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(err.Error(), 2, w)
 		return
 	}
 	fmt.Fprintf(w, string(users))
