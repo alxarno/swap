@@ -3,7 +3,6 @@ package db
 import (
 	"errors"
 	"fmt"
-	"log"
 	// "github.com/AlexeyArno/Gologer"
 	"encoding/json"
 	"strconv"
@@ -55,7 +54,6 @@ func CheckUserInChatDelete(UserId int64, ChatId int64) (bool, error) {
 	//Gologer.PInfo(strconv.FormatInt(UserId,10))
 	//Gologer.PInfo(strconv.FormatInt(ChatId,10))
 	var cUser ChatUser
-	log.Println(UserId, ChatId, "LOX")
 	query := o.QueryTable("chat_users").Filter("user_id", UserId).Filter("chat_id", ChatId)
 	err := query.One(&cUser)
 	if err != nil {

@@ -151,7 +151,7 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium) {
 	} else {
 		messageToUser, err := UserMsg(msg)
 		if err != nil {
-			log.Println(err)
+			log.Println("decodeNewMessage error: " + err.Error())
 			return
 		}
 		sendMessages <- *messageToUser

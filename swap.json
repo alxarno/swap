@@ -1,19 +1,20 @@
 {
-	"Backend": {
-		"test": false,
-		"encryption":false,
-		"cert_file": "",
-		"key_file": "",
-		"host": "3030",
-		"secret_key_for_token": "89189365083"
-	},
-    "db":{
-        "db_type": "l",
-        "sqlite":{
-            "file_path": "./app.db"
-        }
-    },
-	"service": {
-		"max_file_size_byte": 104857600
-	}
-}
+				"backend":{
+					"test": false,
+					"encryption":false,
+					"cert_file": "",
+					"key_file": "",
+					"host": "3030",
+					"secret_key_for_token": "MY SECRET",
+					"files_path": "/public/files"
+				},
+				"service":{
+					"max_file_size_byte": 104857600
+				},
+				"db":{
+					"db_type":"l",
+					"sqlite":{
+						"file_path": "swap.db"
+					}
+				}
+			}

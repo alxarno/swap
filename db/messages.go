@@ -46,12 +46,12 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64) ([]*mode
 	err := o.QueryTable("chat_users").Filter("user_id", userId).
 		Filter("chat_id", chatId).RelatedSel().One(&cUser)
 	if err != nil {
-		return final, errors.New("user is not in chat")
+		return final, errors.New("User is not in chat")
 	}
 
 	delTimes, err := cUser.GetDeletePoints()
 	if err != nil {
-		return final, errors.New("cant decode delete points")
+		return final, errors.New("Can't decode delete points")
 	}
 	qb, _ := orm.NewQueryBuilder(driver)
 	//Get message from db
@@ -80,7 +80,7 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64) ([]*mode
 			}
 		}
 		if add {
-			qb.And(fmt.Sprintf("messages.id < %d", lastIndex))
+			qb.And(fmt.Sprintf("messages.id > %d", lastIndex))
 		}
 		qb.OrderBy("messages.time").Asc().Limit(80)
 	}

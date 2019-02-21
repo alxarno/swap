@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -65,7 +64,6 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 
 	user, err := TestUserToken(buff.token)
 	if err != nil {
-		log.Println(err)
 		sendAnswerError(err.Error(), 1, w)
 		return
 	}

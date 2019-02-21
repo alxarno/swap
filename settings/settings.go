@@ -2,8 +2,10 @@ package settings
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 )
 
@@ -21,7 +23,8 @@ type Settings struct {
 		KeyFile           string `json:"key_file"`
 		Host              string `json:"host"`
 		SecretKeyForToken string `json:"secret_key_for_token"`
-	} `json:"Backend"`
+		FilesPath         string `json:"files_path"`
+	} `json:"backend"`
 	Service struct {
 		MaxFileSize int64 `json:"max_file_size_byte"`
 	} `json:"service"`
@@ -44,18 +47,47 @@ func LoadSettings() error {
 		if _, err := os.Stat(fileName); os.IsNotExist(err) {
 			f, err := os.Create(fileName)
 			if err != nil {
-				fmt.Println("Create config error")
+				log.Println("Create config error")
 				return err
 			}
 
-			default_config := `{	"Backend": {		"encryption":false,		"cert_file": "",		"key_file": "",		"host": "1234",		"secret_key_for_token": "MY SECRET"	},	"service":{		"max_file_size_byte": 104857600	}}`
+			defaultConfig := `{
+				"backend":{
+					"test": false,
+					"encryption":false,
+					"cert_file": "",
+					"key_file": "",
+					"host": "3030",
+					"secret_key_for_token": "MY SECRET",
+					"files_path": "/public/files"
+				},
+				"service":{
+					"max_file_size_byte": 104857600
+				},
+				"db":{
+					"db_type":"l",
+					"sqlite":{
+						"file_path": "swap.db"
+					}
+				}
+			}`
 
-			_, err = f.Write([]byte(default_config))
+			_, err = f.Write([]byte(defaultConfig))
+			f.Close()
 			if err != nil {
+				log.Println("Cannot write config")
 				return err
 			}
+
+			os.RemoveAll("./public/files/")
+			os.Mkdir("./public", os.ModePerm)
+			os.Mkdir("./public/files", os.ModePerm)
+			os.Mkdir("./public/files/min", os.ModePerm)
+			b, err = ioutil.ReadFile(fileName)
+		} else {
+			return errors.New("Strange config problem: " + err.Error())
 		}
-		return err
+
 	}
 	err = json.Unmarshal(b, &ServiceSettings)
 	if err != nil {

@@ -29,21 +29,22 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	TypeChanger(rData, &data)
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(err.Error(), 1, w)
 		return
 	}
+
 	//There is no need check user is in chat, because func "GetMessage" check it auto
 	var mes []*models.NewMessageToUser
 	if data.LastId == 0 {
 		mes, err = db.GetMessages(user.Id, data.ChatId, false, 0)
 		if err != nil {
-			sendAnswerError(err.Error(), 0, w)
+			sendAnswerError(err.Error(), 2, w)
 			return
 		}
 	} else {
 		mes, err = db.GetMessages(user.Id, data.ChatId, true, data.LastId)
 		if err != nil {
-			sendAnswerError(err.Error(), 0, w)
+			sendAnswerError(err.Error(), 3, w)
 			return
 		}
 	}

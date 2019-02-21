@@ -4,6 +4,7 @@ import (
 	//"github.com/nfnt/resize"
 	"log"
 	"os"
+	"strings"
 	//"fmt"
 	"errors"
 	"image"
@@ -11,9 +12,11 @@ import (
 	"image/png"
 	//"github.com/disintegration/imaging"
 	"github.com/disintegration/imaging"
+	"github.com/swap-messenger/Backend/settings"
 )
 
 func compressionImage(iType string, ratio float64, path string) error {
+	iType = strings.ToLower(iType)
 	file, err := os.Open("./public/files/" + path)
 	defer file.Close()
 	if err != nil {
@@ -32,13 +35,12 @@ func compressionImage(iType string, ratio float64, path string) error {
 	if iType == "jpeg" || iType == "jpg" {
 		nowImage, err = jpeg.Decode(file)
 		if err != nil {
-			log.Println(err, 2)
-			return err
+			return errors.New("JPG/JPEG encode error:" + err.Error())
 		}
 	}
 	if nowImage == nil {
-		log.Println("failed type", iType)
-		return errors.New("failed type")
+		// log.Println("Failed type", iType)
+		return errors.New("Failed type error:" + err.Error())
 	}
 	file.Close()
 	g := nowImage.Bounds()
@@ -47,10 +49,10 @@ func compressionImage(iType string, ratio float64, path string) error {
 	//fmt.Println("Width = ", width)
 	//fmt.Println("Height = ", height)
 	//fmt.Println("Ratio size = ", ratio_size)
-	out, err := os.Create("./public/files/min/" + path)
+	out, err := os.Create(settings.ServiceSettings.Backend.FilesPath + path)
 	if err != nil {
 		log.Println(err, 3)
-		return err
+		return errors.New("Failed creating file:" + err.Error())
 	}
 	defer out.Close()
 	if width > 500 || height > 360 {

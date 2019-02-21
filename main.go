@@ -71,8 +71,7 @@ func main() {
 	if *test {
 		settings.SetTestVar(true)
 	} else {
-		//removeContents("./public/files")
-		//os.Mkdir("./public/files/min", os.ModePerm)
+
 	}
 
 	err = db.BeginDB()

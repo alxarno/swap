@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -113,7 +112,6 @@ func GetUserChats(userId int64) ([]*models.UserChatInfo, error) {
 	sql = msg.String()
 	for _, v := range ChatInfoBuffer {
 		o.Raw(sql, v.Id).Values(&messagesBuffer)
-		fmt.Println(messagesBuffer)
 		if len(messagesBuffer) == 0 {
 			continue
 		}
