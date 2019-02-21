@@ -18,17 +18,22 @@ func CreateChat(name string, AuthorId int64) (int64, error) {
 	err := o.QueryTable("users").Filter("id", AuthorId).
 		One(&u)
 	if err != nil {
-		return 0, err
+		return 0, errors.New("Get User error:" + err.Error())
 	}
+	o.Begin()
 	c := Chat{Name: name, Author: &u, Type: 0}
 	id, err := o.Insert(&c)
 	if err != nil {
-		return 0, err
+		o.Rollback()
+		return 0, errors.New("Insert chat error:" + err.Error())
 	}
-	err = InsertUserInChat(u.Id, id)
+	o.Commit()
+	// log.Println(u.Id, id)
+	err = InsertUserInChat(u.Id, id, false)
 	if err != nil {
-		return id, err
+		return id, errors.New("Insert user in chat error:" + err.Error())
 	}
+	o.Commit()
 	return id, nil
 }
 
@@ -50,9 +55,11 @@ func CheckUserInChatDelete(UserId int64, ChatId int64) (bool, error) {
 	//Gologer.PInfo(strconv.FormatInt(UserId,10))
 	//Gologer.PInfo(strconv.FormatInt(ChatId,10))
 	var cUser ChatUser
-	err := o.QueryTable("chat_users").Filter("user_id", UserId).Filter("chat_id", ChatId).One(&cUser)
+	log.Println(UserId, ChatId, "LOX")
+	query := o.QueryTable("chat_users").Filter("user_id", UserId).Filter("chat_id", ChatId)
+	err := query.One(&cUser)
 	if err != nil {
-		return false, err
+		return false, errors.New("Get ChatUser error: " + err.Error())
 	}
 	if cUser.List_Invisible || cUser.Delete_last != 0 {
 		return true, nil
@@ -60,11 +67,11 @@ func CheckUserInChatDelete(UserId int64, ChatId int64) (bool, error) {
 	return false, nil
 }
 
-func InsertUserInChat(UserId int64, ChatId int64) error {
+func InsertUserInChat(UserId int64, ChatId int64, invite bool) error {
 	var cUser ChatUser
 	err := o.QueryTable("chat_users").Filter("user_id", UserId).Filter("chat_id", ChatId).One(&cUser)
 	if err == nil {
-		return errors.New("user already in chat")
+		return errors.New("User already in chat")
 	}
 
 	cUser.User = &User{Id: UserId}
@@ -74,19 +81,29 @@ func InsertUserInChat(UserId int64, ChatId int64) error {
 	DeletePoints = append(DeletePoints, []int64{0, 0})
 	cUser.Start = time.Now().Unix()
 	cUser.SetDeletePoints(DeletePoints)
+	o.Begin()
 	_, err = o.Insert(&cUser)
 	if err != nil {
-		return err
+		o.Rollback()
+		return errors.New("Insert ChatUser error:" + err.Error())
 	}
-	content := cUser.User.Name + " создал(а) беседу"
-	if cUser.Chat.Type == 2 {
-		content = cUser.User.Name + " создал(а) канал"
+	o.Commit()
+	var content string
+	if !invite {
+		content = cUser.User.Name + " создал(а) беседу"
+		if cUser.Chat.Type == 2 {
+			content = cUser.User.Name + " создал(а) канал"
+		}
+	} else {
+		content = cUser.User.Name + " приглашен(а) в беседу"
+		if cUser.Chat.Type == 2 {
+			content = cUser.User.Name + " приглашен(а) в канал"
+		}
 	}
-	_, err = SendMessage(ChatId, UserId, content, 1)
+
+	_, err = SendMessage(UserId, ChatId, content, 1)
 	if err != nil {
-		// Gologer.PError(err.Error())
-		log.Println(err)
-		return err
+		return errors.New("SendMessage error:" + err.Error())
 	}
 	return nil
 }

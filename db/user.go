@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	// "github.com/AlexeyArno/Gologer"
-	"github.com/swap-messenger/Backend/models"
 	"github.com/astaxie/beego/orm"
+	"github.com/swap-messenger/Backend/models"
 )
 
 //import "fmt
@@ -96,9 +96,12 @@ func GetUserChats(userId int64) ([]*models.UserChatInfo, error) {
 		//Offset(0)
 	sql := qb.String()
 	_, err := o.Raw(sql, false, userId).QueryRows(&ChatInfoBuffer)
+
 	if err != nil {
 		return final, err
 	}
+
+	// LAST Messages
 	msg, _ := orm.NewQueryBuilder(driver)
 	msg.Select("messages.content",
 		"messages.time",
@@ -110,10 +113,11 @@ func GetUserChats(userId int64) ([]*models.UserChatInfo, error) {
 	sql = msg.String()
 	for _, v := range ChatInfoBuffer {
 		o.Raw(sql, v.Id).Values(&messagesBuffer)
+		fmt.Println(messagesBuffer)
 		if len(messagesBuffer) == 0 {
 			continue
 		}
-		fmt.Println(messagesBuffer)
+
 		var msgNow models.MessageContent
 		err := json.Unmarshal([]byte(messagesBuffer[0]["content"].(string)), &msgNow)
 		if err != nil {

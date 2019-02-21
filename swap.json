@@ -4,7 +4,7 @@
 		"encryption":false,
 		"cert_file": "",
 		"key_file": "",
-		"host": "1234",
+		"host": "3030",
 		"secret_key_for_token": "89189365083"
 	},
     "db":{

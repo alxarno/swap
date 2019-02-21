@@ -14,17 +14,19 @@ import (
 func addMessage(userId int64, chatId int64, content string) (int64, error) {
 	res, err := CheckUserInChatDelete(userId, chatId)
 	if err != nil {
-		// Gologer.PError(err.Error())
-		return 0, err
+		return 0, errors.New("Check user in chat error: " + err.Error())
 	}
 	if res {
-		return 0, errors.New("user delete from chat")
+		return 0, errors.New("User deleted from chat")
 	}
 	m := Message{Author: &User{Id: userId}, Content: content, Chat: &Chat{Id: chatId}, Time: time.Now().Unix()}
+	o.Begin()
 	id, err := o.Insert(&m)
 	if err != nil {
-		return 0, err
+		o.Rollback()
+		return 0, errors.New("Message insert error: " + err.Error())
 	}
+	o.Commit()
 	return id, nil
 }
 
@@ -80,7 +82,7 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64) ([]*mode
 		if add {
 			qb.And(fmt.Sprintf("messages.id < %d", lastIndex))
 		}
-		qb.OrderBy("messages.time").Desc().Limit(80)
+		qb.OrderBy("messages.time").Asc().Limit(80)
 	}
 	sql := qb.String()
 	o.Raw(sql, chatId).QueryRows(&templates)

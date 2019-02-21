@@ -20,25 +20,25 @@ func create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(data.Name) < 3 {
-		sendAnswerError("name less then 3 char", 0, w)
+		sendAnswerError("name less then 3 char", 1, w)
 		return
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError("token is invalid", 0, w)
+		sendAnswerError("token is invalid", 2, w)
 		return
 	}
 	if data.Type == "chat" {
 		_, err = db.CreateChat(data.Name, user.Id)
 		if err != nil {
-			sendAnswerError(err.Error(), 0, w)
+			sendAnswerError(err.Error(), 3, w)
 			return
 		}
 	}
 	if data.Type == "channel" {
 		_, err = db.CreateChannel(data.Name, user.Id)
 		if err != nil {
-			sendAnswerError(err.Error(), 0, w)
+			sendAnswerError(err.Error(), 4, w)
 			return
 		}
 	}
@@ -80,7 +80,7 @@ func addUsers(w http.ResponseWriter, r *http.Request) {
 	var failed []int64
 	var successAdd []int64
 	for i := 0; i < len(data.Ids); i++ {
-		err := db.InsertUserInChat(data.Ids[i], data.ChatId)
+		err := db.InsertUserInChat(data.Ids[i], data.ChatId, true)
 		if err != nil {
 			failed = append(failed, data.Ids[i])
 		} else {
