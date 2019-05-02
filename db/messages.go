@@ -32,9 +32,9 @@ func addMessage(userId int64, chatId int64, content string) (int64, error) {
 
 func GetMessages(userId int64, chatId int64, add bool, lastIndex int64) ([]*models.NewMessageToUser, error) {
 	type MessageTemplate struct {
-		Id       int64
+		ID       int64
 		Content  string
-		AuthorId int64
+		AuthorID int64
 		Name     string
 		Login    string
 		Time     int64
@@ -89,13 +89,7 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64) ([]*mode
 
 	//Get Content and File information
 	for _, v := range templates {
-		type ContentFirst struct {
-			Message   string  `json:"content"`
-			Documents []int64 `json:"documents"`
-			Type      string  `json:"type"`
-		}
-
-		var Content ContentFirst
+		var Content models.MessageContent
 		err := json.Unmarshal([]byte(v.Content), &Content)
 		if err != nil {
 			// Gologer.PError("Fail unmarshal : "+v.Content)
@@ -114,11 +108,12 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64) ([]*mode
 		mes.Documents = docs
 		mes.Message = Content.Message
 		mes.Type = Content.Type
+		mes.Command = Content.Command
 
 		final = append(final, &models.NewMessageToUser{
-			ID:          v.Id,
+			ID:          v.ID,
 			ChatId:      chatId,
-			AuthorId:    v.AuthorId,
+			AuthorId:    v.AuthorID,
 			AuthorName:  v.Name,
 			AuthorLogin: v.Login,
 			Time:        v.Time,

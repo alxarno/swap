@@ -3,6 +3,9 @@ package db
 import (
 	"errors"
 	"fmt"
+	"log"
+
+	"github.com/swap-messenger/Backend/models"
 	// "github.com/AlexeyArno/Gologer"
 	"encoding/json"
 	"strconv"
@@ -27,12 +30,14 @@ func CreateChat(name string, AuthorId int64) (int64, error) {
 		return 0, errors.New("Insert chat error:" + err.Error())
 	}
 	o.Commit()
-	// log.Println(u.Id, id)
 	err = InsertUserInChat(u.Id, id, false)
 	if err != nil {
 		return id, errors.New("Insert user in chat error:" + err.Error())
 	}
 	o.Commit()
+	if ChatCreated != nil {
+		ChatCreated(AuthorId)
+	}
 	return id, nil
 }
 
@@ -43,10 +48,20 @@ func CreateChannel(name string, AuthorId int64) (int64, error) {
 		return 0, err
 	}
 	c := Chat{Name: name, Author: &u, Type: 2}
+	o.Begin()
 	id, err := o.Insert(&c)
 	if err != nil {
+		o.Rollback()
 		return 0, err
 	}
+	// o.Commit()
+
+	err = InsertUserInChat(u.Id, id, false)
+	if err != nil {
+		o.Rollback()
+		return id, errors.New("Insert user in channel error:" + err.Error())
+	}
+	o.Commit()
 	return id, nil
 }
 
@@ -87,19 +102,29 @@ func InsertUserInChat(UserId int64, ChatId int64, invite bool) error {
 	}
 	o.Commit()
 	var content string
+	var command int
 	if !invite {
-		content = cUser.User.Name + " создал(а) беседу"
+		command = models.MESSAGE_COMMAND_USER_CREATED_CHAT
+		// content = cUser.User.Name + " создал(а) беседу"
 		if cUser.Chat.Type == 2 {
-			content = cUser.User.Name + " создал(а) канал"
+			command = models.MESSAGE_COMMAND_USER_CREATED_CHANNEL
+			// content = cUser.User.Name + " создал(а) канал"
 		}
 	} else {
-		content = cUser.User.Name + " приглашен(а) в беседу"
+		command = models.MESSAGE_COMMAND_USER_INSERTED_TO_CHAT
+
+		// content = cUser.User.Name + " приглашен(а) в беседу"
 		if cUser.Chat.Type == 2 {
-			content = cUser.User.Name + " приглашен(а) в канал"
+			command = models.MESSAGE_COMMAND_USER_INSERTED_TO_CHANNEL
+			// content = cUser.User.Name + " приглашен(а) в канал"
+		}
+		if UserRequestedToChat != nil {
+			UserRequestedToChat(UserId, ChatId, command)
 		}
 	}
-
-	_, err = SendMessage(UserId, ChatId, content, 1)
+	log.Println("Command ", command)
+	_, err = SendMessage(UserId, ChatId, content, 1, command)
+	//UserRequestedToChat
 	if err != nil {
 		return errors.New("SendMessage error:" + err.Error())
 	}
@@ -117,10 +142,16 @@ func GetChatType(ChatId int64) (int, error) {
 
 func CheckUserRightsInChat(UserId int64, ChatId int64) error {
 	var c Chat
-	err := o.QueryTable("chat_users").Filter("id", ChatId).Filter("chat_id", ChatId).One(&c)
+
+	err := o.QueryTable("chats").Filter("id", ChatId).One(&c)
 	if err != nil {
 		return err
 	}
+
+	// err := o.QueryTable("chat_users").Filter("id", ChatId).Filter("chat_id", ChatId).One(&c)
+	// if err != nil {
+	// 	return err
+	// }
 	if c.Author.Id != UserId {
 		return errors.New("user haven't rights")
 	}
@@ -269,7 +300,7 @@ func GetChatSettings(ChatId int64) (map[string]interface{}, error) {
 }
 
 func SetNameChat(ChatId int64, name string) error {
-	ch := Chat{Id: ChatId}
+	ch := &Chat{Id: ChatId}
 	err := o.Read(ch)
 	if err != nil {
 		// Gologer.PError(err.Error())

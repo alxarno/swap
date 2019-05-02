@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -60,7 +61,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	buff.name = r.FormValue("name")
 	buff.fileType = r.FormValue("type")
 
-	fmt.Println(buff)
+	// fmt.Println(buff)
 
 	user, err := TestUserToken(buff.token)
 	if err != nil {
@@ -83,20 +84,16 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(err.Error(), 4, w)
 		return
 	}
-	f, err := os.OpenFile("./public/files/"+path, os.O_WRONLY|os.O_CREATE, 0666)
+
+	f, err := os.OpenFile(settings.ServiceSettings.Backend.FilesPath+path, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		sendAnswerError(err.Error(), 5, w)
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
-	defer f.Close()
 	io.Copy(f, file)
+	f.Close()
 	compressionImage(fD.fileType, fD.ratioSize, path)
-	// if err != nil {
-	// 	// Gologer.PError(err.Error())
-	// 	sendAnswerError(err.Error(), 6, w)
-	// 	return
-	// }
 	var x = make(map[string]string)
 	x["result"] = "Success"
 	x["FileId"] = strconv.FormatInt(id, 10)
@@ -105,38 +102,33 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteFile(w http.ResponseWriter, r *http.Request) {
-	var rData struct {
-		Token  string  `json:"token"`
-		FileId float64 `json:"file_id"`
-	}
 	var data struct {
 		Token  string `json:"token"`
-		FileId int64  `json:"file_id"`
+		FileID int64  `json:"file_id,integer"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	defer r.Body.Close()
-	err := decoder.Decode(&rData)
+	err := decoder.Decode(&data)
 	if err != nil {
 		sendAnswerError("Failed decode data", 0, w)
 		return
 	}
-	TypeChanger(rData, &data)
 	user, err := TestUserToken(data.Token)
 	if err != nil {
 		sendAnswerError("Failed decode data", 0, w)
 		return
 	}
-	path, err := db.DeleteFile(user.Id, data.FileId)
+	path, err := db.DeleteFile(user.Id, data.FileID)
 	if err != nil {
 		sendAnswerError("Failed delete from db", 0, w)
 		return
 	}
-	err = os.Remove("./public/files/" + path)
+	err = os.Remove(settings.ServiceSettings.Backend.FilesPath + path)
 	if err != nil {
 		sendAnswerError(err.Error(), 0, w)
 		return
 	}
-	err = os.Remove("./public/files/min/" + path)
+	err = os.Remove(settings.ServiceSettings.Backend.FilesPath + "min/" + path)
 	if err != nil {
 		sendAnswerError(err.Error(), 0, w)
 		return
@@ -148,28 +140,24 @@ func deleteFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func getDisposableFileLink(w http.ResponseWriter, r *http.Request) {
-	var rData struct {
-		Token  string  `json:"token"`
-		FileId float64 `json:"file_id"`
-	}
 	var data struct {
 		Token  string `json:"token"`
-		FileId int64  `json:"file_id"`
+		FileID int64  `json:"file_id,integer"`
 	}
+
 	decoder := json.NewDecoder(r.Body)
 	defer r.Body.Close()
-	err := decoder.Decode(&rData)
+	err := decoder.Decode(&data)
 	if err != nil {
 		sendAnswerError("Failed decode r.Body", 0, w)
 		return
 	}
-	TypeChanger(rData, &data)
 	user, err := TestUserToken(data.Token)
 	if err != nil {
 		sendAnswerError(err.Error(), 1, w)
 		return
 	}
-	path, err := db.CheckFileRights(user.Id, data.FileId)
+	path, err := db.CheckFileRights(user.Id, data.FileID)
 	if err != nil {
 		sendAnswerError(err.Error(), 2, w)
 		return
@@ -200,47 +188,44 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request) {
 }
 
 func getFile(w http.ResponseWriter, r *http.Request) {
-	var rData struct {
-		Token  string  `json:"token"`
-		FileId float64 `json:"file_id"`
-		Min    bool    `json:"min"`
-	}
 	var data struct {
 		Token  string `json:"token"`
-		FileId int64  `json:"file_id"`
+		FileID int64  `json:"file_id,integer"`
 		Min    bool   `json:"min"`
 	}
+
 	decoder := json.NewDecoder(r.Body)
 	defer r.Body.Close()
-	err := decoder.Decode(&rData)
+	err := decoder.Decode(&data)
 	if err != nil {
 		sendAnswerError("Failed decode data", 0, w)
 		return
 	}
-	TypeChanger(rData, &data)
 	user, err := TestUserToken(data.Token)
 	if err != nil {
 		sendAnswerError(err.Error(), 1, w)
 		return
 	}
-	path, err := db.CheckFileRights(user.Id, data.FileId)
+	path, err := db.CheckFileRights(user.Id, data.FileID)
 	if err != nil {
-		// Gologer.PInfo(err.Error())
 		sendAnswerError(err.Error(), 2, w)
 		return
 	}
-	// Gologer.PInfo(strconv.FormatBool(data.Min))
-	file := "./public/files/" + path
+	file := settings.ServiceSettings.Backend.FilesPath + path
 	if data.Min {
-		file = "./public/files/min/" + path
+		file = settings.ServiceSettings.Backend.FilesPath + "min/" + path
 	}
+
 	if _, err := os.Stat(file); os.IsNotExist(err) {
-		if data.Min {
-			file = "./public/files/" + path
-			if _, err := os.Stat(file); os.IsNotExist(err) {
-				return
-			}
-		}
+		sendAnswerError(err.Error(), 3, w)
+		return
+		// if data.Min {
+		// 	file = settings.ServiceSettings.Backend.FilesPath + path
+		// 	if _, err := os.Stat(file); os.IsNotExist(err) {
+		// 		log.Println(err, 3)
+		// 		return
+		// 	}
+		// }
 	}
 	http.ServeFile(w, r, file)
 	return

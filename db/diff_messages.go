@@ -8,8 +8,9 @@ import (
 	//"github.com/AlexeyArno/Gologer"
 )
 
-func SendMessage(UserId int64, ChatId int64, Content string, Type int) (int64, error) {
+func SendMessage(UserId int64, ChatId int64, Content string, Type int, command int) (int64, error) {
 	var newContent models.MessageContent
+	newContent.Command = command
 	if Type == 1 {
 		newContent.Type = "a_msg"
 	} else {

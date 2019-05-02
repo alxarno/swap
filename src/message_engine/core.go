@@ -49,46 +49,6 @@ var (
 	forceSendMessages = make(chan models.ForceMsgToUser)
 )
 
-func UserMove(userId int64, mType string) {
-	userChats, err := db.GetUsersChatsIds(userId)
-	if err != nil {
-		return
-	}
-	var usersOnline []int64
-	for _, b := range users {
-		if b.Authoriz == true {
-			usersOnline = append(usersOnline, b.UserId)
-		}
-	}
-	notificationIds, err := db.GetOnlineUsersIdsInChats(&userChats, &usersOnline)
-	if err != nil {
-		return
-	}
-	var data = make(map[string]interface{})
-	data["action"] = "online_user"
-	data["type"] = mType
-	data["chats"] = userChats
-	data["type_a"] = "system"
-	data["self"] = false
-	finish, _ := json.Marshal(data)
-	for _, i := range notificationIds {
-		for _, v := range users {
-			if v.UserId == i {
-				if i == userId {
-					if mType != "-" {
-						data["self"] = true
-						finish, _ := json.Marshal(data)
-						v.SystemMessChan <- string(finish)
-						data["self"] = false
-					}
-				} else {
-					v.SystemMessChan <- string(finish)
-				}
-			}
-		}
-	}
-}
-
 func writerUserSys(ws *websocket.Conn, sysCh <-chan string) {
 	for sysMsg := range sysCh {
 		if err := websocket.Message.Send(ws, string(sysMsg)); err != nil {

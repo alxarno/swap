@@ -17,7 +17,7 @@ import (
 
 func compressionImage(iType string, ratio float64, path string) error {
 	iType = strings.ToLower(iType)
-	file, err := os.Open("./public/files/" + path)
+	file, err := os.Open(settings.ServiceSettings.Backend.FilesPath + path)
 	defer file.Close()
 	if err != nil {
 		log.Println(err, 0)
@@ -39,17 +39,13 @@ func compressionImage(iType string, ratio float64, path string) error {
 		}
 	}
 	if nowImage == nil {
-		// log.Println("Failed type", iType)
-		return errors.New("Failed type error:" + err.Error())
+		return errors.New("Failed type error: " + iType)
 	}
 	file.Close()
 	g := nowImage.Bounds()
 	height := g.Dy()
 	width := g.Dx()
-	//fmt.Println("Width = ", width)
-	//fmt.Println("Height = ", height)
-	//fmt.Println("Ratio size = ", ratio_size)
-	out, err := os.Create(settings.ServiceSettings.Backend.FilesPath + path)
+	out, err := os.Create(settings.ServiceSettings.Backend.FilesPath + "min//" + path)
 	if err != nil {
 		log.Println(err, 3)
 		return errors.New("Failed creating file:" + err.Error())
@@ -58,16 +54,10 @@ func compressionImage(iType string, ratio float64, path string) error {
 	if width > 500 || height > 360 {
 		height = 360
 		width = int(float64(height) * ratio)
-		//newImage := resize.Resize(uint(width), 180, nowImage, resize.Lanczos3)
-		//imaging.
 		dstImage128 := imaging.Resize(nowImage, width, height, imaging.Lanczos)
-		//dstImage128:= imaging.CropAnchor(nowImage, width, height, imaging.Center)
-		//dstImage := imaging.Blur(dstImage128, 1.3)
 		dstImage := dstImage128
 
-		//Options := struct {Quality int}{70}
 		if iType == "png" {
-			//Options:=png.Options{70}
 			png.Encode(out, dstImage)
 		}
 		if iType == "jpeg" || iType == "jpg" {
@@ -77,7 +67,6 @@ func compressionImage(iType string, ratio float64, path string) error {
 
 	} else {
 		if iType == "png" {
-			//Options:=png.Options{70}
 			png.Encode(out, nowImage)
 		}
 		if iType == "jpeg" || iType == "jpg" {

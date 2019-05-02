@@ -74,6 +74,7 @@ func main() {
 
 	}
 
+	engine.ConnectActionsToDB()
 	err = db.BeginDB()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -82,6 +83,7 @@ func main() {
 	}
 
 	//go broadcaster()
+
 	engine.StartCoreMessenger()
 
 	router := newRouter()
@@ -104,6 +106,8 @@ func main() {
 			}
 		}
 	}
+
+	// log.Println(models.MESSAGE_COMMAND_USER_CREATED_CHAT)
 
 	if *test {
 		os.Stderr.WriteString(clearIPs)

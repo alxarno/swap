@@ -59,7 +59,7 @@ func LoadSettings() error {
 					"key_file": "",
 					"host": "3030",
 					"secret_key_for_token": "MY SECRET",
-					"files_path": "/public/files"
+					"files_path": "./public/files/"
 				},
 				"service":{
 					"max_file_size_byte": 104857600

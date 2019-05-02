@@ -8,9 +8,14 @@ import (
 	"github.com/swap-messenger/Backend/settings"
 )
 
+type userRequestedCallback = func(userID int64, chatID int64, messageCommand int)
+type chatCreatedCallback = func(AuthorId int64)
+
 var (
-	o      orm.Ormer
-	driver = "mysql"
+	o                   orm.Ormer
+	driver                                    = "mysql"
+	UserRequestedToChat userRequestedCallback = nil
+	ChatCreated         chatCreatedCallback   = nil
 )
 
 func LoadDb() {

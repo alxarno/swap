@@ -65,7 +65,7 @@ func NewMessage(userQuest *string) (models.NewMessageToUser, error) {
 		// Gologer.PError(err.Error())
 		return send, err
 	}
-	messageId, err := db.SendMessage(user.Id, data.ChatId, string(content), 0)
+	messageId, err := db.SendMessage(user.Id, data.ChatId, string(content), 0, 0)
 	if err != nil {
 		// Gologer.PError(err.Error())
 		return send, err
