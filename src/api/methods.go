@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -11,6 +12,11 @@ import (
 	"github.com/swap-messenger/Backend/db"
 	"github.com/swap-messenger/Backend/settings"
 	//"strconv"
+)
+
+const (
+	SUCCESS_ANSWER = "Success"
+	ERROR_ANSWER   = "Error"
 )
 
 func getToken() (string, error) {
@@ -21,9 +27,18 @@ func getToken() (string, error) {
 	return secret.Backend.SecretKeyForToken, nil
 }
 
-func sendAnswerError(eType string, errCode int, w http.ResponseWriter) {
+func sendAnswerError(reference string, err error, data interface{}, eType int, errCode int, w http.ResponseWriter) {
+	log.Print(reference, errCode)
+	if err != nil {
+		log.Print(err.Error())
+	}
+	if data != nil {
+		log.Print(data)
+	}
+	log.Println()
+
 	var answer = make(map[string]interface{})
-	answer["result"] = "Error"
+	answer["result"] = ERROR_ANSWER
 	answer["code"] = errCode
 	answer["type"] = eType
 	finish, _ := json.Marshal(answer)
@@ -32,7 +47,7 @@ func sendAnswerError(eType string, errCode int, w http.ResponseWriter) {
 
 func sendAnswerSuccess(w http.ResponseWriter) {
 	var x = make(map[string]string)
-	x["result"] = "Success"
+	x["result"] = SUCCESS_ANSWER
 	finish, _ := json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
 }

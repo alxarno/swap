@@ -3,12 +3,25 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/swap-messenger/Backend/db"
 )
 
+type dataTokenChat struct {
+	Token  string `json:"token"`
+	ChatID int64  `json:"chat_id,integer"`
+}
+
+func decodeFail(ref string, err error, r *http.Request, w http.ResponseWriter) {
+	var p []byte
+	r.Body.Read(p)
+	sendAnswerError(ref, err, p, FAILED_DECODE_DATA, 0, w)
+}
+
 func create(w http.ResponseWriter, r *http.Request) {
+	const ref string = "Chat create API:"
 	var data struct {
 		Token string `json:"token"`
 		Name  string `json:"name"`
@@ -16,29 +29,30 @@ func create(w http.ResponseWriter, r *http.Request) {
 	}
 	err := getJson(&data, r)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 	if len(data.Name) < 3 {
-		sendAnswerError("name less then 3 char", 1, w)
+		sendAnswerError(ref, nil, data.Name, SHORT_CHAT_NAME, 1, w)
 		return
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError("token is invalid", 2, w)
+		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 2, w)
 		return
 	}
 	if data.Type == "chat" {
 		_, err = db.CreateChat(data.Name, user.Id)
 		if err != nil {
-			sendAnswerError(err.Error(), 3, w)
+			sendAnswerError(ref, err, map[string]interface{}{"name": data.Name, "userID": user.Id}, CREATED_CHAT, 3, w)
 			return
 		}
 	}
 	if data.Type == "channel" {
 		_, err = db.CreateChannel(data.Name, user.Id)
 		if err != nil {
-			sendAnswerError(err.Error(), 4, w)
+			sendAnswerError(ref, err, map[string]interface{}{"name": data.Name, "userID": user.Id}, CREATED_CHANNEL, 4, w)
+			log.Println("Chat create API: 4 - ", err.Error())
 			return
 		}
 	}
@@ -46,6 +60,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 }
 
 func addUsers(w http.ResponseWriter, r *http.Request) {
+	const ref string = "Chat Add Users API"
 	var data struct {
 		Token  string  `json:"token"`
 		IDs    []int64 `json:"users"`
@@ -53,22 +68,24 @@ func addUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	err := getJson(&data, r)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 1, w)
+		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
 	res, err := db.CheckUserInChatDelete(user.Id, data.ChatID)
 	if err != nil {
-		sendAnswerError(err.Error(), 2, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "userID": user.Id},
+			USER_CHAT_CHECK_FAILED, 2, w)
 		return
 	}
 	if res {
-		sendAnswerError(err.Error(), 3, w)
+		sendAnswerError(ref, nil, nil, USER_IS_DELETED_FROM_CHAT, 3, w)
 		return
 	}
 
@@ -86,24 +103,22 @@ func addUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUsers(w http.ResponseWriter, r *http.Request) {
-	var data struct {
-		Token  string `json:"token"`
-		ChatID int64  `json:"chat_id,integer"`
-	}
+	const ref string = "Chat get users API:"
+	var data dataTokenChat
 
 	err := getJson(&data, r)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 	_, err = TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 1, w)
+		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
 	users, err := db.GetChatUserInfo(data.ChatID)
 	if err != nil {
-		sendAnswerError(err.Error(), 2, w)
+		sendAnswerError(ref, err, map[string]interface{}{"chatID": data.ChatID}, FAILED_GET_USER_INFO, 2, w)
 		return
 	}
 	fmt.Fprintf(w, string(users))
@@ -111,6 +126,7 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUsersForAdd(w http.ResponseWriter, r *http.Request) {
+	const ref string = "Chat get users for add API:"
 	var data struct {
 		Token  string `json:"token"`
 		ChatID int64  `json:"chat_id,integer"`
@@ -119,22 +135,24 @@ func getUsersForAdd(w http.ResponseWriter, r *http.Request) {
 
 	err := getJson(&data, r)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 	_, err = TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 1, w)
+		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
 	users, err := db.GetUsersForAddByName(data.ChatID, data.Name)
 	if err != nil {
-		sendAnswerError(err.Error(), 2, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "name": data.Name},
+			FAILED_GET_USERS_FOR_ADD, 2, w)
 		return
 	}
 	var finish []byte
 	var x = make(map[string]interface{})
-	x["result"] = "Success"
+	x["result"] = SUCCESS_ANSWER
 	if users == nil {
 		x["users"] = [0]map[string]interface{}{}
 	} else {
@@ -145,41 +163,41 @@ func getUsersForAdd(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteUsers(w http.ResponseWriter, r *http.Request) {
+	const ref string = "Chat delete users API:"
 	var data struct {
 		Token  string  `json:"token"`
 		IDs    []int64 `json:"ids"`
 		ChatID int64   `json:"chat_id,integer"`
 	}
-	// var data struct {
-	// 	Token  string  `json:"token"`
-	// 	Ids    []int64 `json:"ids"`
-	// 	ChatId int64   `json:"chat_id"`
-	// }
 	err := getJson(&data, r)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
 	err = db.CheckUserRightsInChat(user.Id, data.ChatID)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			HAVENT_RIGHTS_FOR_ACTION, 2, w)
 		return
 	}
 	err = db.DeleteUsersInChat(data.IDs, data.ChatID, false)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "IDs": data.IDs},
+			FAILED_DELETE_USERS, 3, w)
 		return
 	}
-	//	Notifications...
 	sendAnswerSuccess(w)
 }
 
 func recoveryUsers(w http.ResponseWriter, r *http.Request) {
+	const ref string = "Chat recovery users API:"
 	var data struct {
 		Token  string  `json:"token"`
 		IDs    []int64 `json:"ids"`
@@ -187,22 +205,26 @@ func recoveryUsers(w http.ResponseWriter, r *http.Request) {
 	}
 	err := getJson(&data, r)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
 	err = db.CheckUserRightsInChat(user.Id, data.ChatID)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			HAVENT_RIGHTS_FOR_ACTION, 2, w)
 		return
 	}
 	err = db.RecoveryUsersInChat(data.IDs, data.ChatID, false)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "ids": data.IDs},
+			FAILED_RECOVERY_USERS, 3, w)
 		return
 	}
 	//	Notifications...
@@ -210,40 +232,45 @@ func recoveryUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func getChatSettings(w http.ResponseWriter, r *http.Request) {
-	var data struct {
-		Token  string `json:"token"`
-		ChatID int64  `json:"chat_id,integer"`
-	}
+	const ref string = "Chat get chat settings API:"
+	var data dataTokenChat
 
 	err := getJson(&data, r)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
 	err = db.CheckUserRightsInChat(user.Id, data.ChatID)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			HAVENT_RIGHTS_FOR_ACTION, 2, w)
 		return
 	}
 	res, err := db.GetChatSettings(data.ChatID)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID},
+			FAILED_GET_CHAT_SETTINGS, 3, w)
 		return
 	}
 	final, err := json.Marshal(res)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"data": res},
+			FAILED_ENCODE_DATA, 3, w)
 		return
 	}
 	fmt.Fprintf(w, string(final))
 }
 
 func setChatSettings(w http.ResponseWriter, r *http.Request) {
+	const ref string = "Chat set chat settings API:"
 	var data struct {
 		Token  string `json:"token"`
 		ChatID int64  `json:"chat_id"`
@@ -252,23 +279,27 @@ func setChatSettings(w http.ResponseWriter, r *http.Request) {
 
 	err := getJson(&data, r)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
 	// log.Println(user)
 	err = db.CheckUserRightsInChat(user.Id, data.ChatID)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			HAVENT_RIGHTS_FOR_ACTION, 2, w)
 		return
 	}
 	err = db.SetNameChat(data.ChatID, data.Name)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "name": data.Name},
+			HAVENT_RIGHTS_FOR_ACTION, 3, w)
 		return
 	}
 	//	Notification
@@ -276,24 +307,24 @@ func setChatSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteFromDialog(w http.ResponseWriter, r *http.Request) {
-	var data struct {
-		Token  string `json:"token"`
-		ChatID int64  `json:"chat_id,integer"`
-	}
+	const ref string = "Chat delete from dialog API:"
+	var data dataTokenChat
 
 	err := getJson(&data, r)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
 	err = db.DeleteUsersInChat([]int64{user.Id}, data.ChatID, true)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			FAILED_DELETE_USERS, 2, w)
 		return
 	}
 	//	Notifications...
@@ -301,33 +332,37 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request) {
 }
 
 func recoveryUserInDialog(w http.ResponseWriter, r *http.Request) {
-	var data struct {
-		Token  string `json:"token"`
-		ChatID int64  `json:"chat_id,integer"`
-	}
+	const ref string = "Chat recovery user in dialog API:"
+	var data dataTokenChat
 
 	err := getJson(&data, r)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
 	res, err := db.CheckUserInChatDelete(user.Id, data.ChatID)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			USER_CHAT_CHECK_FAILED, 2, w)
 		return
 	}
 	if !res {
-		sendAnswerError("user aren't delete", 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			USER_IS_DELETED_FROM_CHAT, 2, w)
 		return
 	}
 	err = db.RecoveryUsersInChat([]int64{user.Id}, data.ChatID, true)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			FAILED_RECOVERY_USERS, 2, w)
 		return
 	}
 	//	Notifications..
@@ -335,24 +370,24 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteChatFromList(w http.ResponseWriter, r *http.Request) {
-	var data struct {
-		Token  string `json:"token"`
-		ChatID int64  `json:"chat_id,integer"`
-	}
+	const ref string = "Chat delete chat from list API:"
+	var data dataTokenChat
 
 	err := getJson(&data, r)
 	if err != nil {
-		sendAnswerError("failed decode data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
 	err = db.DeleteChatFromList(user.Id, data.ChatID)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err,
+			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			FAILED_DELETE_FROM_LIST, 2, w)
 		return
 	}
 	//	Notification...
@@ -385,6 +420,6 @@ func ChatApi(var1 string, w http.ResponseWriter, r *http.Request) {
 	case "deleteFromList":
 		deleteChatFromList(w, r)
 	default:
-		sendAnswerError("Not found", 0, w)
+		sendAnswerError("Chat Router", nil, nil, END_POINT_NOT_FOUND, 0, w)
 	}
 }
