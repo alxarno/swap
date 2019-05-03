@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/swap-messenger/Backend/models"
+	"github.com/swap-messenger/swap/models"
 	//"github.com/AlexeyArno/Gologer"
 )
 

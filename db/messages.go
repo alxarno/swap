@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/astaxie/beego/orm"
-	"github.com/swap-messenger/Backend/models"
+	"github.com/swap-messenger/swap/models"
 	// "github.com/AlexeyArno/Gologer"
 )
 

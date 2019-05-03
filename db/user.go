@@ -10,7 +10,7 @@ import (
 
 	// "github.com/AlexeyArno/Gologer"
 	"github.com/astaxie/beego/orm"
-	"github.com/swap-messenger/Backend/models"
+	"github.com/swap-messenger/swap/models"
 )
 
 //import "fmt

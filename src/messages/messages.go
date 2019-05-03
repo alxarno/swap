@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 
 	// "github.com/AlexeyArno/Gologer"
-	"github.com/swap-messenger/Backend/db"
-	"github.com/swap-messenger/Backend/models"
-	"github.com/swap-messenger/Backend/src/api"
+	"github.com/swap-messenger/swap/db"
+	"github.com/swap-messenger/swap/models"
+	"github.com/swap-messenger/swap/src/api"
 )
 
 type NewMessageFormUser struct {

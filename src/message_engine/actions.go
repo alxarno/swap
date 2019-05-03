@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/swap-messenger/Backend/db"
-	"github.com/swap-messenger/Backend/models"
+	"github.com/swap-messenger/swap/db"
+	"github.com/swap-messenger/swap/models"
 )
 
 func ConnectActionsToDB() {

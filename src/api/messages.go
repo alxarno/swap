@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/swap-messenger/Backend/db"
-	"github.com/swap-messenger/Backend/models"
+	"github.com/swap-messenger/swap/db"
+	"github.com/swap-messenger/swap/models"
 	//"github.com/AlexeyArno/Gologer"
 )
 
 func getMessages(w http.ResponseWriter, r *http.Request) {
+	const ref string = "Messages get API:"
 	var data struct {
 		Token  string `json:"token"`
 		LastID int64  `json:"last_index,integer"`
@@ -19,12 +20,12 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 
 	err := getJson(&data, r)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 1, w)
+		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
 
@@ -33,13 +34,13 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	if data.LastID == 0 {
 		mes, err = db.GetMessages(user.Id, data.ChatID, false, 0)
 		if err != nil {
-			sendAnswerError(err.Error(), 2, w)
+			sendAnswerError(ref, err, map[string]interface{}{"userID": user.Id, "chatID": data.ChatID}, FAILED_GET_MESSAGES, 2, w)
 			return
 		}
 	} else {
 		mes, err = db.GetMessages(user.Id, data.ChatID, true, data.LastID)
 		if err != nil {
-			sendAnswerError(err.Error(), 3, w)
+			sendAnswerError(ref, err, map[string]interface{}{"userID": user.Id, "chatID": data.ChatID}, FAILED_GET_ADDITIONAL_MESSAGES, 3, w)
 			return
 		}
 	}
@@ -85,6 +86,6 @@ func MessagesApi(var1 string, w http.ResponseWriter, r *http.Request) {
 	case "getMessages":
 		getMessages(w, r)
 	default:
-		sendAnswerError("Not found", 0, w)
+		sendAnswerError("Messages API Router", nil, nil, END_POINT_NOT_FOUND, 0, w)
 	}
 }

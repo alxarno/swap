@@ -5,7 +5,7 @@ import (
 
 	"github.com/astaxie/beego/orm"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/swap-messenger/Backend/settings"
+	"github.com/swap-messenger/swap/settings"
 )
 
 type userRequestedCallback = func(userID int64, chatID int64, messageCommand int)

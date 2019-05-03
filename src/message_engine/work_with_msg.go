@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	messagesWork "github.com/swap-messenger/Backend/src/messages"
-	"github.com/swap-messenger/Backend/models"
-	"github.com/swap-messenger/Backend/src/api"
+	"github.com/swap-messenger/swap/models"
+	"github.com/swap-messenger/swap/src/api"
+	messagesWork "github.com/swap-messenger/swap/src/messages"
 	//"github.com/swap-messenger/Backend/settings"
 )
 

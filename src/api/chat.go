@@ -6,18 +6,12 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/swap-messenger/Backend/db"
+	"github.com/swap-messenger/swap/db"
 )
 
 type dataTokenChat struct {
 	Token  string `json:"token"`
 	ChatID int64  `json:"chat_id,integer"`
-}
-
-func decodeFail(ref string, err error, r *http.Request, w http.ResponseWriter) {
-	var p []byte
-	r.Body.Read(p)
-	sendAnswerError(ref, err, p, FAILED_DECODE_DATA, 0, w)
 }
 
 func create(w http.ResponseWriter, r *http.Request) {
@@ -420,6 +414,6 @@ func ChatApi(var1 string, w http.ResponseWriter, r *http.Request) {
 	case "deleteFromList":
 		deleteChatFromList(w, r)
 	default:
-		sendAnswerError("Chat Router", nil, nil, END_POINT_NOT_FOUND, 0, w)
+		sendAnswerError("Chat API Router", nil, nil, END_POINT_NOT_FOUND, 0, w)
 	}
 }

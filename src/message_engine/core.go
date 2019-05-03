@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"log"
 
-	models "github.com/swap-messenger/Backend/models"
-	"github.com/swap-messenger/Backend/src/api"
+	models "github.com/swap-messenger/swap/models"
+	"github.com/swap-messenger/swap/src/api"
 	"golang.org/x/net/websocket"
 	//"github.com/swap-messenger/Backend/src/api/methods"
-	"github.com/swap-messenger/Backend/db"
+	"github.com/swap-messenger/swap/db"
 	// "github.com/AlexeyArno/Gologer"
 )
 

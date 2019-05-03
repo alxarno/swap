@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/robbert229/jwt"
-	"github.com/swap-messenger/Backend/db"
-	"github.com/swap-messenger/Backend/settings"
+	"github.com/swap-messenger/swap/db"
+	"github.com/swap-messenger/swap/settings"
 	//"strconv"
 )
 
@@ -18,6 +18,12 @@ const (
 	SUCCESS_ANSWER = "Success"
 	ERROR_ANSWER   = "Error"
 )
+
+func decodeFail(ref string, err error, r *http.Request, w http.ResponseWriter) {
+	var p []byte
+	r.Body.Read(p)
+	sendAnswerError(ref, err, p, FAILED_DECODE_DATA, 0, w)
+}
 
 func getToken() (string, error) {
 	secret, err := settings.GetSettings()
