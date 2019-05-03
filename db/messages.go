@@ -2,7 +2,6 @@ package db
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -11,20 +10,26 @@ import (
 	// "github.com/AlexeyArno/Gologer"
 )
 
+const (
+	USER_CHECK_IN_CHAT     = "Checking user in chat failed:"
+	USER_DELETED_FROM_CHAT = "User deleted from chat: "
+	MESSAGE_INSERT_ERROR   = "Message insert error: "
+)
+
 func addMessage(userId int64, chatId int64, content string) (int64, error) {
 	res, err := CheckUserInChatDelete(userId, chatId)
 	if err != nil {
-		return 0, errors.New("Check user in chat error: " + err.Error())
+		return 0, newError(USER_CHECK_IN_CHAT + err.Error())
 	}
 	if res {
-		return 0, errors.New("User deleted from chat")
+		return 0, newError(USER_DELETED_FROM_CHAT)
 	}
 	m := Message{Author: &User{Id: userId}, Content: content, Chat: &Chat{Id: chatId}, Time: time.Now().Unix()}
 	o.Begin()
 	id, err := o.Insert(&m)
 	if err != nil {
 		o.Rollback()
-		return 0, errors.New("Message insert error: " + err.Error())
+		return 0, newError(MESSAGE_INSERT_ERROR + err.Error())
 	}
 	o.Commit()
 	return id, nil
@@ -46,12 +51,12 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64) ([]*mode
 	err := o.QueryTable("chat_users").Filter("user_id", userId).
 		Filter("chat_id", chatId).RelatedSel().One(&cUser)
 	if err != nil {
-		return final, errors.New("User is not in chat")
+		return final, newError(USER_CHECK_IN_CHAT + err.Error())
 	}
 
 	delTimes, err := cUser.GetDeletePoints()
 	if err != nil {
-		return final, errors.New("Can't decode delete points")
+		return final, newError(GET_DELETE_POINTS + err.Error())
 	}
 	qb, _ := orm.NewQueryBuilder(driver)
 	//Get message from db
@@ -92,7 +97,6 @@ func GetMessages(userId int64, chatId int64, add bool, lastIndex int64) ([]*mode
 		var Content models.MessageContent
 		err := json.Unmarshal([]byte(v.Content), &Content)
 		if err != nil {
-			// Gologer.PError("Fail unmarshal : "+v.Content)
 			continue
 		}
 		var docs []map[string]interface{}

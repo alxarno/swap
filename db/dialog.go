@@ -1,14 +1,19 @@
 package db
 
 import (
-	"errors"
 	"strconv"
 	"strings"
 
 	"github.com/astaxie/beego/orm"
 )
 
-func GetUsersForCreateDialog(userId int64, name string) ([]map[string]interface{}, error) {
+const (
+	DIALOG_ALREADY_CREATED = "Dialog already created: "
+	CREATE_CHAT_ERROR      = "Chat creating failed: "
+	FAILED_INSERT_DIALOG   = "Dialog insertion failed: "
+)
+
+func GetUsersForCreateDialog(userID int64, name string) ([]map[string]interface{}, error) {
 	//user which have dialogs with our
 	var final []map[string]interface{}
 	var userBuf []User
@@ -38,7 +43,7 @@ func GetUsersForCreateDialog(userId int64, name string) ([]map[string]interface{
 		And("chat_users.list__invisible = 0").
 		And("chat_users.user_id = ?")
 	sql = qb.String()
-	o.Raw(sql, userId).QueryRows(&occupyUsers)
+	o.Raw(sql, userID).QueryRows(&occupyUsers)
 	for _, v := range occupyUsers {
 		occupyUsersStrings = append(occupyUsersStrings, strconv.FormatInt(v, 10))
 	}
@@ -52,7 +57,7 @@ func GetUsersForCreateDialog(userId int64, name string) ([]map[string]interface{
 		And("name LIKE ?").
 		Or("login LIKE ?")
 	sql = qb.String()
-	o.Raw(sql, userId, name, name).QueryRows(&userBuf)
+	o.Raw(sql, userID, name, name).QueryRows(&userBuf)
 
 	for _, v := range userBuf {
 		final = append(final, map[string]interface{}{
@@ -61,7 +66,7 @@ func GetUsersForCreateDialog(userId int64, name string) ([]map[string]interface{
 	return final, nil
 }
 
-func HaveAlreadyDialog(userId int64, anotherUserId int64) (int64, error) {
+func HaveAlreadyDialog(userID int64, anotherUserID int64) (int64, error) {
 	var final int64
 	qb, _ := orm.NewQueryBuilder(driver)
 	//Delete users in caht
@@ -70,34 +75,34 @@ func HaveAlreadyDialog(userId int64, anotherUserId int64) (int64, error) {
 		Where("user1 = ? and user2=?").
 		Or("user2 = ? and user1=?")
 	sql := qb.String()
-	o.Raw(sql, userId, anotherUserId, userId, anotherUserId).QueryRow(&final)
+	o.Raw(sql, userID, anotherUserID, userID, anotherUserID).QueryRow(&final)
 	return final, nil
 }
 
-func CreateDialog(userId int64, anotherUserId int64) error {
-	res, err := HaveAlreadyDialog(userId, anotherUserId)
+func CreateDialog(userID int64, anotherUserID int64) error {
+	res, err := HaveAlreadyDialog(userID, anotherUserID)
 	if err != nil {
 		return err
 	}
 	if res != 0 {
-		return errors.New("dialog already create")
+		return newError(DIALOG_ALREADY_CREATED)
 	}
-	cId, err := CreateChat("", userId)
+	cID, err := CreateChat("", userID)
 	if err != nil {
-		return err
+		return newError(CREATE_CHAT_ERROR)
 	}
-	err = InsertUserInChat(userId, cId, false)
+	err = InsertUserInChat(userID, cID, false)
 	if err != nil {
-		return err
+		return newError(INSERT_USER_IN_CHAT + err.Error())
 	}
-	err = InsertUserInChat(anotherUserId, cId, false)
+	err = InsertUserInChat(anotherUserID, cID, false)
 	if err != nil {
-		return err
+		return newError(INSERT_USER_IN_CHAT + err.Error())
 	}
-	d := Dialog{ChatId: cId, User1: &User{Id: userId}, User2: &User{Id: anotherUserId}}
+	d := Dialog{ChatId: cID, User1: &User{Id: userID}, User2: &User{Id: anotherUserID}}
 	_, err = o.Insert(&d)
 	if err != nil {
-		return err
+		return newError(FAILED_INSERT_DIALOG + err.Error())
 	}
 	return nil
 }

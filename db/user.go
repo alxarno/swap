@@ -4,17 +4,21 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"strconv"
 	"strings"
 
-	// "github.com/AlexeyArno/Gologer"
 	"github.com/astaxie/beego/orm"
 	"github.com/swap-messenger/swap/models"
 )
 
-//import "fmt
-//import "github.com/swap-messenger/Backend/src/api/methods"
+const (
+	USER_INSERT_ERROR             = "User insert error: "
+	USER_UPDATE_ERROR             = "User updating failed: "
+	USER_WITH_LOGIN_ALREADY_EXIST = "User with the login already created: "
+	GET_CHAT_INFO_FAILED          = "Getting chat info failed: "
+	QUERYBUILDER_FAILED           = "QueryBuilder initialize failed: "
+	USER_NOT_FOUND                = "User not found: "
+)
 
 func GetUser(sType string, data map[string]interface{}) (*User, error) {
 	if sType == "login" {
@@ -27,7 +31,7 @@ func GetUser(sType string, data map[string]interface{}) (*User, error) {
 			One(&u)
 		// Gologer.PInfo(u.Name)
 		if err != nil {
-			return nil, err
+			return nil, newError(GET_USER_ERROR + err.Error())
 		}
 		return &u, nil
 	} else {
@@ -36,7 +40,7 @@ func GetUser(sType string, data map[string]interface{}) (*User, error) {
 			Filter("id", data["id"]).
 			One(&u)
 		if err != nil {
-			return nil, err
+			return nil, newError(GET_USER_ERROR + err.Error())
 		}
 		return &u, nil
 	}
@@ -55,24 +59,23 @@ func CreateUser(login string, pass string, uName string) (int64, error) {
 		u.Login = login
 		id, err := o.Insert(&u)
 		if err != nil {
-			return 0, err
+			return 0, newError(USER_INSERT_ERROR + err.Error())
 		}
 		return id, nil
 	} else {
-		// Gologer.PInfo(u.Name)
-		return 0, errors.New("user with this login already created")
+		return 0, newError(USER_WITH_LOGIN_ALREADY_EXIST)
 	}
 }
 
 func GetUserChats(userId int64) ([]*models.UserChatInfo, error) {
 	var final []*models.UserChatInfo
 	type chatInfo struct {
-		Id          int64
-		Name        string
-		Author_Id   int64
-		Type        int
-		Delete_Last int64
-		Ban         bool
+		ID         int64
+		Name       string
+		AuthorID   int64
+		Type       int
+		DeleteLast int64
+		Ban        bool
 	}
 	type message struct {
 		LastSender      string
@@ -97,7 +100,7 @@ func GetUserChats(userId int64) ([]*models.UserChatInfo, error) {
 	_, err := o.Raw(sql, false, userId).QueryRows(&ChatInfoBuffer)
 
 	if err != nil {
-		return final, err
+		return final, newError(GET_CHAT_INFO_FAILED)
 	}
 
 	// LAST Messages
@@ -111,7 +114,7 @@ func GetUserChats(userId int64) ([]*models.UserChatInfo, error) {
 		Where("messages.chat_id = ?").OrderBy("messages.time").Desc().Limit(1)
 	sql = msg.String()
 	for _, v := range ChatInfoBuffer {
-		o.Raw(sql, v.Id).Values(&messagesBuffer)
+		o.Raw(sql, v.ID).Values(&messagesBuffer)
 		if len(messagesBuffer) == 0 {
 			continue
 		}
@@ -119,11 +122,10 @@ func GetUserChats(userId int64) ([]*models.UserChatInfo, error) {
 		var msgNow models.MessageContent
 		err := json.Unmarshal([]byte(messagesBuffer[0]["content"].(string)), &msgNow)
 		if err != nil {
-			// Gologer.PError(err.Error())
 			continue
 		}
 		var deleteV = true
-		if v.Ban == false && v.Delete_Last == 0 {
+		if v.Ban == false && v.DeleteLast == 0 {
 			deleteV = false
 		}
 		t, err := strconv.ParseInt(messagesBuffer[0]["time"].(string), 10, 64)
@@ -132,11 +134,11 @@ func GetUserChats(userId int64) ([]*models.UserChatInfo, error) {
 		}
 		final = append(final,
 			&models.UserChatInfo{
-				ID:              v.Id,
+				ID:              v.ID,
 				Name:            v.Name,
 				Type:            v.Type,
 				LastSender:      messagesBuffer[0]["name"].(string),
-				Admin_id:        v.Author_Id,
+				Admin_id:        v.AuthorID,
 				LastMessage:     &msgNow,
 				LastMessageTime: t,
 				View:            0,
@@ -159,22 +161,22 @@ func GetUsersChatsIds(userId int64) ([]int64, error) {
 
 func GetOnlineUsersIdsInChats(chatsId *[]int64, usersOnline *[]int64) ([]int64, error) {
 	var final []int64
-	var users_in_strings []string
+	var usersInStrings []string
 	for _, v := range *usersOnline {
-		users_in_strings = append(users_in_strings, strconv.FormatInt(v, 10))
+		usersInStrings = append(usersInStrings, strconv.FormatInt(v, 10))
 	}
-	s := strings.Join(users_in_strings, ",")
+	s := strings.Join(usersInStrings, ",")
 	//s= "("+s+")"
 
-	var chats_in_string []string
+	var chatsInString []string
 	for _, v := range *chatsId {
-		chats_in_string = append(chats_in_string, strconv.FormatInt(v, 10))
+		chatsInString = append(chatsInString, strconv.FormatInt(v, 10))
 	}
-	s1 := strings.Join(chats_in_string, ",")
+	s1 := strings.Join(chatsInString, ",")
 
 	qb, err := orm.NewQueryBuilder(driver)
 	if err != nil {
-		return nil, err
+		return nil, newError(QUERYBUILDER_FAILED)
 	}
 	qb.Select("user_id").
 		From("chat_users").
@@ -193,7 +195,7 @@ func GetUserSettings(userId int64) (map[string]interface{}, error) {
 	u := User{Id: userId}
 	err := o.Read(&u)
 	if err == orm.ErrNoRows {
-		return final, errors.New("user not found")
+		return final, newError(USER_NOT_FOUND)
 	}
 	final["login"] = u.Login
 	final["name"] = u.Name
@@ -204,7 +206,7 @@ func GetUserSettings(userId int64) (map[string]interface{}, error) {
 func SetUserSettings(userId int64, name string) error {
 	user := User{Id: userId, Name: name}
 	if _, err := o.Update(&user); err == nil {
-		return err
+		return newError(USER_UPDATE_ERROR + err.Error())
 	}
 	return nil
 }
