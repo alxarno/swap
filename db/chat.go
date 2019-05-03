@@ -1,7 +1,6 @@
 package db
 
 import (
-	"errors"
 	"fmt"
 	"log"
 
@@ -15,24 +14,41 @@ import (
 	"github.com/astaxie/beego/orm"
 )
 
+const (
+	GET_USER_ERROR             = "Get user error: "
+	INSERT_CHAT_ERROR          = "Insert chat error: "
+	INSERT_USER_IN_CHAT        = "Insert user in chat error: "
+	INSERT_USER_IN_CHANNEL     = "Insert user in channel error: "
+	USER_ALREADY_EXIST_IN_CHAT = "User already in chat: "
+	SEND_MESSAGE_ERROR         = "Send message error: "
+	GET_CHAT_ERROR             = "Getting chat failed: "
+	USER_ISNT_AUTHOR           = "User isnt author: "
+	GET_CHAT_USER_ERROR        = "Gettings chat user failed: "
+	GET_DELETE_POINTS          = "Failed get delete points: "
+	SET_DELETE_POINTS          = "Failed set delete points: "
+	UPDATE_CHAT_USER           = "Failed update chat user: "
+	UPDATE_CHAT                = "Failed update chat: "
+	USER_YET_DIDNT_DELETE      = "User wasn't delete: "
+)
+
 func CreateChat(name string, AuthorId int64) (int64, error) {
 	u := User{}
 	err := o.QueryTable("users").Filter("id", AuthorId).
 		One(&u)
 	if err != nil {
-		return 0, errors.New("Get User error:" + err.Error())
+		return 0, newError(GET_USER_ERROR + err.Error())
 	}
 	o.Begin()
 	c := Chat{Name: name, Author: &u, Type: 0}
 	id, err := o.Insert(&c)
 	if err != nil {
 		o.Rollback()
-		return 0, errors.New("Insert chat error:" + err.Error())
+		return 0, newError(INSERT_CHAT_ERROR + err.Error())
 	}
 	o.Commit()
 	err = InsertUserInChat(u.Id, id, false)
 	if err != nil {
-		return id, errors.New("Insert user in chat error:" + err.Error())
+		return id, newError(INSERT_USER_IN_CHAT + err.Error())
 	}
 	o.Commit()
 	if ChatCreated != nil {
@@ -52,27 +68,25 @@ func CreateChannel(name string, AuthorId int64) (int64, error) {
 	id, err := o.Insert(&c)
 	if err != nil {
 		o.Rollback()
-		return 0, err
+		return 0, newError(INSERT_CHAT_ERROR + err.Error())
 	}
 	// o.Commit()
 
 	err = InsertUserInChat(u.Id, id, false)
 	if err != nil {
 		o.Rollback()
-		return id, errors.New("Insert user in channel error:" + err.Error())
+		return id, newError(INSERT_USER_IN_CHANNEL + err.Error())
 	}
 	o.Commit()
 	return id, nil
 }
 
 func CheckUserInChatDelete(UserId int64, ChatId int64) (bool, error) {
-	//Gologer.PInfo(strconv.FormatInt(UserId,10))
-	//Gologer.PInfo(strconv.FormatInt(ChatId,10))
 	var cUser ChatUser
 	query := o.QueryTable("chat_users").Filter("user_id", UserId).Filter("chat_id", ChatId)
 	err := query.One(&cUser)
 	if err != nil {
-		return false, errors.New("Get ChatUser error: " + err.Error())
+		return false, newError(GET_USER_ERROR + err.Error())
 	}
 	if cUser.List_Invisible || cUser.Delete_last != 0 {
 		return true, nil
@@ -84,7 +98,7 @@ func InsertUserInChat(UserId int64, ChatId int64, invite bool) error {
 	var cUser ChatUser
 	err := o.QueryTable("chat_users").Filter("user_id", UserId).Filter("chat_id", ChatId).One(&cUser)
 	if err == nil {
-		return errors.New("User already in chat")
+		return newError(USER_ALREADY_EXIST_IN_CHAT)
 	}
 
 	cUser.User = &User{Id: UserId}
@@ -98,7 +112,7 @@ func InsertUserInChat(UserId int64, ChatId int64, invite bool) error {
 	_, err = o.Insert(&cUser)
 	if err != nil {
 		o.Rollback()
-		return errors.New("Insert ChatUser error:" + err.Error())
+		return newError(INSERT_USER_IN_CHAT + err.Error())
 	}
 	o.Commit()
 	var content string
@@ -122,15 +136,16 @@ func InsertUserInChat(UserId int64, ChatId int64, invite bool) error {
 			UserRequestedToChat(UserId, ChatId, command)
 		}
 	}
-	log.Println("Command ", command)
+	// log.Println("Command ", command)
 	_, err = SendMessage(UserId, ChatId, content, 1, command)
 	//UserRequestedToChat
 	if err != nil {
-		return errors.New("SendMessage error:" + err.Error())
+		return newError(SEND_MESSAGE_ERROR + err.Error())
 	}
 	return nil
 }
 
+//?
 func GetChatType(ChatId int64) (int, error) {
 	var c Chat
 	err := o.QueryTable("chat_users").Filter("id", ChatId).Filter("chat_id", ChatId).One(&c)
@@ -145,7 +160,7 @@ func CheckUserRightsInChat(UserId int64, ChatId int64) error {
 
 	err := o.QueryTable("chats").Filter("id", ChatId).One(&c)
 	if err != nil {
-		return err
+		return newError(GET_CHAT_ERROR + err.Error())
 	}
 
 	// err := o.QueryTable("chat_users").Filter("id", ChatId).Filter("chat_id", ChatId).One(&c)
@@ -153,7 +168,7 @@ func CheckUserRightsInChat(UserId int64, ChatId int64) error {
 	// 	return err
 	// }
 	if c.Author.Id != UserId {
-		return errors.New("user haven't rights")
+		return newError(USER_ISNT_AUTHOR)
 	}
 	return nil
 }
@@ -175,11 +190,11 @@ func GetChatsUsers(ChatId int64) ([]int64, error) {
 
 func GetChatUserInfo(ChatId int64) (string, error) {
 	type userInfo struct {
-		Id          int    `json:"id"`
-		Login       string `json:"login"`
-		Name        string `json:"name"`
-		Delete_Last int64  `json:"delete"`
-		Ban         int    `json:"blocked"`
+		ID         int    `json:"id"`
+		Login      string `json:"login"`
+		Name       string `json:"name"`
+		DeleteLast int64  `json:"delete"`
+		Ban        int    `json:"blocked"`
 	}
 	var data []userInfo
 	qb, _ := orm.NewQueryBuilder(driver)
@@ -198,16 +213,16 @@ func GetChatUserInfo(ChatId int64) (string, error) {
 
 	o.Raw(sql, ChatId).QueryRows(&data)
 	for i, v := range data {
-		if v.Delete_Last != 0 {
-			data[i].Delete_Last = 1
+		if v.DeleteLast != 0 {
+			data[i].DeleteLast = 1
 		}
 	}
 	finish, _ := json.Marshal(data)
 	return string(finish), nil
 }
 
-func DeleteUsersInChat(UserIds []int64, ChatId int64, DeleteYourself bool) error {
-	for _, v := range UserIds {
+func DeleteUsersInChat(UserIDs []int64, ChatID int64, DeleteYourself bool) error {
+	for _, v := range UserIDs {
 		//c := ChatUser{User: &User{Id: v}, Chat:&Chat{Id: ChatId}, Delete_last: 0}
 		//err:= o.Read(&c);if err!=nil{
 		//	Gologer.PError(err.Error())
@@ -215,14 +230,14 @@ func DeleteUsersInChat(UserIds []int64, ChatId int64, DeleteYourself bool) error
 		//}
 		var c ChatUser
 		err := o.QueryTable("chat_users").Filter("user_id", v).
-			Filter("chat_id", ChatId).Filter("delete_last", 0).One(&c)
+			Filter("chat_id", ChatID).Filter("delete_last", 0).One(&c)
 		if err != nil {
-			// Gologer.PError(err.Error())
+			log.Println(GET_CHAT_USER_ERROR, err.Error(), map[string]interface{}{"UserID": v, "ChatID": ChatID})
 			continue
 		}
 		dataPoints, err := c.GetDeletePoints()
 		if err != nil {
-			// Gologer.PError(err.Error() + " in user data :" + c.Delete_points)
+			log.Println(GET_DELETE_POINTS, err.Error(), map[string]interface{}{"ChatUserID": c.Id})
 			continue
 		}
 		if dataPoints[len(dataPoints)-1][0] == 0 {
@@ -236,7 +251,8 @@ func DeleteUsersInChat(UserIds []int64, ChatId int64, DeleteYourself bool) error
 			}
 			err := c.SetDeletePoints(dataPoints)
 			if err != nil {
-				// Gologer.PError("fail set delete points: " + err.Error())
+				log.Println(SET_DELETE_POINTS, err.Error(),
+					map[string]interface{}{"ChatUserID": c.Id, "deletePoints": dataPoints})
 				continue
 			}
 
@@ -245,13 +261,13 @@ func DeleteUsersInChat(UserIds []int64, ChatId int64, DeleteYourself bool) error
 	return nil
 }
 
-func RecoveryUsersInChat(UserIds []int64, ChatId int64, RecoveryYourself bool) error {
-	for _, v := range UserIds {
+func RecoveryUsersInChat(UserIDs []int64, ChatID int64, RecoveryYourself bool) error {
+	for _, v := range UserIDs {
 		var c ChatUser
 		err := o.QueryTable("chat_users").Filter("user_id", v).
-			Filter("chat_id", ChatId).Filter("delete_last", 0).One(&c)
+			Filter("chat_id", ChatID).Filter("delete_last", 0).One(&c)
 		if err != nil {
-			// Gologer.PError(err.Error())
+			log.Println(GET_CHAT_USER_ERROR, err.Error(), map[string]interface{}{"UserID": v, "ChatID": ChatID})
 			continue
 		}
 		if RecoveryYourself {
@@ -264,22 +280,22 @@ func RecoveryUsersInChat(UserIds []int64, ChatId int64, RecoveryYourself bool) e
 
 		deletePoints, err := c.GetDeletePoints()
 		if err != nil {
-			// Gologer.PError(err.Error() + " in user data :" + c.Delete_points)
+			log.Println(GET_DELETE_POINTS, err.Error(), map[string]interface{}{"ChatUserID": c.Id})
 			continue
 		}
 		if deletePoints[len(deletePoints)-1][1] == 0 {
 			deletePoints[len(deletePoints)-1][1] = time.Now().Unix()
 			deletePoints = append(deletePoints, []int64{0, 0})
 			c.Delete_last = 0
-			//fmt.Println(query)
 			err := c.SetDeletePoints(deletePoints)
 			if err != nil {
-				// Gologer.PError("fail set delete points: " + err.Error())
+				log.Println(SET_DELETE_POINTS, err.Error(),
+					map[string]interface{}{"ChatUserID": c.Id, "deletePoints": deletePoints})
 				continue
 			}
 			_, err = o.Update(&c)
 			if err != nil {
-				// Gologer.PError("fail update user in chat info: " + err.Error())
+				log.Println(UPDATE_CHAT_USER, err.Error(), map[string]interface{}{"ChatUserID": c.Id})
 				continue
 			}
 		}
@@ -292,8 +308,7 @@ func GetChatSettings(ChatId int64) (map[string]interface{}, error) {
 	ch := Chat{Id: ChatId}
 	err := o.Read(&ch)
 	if err != nil {
-		// Gologer.PError(err.Error())
-		return sett, err
+		return sett, newError(GET_CHAT_ERROR + err.Error())
 	}
 	sett["name"] = ch.Name
 	return sett, nil
@@ -303,14 +318,12 @@ func SetNameChat(ChatId int64, name string) error {
 	ch := &Chat{Id: ChatId}
 	err := o.Read(ch)
 	if err != nil {
-		// Gologer.PError(err.Error())
-		return err
+		return newError(GET_CHAT_ERROR + err.Error())
 	}
 	ch.Name = name
 	_, err = o.Update(ch)
 	if err != nil {
-		// Gologer.PError(err.Error())
-		return err
+		return newError(UPDATE_CHAT + err.Error())
 	}
 	return nil
 }
@@ -320,17 +333,16 @@ func DeleteChatFromList(UserId int64, ChatId int64) error {
 	err := o.QueryTable("chat_users").Filter("user_id", UserId).
 		Filter("chat_id", ChatId).Filter("delete_last", 0).One(&c)
 	if err != nil {
-		// Gologer.PError(err.Error())
-		return err
+		return newError(GET_CHAT_USER_ERROR + err.Error())
 	}
 	res, err := CheckUserInChatDelete(UserId, ChatId)
 	if err == nil && !res {
-		return errors.New("user yet not delete")
+		return newError(USER_YET_DIDNT_DELETE)
 	}
 	c.List_Invisible = true
 	_, err = o.Update(c)
 	if err != nil {
-		return err
+		return newError(UPDATE_CHAT_USER + err.Error())
 	}
 	return nil
 }
@@ -340,15 +352,13 @@ func FullDeleteChat(ChatId int64) error {
 	err := o.QueryTable("chats").Filter("id", ChatId).
 		Filter("chat_id", ChatId).Filter("delete_last", 0).RelatedSel().One(&c)
 	if err != nil {
-		// Gologer.PError(err.Error())
-		return err
+		return newError(GET_CHAT_ERROR + err.Error())
 	}
 	var cu ChatUser
 	err = o.QueryTable("chat_users").Filter("user_id", c.Author.Id).
 		Filter("chat_id", ChatId).Filter("delete_last", 0).One(&cu)
 	if err != nil {
-		// Gologer.PError(err.Error())
-		return err
+		return newError(GET_CHAT_USER_ERROR + err.Error())
 	}
 	o.Delete(cu)
 	qb, _ := orm.NewQueryBuilder(driver)
@@ -365,18 +375,16 @@ func FullDeleteChat(ChatId int64) error {
 	sql = qb.String()
 	o.Raw(sql, ChatId).Exec()
 	//Need delete files
-
 	o.Delete(&c)
 	return nil
 }
 
-func GetUsersForAddByName(chatId int64, name string) ([]map[string]interface{}, error) {
+func GetUsersForAddByName(chatID int64, name string) ([]map[string]interface{}, error) {
 	var findUsers []User
 	var final []map[string]interface{}
-	otherUsersIds, err := GetChatsUsers(chatId)
+	otherUsersIds, err := GetChatsUsers(chatID)
 	if err != nil {
-		// Gologer.PError(err.Error())
-		return final, err
+		return final, newError(GET_CHAT_USER_ERROR + err.Error())
 	}
 
 	var stringOtherUsersIds []string
@@ -388,11 +396,9 @@ func GetUsersForAddByName(chatId int64, name string) ([]map[string]interface{}, 
 	_, err = o.Raw(query, "%"+name+"%", "%"+name+"%").QueryRows(&findUsers)
 
 	if err != nil {
-		// Gologer.PError(err.Error())
-		return final, err
+		return final, newError(GET_USER_ERROR + err.Error())
 	}
 
-	fmt.Println(findUsers)
 	for i, v := range findUsers {
 		final = append(final, map[string]interface{}{})
 		final[i]["name"] = v.Name
