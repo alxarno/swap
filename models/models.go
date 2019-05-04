@@ -88,14 +88,6 @@ type UserSettings struct {
 	Name string
 }
 
-type UserChatsInfo struct {
-	ID         int64  `json:"id"`
-	Login      string `json:"login"`
-	Name       string `json:"name"`
-	DeleteLast int64  `json:"delete"`
-	Ban        int    `json:"blocked"`
-}
-
 type ChatSettings struct {
 	Name string `json:"name"`
 }

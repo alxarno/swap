@@ -3,6 +3,8 @@ package db2
 import (
 	"fmt"
 	"testing"
+
+	"github.com/swap-messenger/swap/models"
 )
 
 const (
@@ -18,6 +20,9 @@ const (
 	testGotWrongChatUsersInfo      = "Got wrong chat's users info: "
 	testDeleteUsersInChatFailed    = "Deleting users in chat failed: "
 	testRecoveryUsersInChatFailed  = "Recovery users in chat failed: "
+	testGotChatSettingsError       = "Gettings chat settings failed: "
+	testGotWrongChatSettigns       = "Got wrong chat's settings: "
+	testSetChatSettingsError       = "Settings chat's settings failed: "
 )
 
 func TestCreate(t *testing.T) {
@@ -246,4 +251,66 @@ func TestRecoveryUsersInChat(t *testing.T) {
 			fmt.Sprintf("User 1 should not be deleted but he does, got %d", (*usersInfo)[0].DeleteLast))
 		return
 	}
+}
+
+func TestGetChatSettings(t *testing.T) {
+	createTestDB(t)
+	defer deleteTestDB(t)
+	user := User{Login: "user1", Pass: "1234"}
+	lindex, err := CreateUser(user.Login, user.Pass, user.Login)
+	if err != nil {
+		t.Error(testCannotCreateFirstUser, err.Error())
+		return
+	}
+	user.ID = lindex
+	chatName := "chat1"
+	chatID, err := Create(chatName, user.ID, DialogType)
+	if err != nil {
+		t.Error(testCreateChatError, err.Error())
+		return
+	}
+	chatSettings, err := GetChatSettings(chatID)
+	if err != nil {
+		t.Error(testGotChatSettingsError, err.Error())
+		return
+	}
+	if chatSettings.Name != chatName {
+		t.Error(testGotWrongChatSettigns)
+		return
+	}
+}
+
+func TestSetChatSettings(t *testing.T) {
+	createTestDB(t)
+	defer deleteTestDB(t)
+	user := User{Login: "user1", Pass: "1234"}
+	lindex, err := CreateUser(user.Login, user.Pass, user.Login)
+	if err != nil {
+		t.Error(testCannotCreateFirstUser, err.Error())
+		return
+	}
+	user.ID = lindex
+	chatName := "chat1"
+	chatID, err := Create(chatName, user.ID, DialogType)
+	if err != nil {
+		t.Error(testCreateChatError, err.Error())
+		return
+	}
+	newChatName := "chat228"
+	settings := models.ChatSettings{Name: newChatName}
+	err = SetChatSettings(chatID, &settings)
+	if err != nil {
+		t.Error(testSetChatSettingsError, err)
+		return
+	}
+	chatSettings, err := GetChatSettings(chatID)
+	if err != nil {
+		t.Error(testGotChatSettingsError, err.Error())
+		return
+	}
+	if chatSettings.Name != newChatName {
+		t.Error(testGotWrongChatSettigns)
+		return
+	}
+
 }

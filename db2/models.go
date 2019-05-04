@@ -103,3 +103,18 @@ func (u *System) TableName() string {
 	// db table name
 	return "sys"
 }
+
+//Intermidiate types
+type chatInfo struct {
+	ID         int64
+	Name       string
+	AuthorID   int64
+	Type       int
+	DeleteLast int64
+	Ban        bool
+}
+type message struct {
+	LastSender      string
+	LastMessage     string
+	LastMessageTime int64
+}

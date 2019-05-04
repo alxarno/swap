@@ -261,4 +261,37 @@ func RecoveryUsersInChat(userIDs []int64, chatID int64, recoveryByYourself bool)
 	return nil
 }
 
-// func GetChat
+//GetChatSettings - return chat settings by chat's ID
+func GetChatSettings(chatID int64) (*models.ChatSettings, error) {
+	settings := models.ChatSettings{}
+	c := Chat{}
+	if err := db.First(&c, chatID).Error; err != nil {
+		return nil, DBE(GetChatError, err)
+	}
+	settings.Name = c.Name
+	return &settings, nil
+}
+
+//SetChatSettings - apply settigns for certain chat
+func SetChatSettings(chatID int64, settings *models.ChatSettings) error {
+	c := Chat{}
+	if err := db.First(&c, chatID).Error; err != nil {
+		return DBE(GetChatError, err)
+	}
+	c.Name = (*settings).Name
+	if err := db.Save(&c).Error; err != nil {
+		return DBE(UpdateChatError, err)
+	}
+	return nil
+}
+
+func DeleteChatFromList(userID int64, chatID int64) error {
+	c := ChatUser{ChatID: chatID, UserID: userID}
+	if err := db.Where(&c).Where("delete_last = ?", 0).First(&c).Error; err != nil {
+		return DBE(GetChatUserError, err)
+	}
+	//
+	return nil
+}
+
+// func FullDeleteChat()

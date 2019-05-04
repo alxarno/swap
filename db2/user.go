@@ -3,6 +3,7 @@ package db2
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 
 	"github.com/swap-messenger/swap/models"
 )
@@ -20,6 +21,10 @@ const (
 	UserNotFound = "User not found: "
 	//PasswordEncodingFailed - Password encoding failed
 	PasswordEncodingFailed = "Pass encoding failed"
+	//GetMessageError - getting message failed
+	GetMessageError = "Getting message failed"
+	//MessageContentDecodeError - decoding message was failed
+	MessageContentDecodeError = "Message's content decoding failed"
 )
 
 func encodePass(pass string) (string, error) {
@@ -82,9 +87,68 @@ func CreateUser(login string, pass string, name string) (int64, error) {
 }
 
 //GetUserChats - return users chats
-func GetUserChats(userID int64) ([]*models.UserChatInfo, error) {
-	//
-	return []*models.UserChatInfo{}, nil
+func GetUserChats(userID int64) (*[]models.UserChatInfo, error) {
+	info := []chatInfo{}
+	mes := message{}
+	res := []models.UserChatInfo{}
+	//Query for chat's info
+	query := db.Table("chat_users").
+		Select(`chats.id, chats.name, chats.author_id,
+		chats.type, chat_users.delete_last,chat_users.ban`).
+		Joins("inner join chats on chat_users.chat_id = chats.id").
+		Where("list__invisible = ?", 0).
+		Where("user_id = ?", userID)
+	if err := query.Scan(&info).Error; err != nil {
+		return nil, DBE(GetChatInfoError, err)
+	}
+	//Query for last messages
+	query = db.Table("messages").
+		Select("messages.content, messages.time, users.name").
+		Joins("inner join users on messages.author_id = users.id").
+		Order("messages.time desc")
+	msgContent := models.MessageContent{}
+	for _, v := range info {
+		if err := query.Where("messages.chat_id=?", v.ID).First(&mes).Error; err != nil {
+			return nil, DBE(GetMessageError, err)
+		}
+		err := json.Unmarshal([]byte(mes.LastMessage), &msgContent)
+		if err != nil {
+			return nil, DBE(MessageContentDecodeError, err)
+		}
+		deleted := true
+		if !v.Ban && v.DeleteLast == 0 {
+			deleted = false
+		}
+		res = append(res, models.UserChatInfo{
+			ID: v.ID, Name: v.Name, Type: v.Type,
+			LastSender: mes.LastSender, AdminID: v.AuthorID,
+			LastMessage: &msgContent, LastMessageTime: mes.LastMessageTime,
+			View: 0, Delete: deleted, Online: 0})
+	}
+	return &res, nil
+}
+
+//GetUsersChatsIDs - return user's chats ID
+func GetUsersChatsIDs(userID int64) (*[]int64, error) {
+	IDs := []int64{}
+	if err := db.Model(&ChatUser{}).
+		Where("user_id = ?", userID).
+		Pluck("chat_id", &IDs).Error; err != nil {
+		return nil, DBE(GetChatUserError, err)
+	}
+	return &IDs, nil
+}
+
+//GetOnlineUsersIDsInChat - return online users IDs in chats by online usesrs slice
+func GetOnlineUsersIDsInChat(chatsID *[]int64, usersOnlineID *[]int64) (*[]int64, error) {
+	res := []int64{}
+	query := db.Model(&ChatUser{}).Where("user_id", usersOnlineID).
+		Where("chat_id", chatsID).Where("ban = ?", 0).Where("list_invisible = 0").
+		Where("delete_last = ?", 0)
+	if err := query.Pluck("user_id", &res).Error; err != nil {
+		return nil, DBE(GetChatUserError, err)
+	}
+	return &res, nil
 }
 
 //GetUserSettings - return user's settings
