@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	db "github.com/swap-messenger/Backend/db"
-	"github.com/swap-messenger/Backend/settings"
-	api "github.com/swap-messenger/Backend/src/api"
-	engine "github.com/swap-messenger/Backend/src/message_engine"
 	"github.com/gorilla/mux"
 	"github.com/robbert229/jwt"
+	db "github.com/swap-messenger/swap/db"
+	"github.com/swap-messenger/swap/settings"
+	api "github.com/swap-messenger/swap/src/api"
+	engine "github.com/swap-messenger/swap/src/message_engine"
 	"golang.org/x/net/websocket"
 	// "google.golang.org/genproto/protobuf/api"
 )

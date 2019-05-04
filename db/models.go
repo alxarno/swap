@@ -1,15 +1,15 @@
 package db
 
 type User struct {
-	Id       int64       `orm:"auto"`
-	Login    string      `orm:"size(32)"`
-	Name     string      `orm:"size(100)"`
-	Pass     string      `orm:"size(45)"`
-	Chats    []*ChatUser `orm:"reverse(many)"`
-	Messages []*Message  `orm:"reverse(many)"`
-	Files    []*File     `orm:"reverse(many)"`
-	MyChats  []*Chat     `orm:"reverse(many)"`
-	Dialogs  []*Dialog   `orm:"reverse(many)"`
+	ID       int64
+	Login    string `orm:"size(32)"`
+	Name     string `orm:"size(100)"`
+	Pass     string `orm:"size(45)"`
+	Chats    []ChatUser
+	Messages []Message
+	Files    []File
+	MyChats  []Chat
+	Dialogs  []Dialog
 }
 
 func (u *User) TableName() string {
@@ -17,12 +17,12 @@ func (u *User) TableName() string {
 }
 
 type Chat struct {
-	Id       int64      `orm:"auto"`
-	Name     string     `orm:"size(100)"`
-	Author   *User      `orm:"rel(fk)"`
-	Type     int        `orm:"default(0)"`
-	Files    []*File    `orm:"reverse(many)"`
-	Messages []*Message `orm:"reverse(many)"`
+	ID       int64  `orm:"auto"`
+	Name     string `orm:"size(100)"`
+	Author   User
+	Type     int       `orm:"default(0)"`
+	Files    []File    `orm:"reverse(many)"`
+	Messages []Message `orm:"reverse(many)"`
 }
 
 func (u *Chat) TableName() string {
@@ -30,14 +30,14 @@ func (u *Chat) TableName() string {
 }
 
 type ChatUser struct {
-	Id             int64 `orm:"auto"`
-	User           *User `orm:"rel(fk)"`
-	Chat           *Chat `orm:"rel(fk)"`
-	Start          int64 `orm:"default(0)"`
-	Delete_last    int64 `orm:"default(0)"`
-	Delete_points  string
-	Ban            bool `orm:"default(false)"`
-	List_Invisible bool `orm:"default(false)"`
+	ID            int64 `orm:"auto"`
+	User          User
+	Chat          Chat
+	Start         int64 `orm:"default(0)"`
+	DeleteLast    int64 `orm:"default(0)"`
+	DeletePoints  string
+	Ban           bool `orm:"default(false)"`
+	ListInvisible bool `orm:"default(false)"`
 }
 
 func (c *ChatUser) TableName() string {
@@ -45,9 +45,9 @@ func (c *ChatUser) TableName() string {
 }
 
 type Message struct {
-	Id      int64 `orm:"auto"`
-	Author  *User `orm:"rel(fk)"`
-	Chat    *Chat `orm:"rel(fk)"`
+	ID      int64 `orm:"auto"`
+	Author  User
+	Chat    Chat
 	Content string
 	Time    int64 `orm:"default(0)"`
 }
@@ -58,9 +58,9 @@ func (u *Message) TableName() string {
 }
 
 type File struct {
-	Id        int64 `orm:"auto"`
-	Author    *User `orm:"rel(fk)"`
-	Chat      *Chat `orm:"rel(fk)"`
+	ID        int64 `orm:"auto"`
+	Author    User  `orm:"rel(fk)"`
+	Chat      Chat  `orm:"rel(fk)"`
 	Name      string
 	Path      string
 	RatioSize float64 `orm:"default(0)"`
@@ -73,10 +73,10 @@ func (u *File) TableName() string {
 }
 
 type Dialog struct {
-	Id     int64 `orm:"auto"`
-	ChatId int64
-	User1  *User `orm:"rel(fk)"`
-	User2  *User `orm:"rel(fk)"`
+	ID     int64 `orm:"auto"`
+	ChatID int64
+	User1  User `orm:"rel(fk)"`
+	User2  User `orm:"rel(fk)"`
 }
 
 func (u *Dialog) TableName() string {
@@ -85,7 +85,7 @@ func (u *Dialog) TableName() string {
 }
 
 type System struct {
-	Id      int64 `orm:"auto"`
+	ID      int64 `orm:"auto"`
 	Date    int64 `orm:"default(0)"`
 	Version string
 }

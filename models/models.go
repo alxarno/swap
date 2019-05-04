@@ -1,21 +1,21 @@
 package models
 
 type Chat struct {
-	ID                      float64
+	ID                      int64
 	Name                    string
-	Addr_users              []string
-	MessageBlockId          float64
+	AddrUsers               []string
+	MessageBlockID          int64
 	LastSender, LastMessage string
 }
 type MessageBlock struct {
-	chatId   int64
+	ChatID   int64
 	Messages []Message
 }
 type Message struct {
-	Addr_author string
-	Content     string
-	Type        string
-	Chat_Id     float64
+	AddrAuthor string
+	Content    string
+	Type       string
+	ChatID     float64
 }
 type UserChatInfo struct {
 	ID   int64  `json:"id"`
@@ -23,7 +23,7 @@ type UserChatInfo struct {
 	Type int    `json:"type"`
 	//Addr_users []string
 	LastSender string `json:"last_sender"`
-	Admin_id   int64  `json:"admin_id"`
+	AdminID    int64  `json:"admin_id"`
 	//Moders_ids []float64 `json:"moderators_ids"`
 	LastMessage     *MessageContent `json:"last_message"`
 	LastMessageTime int64           `json:"last_message_time"`
@@ -38,7 +38,7 @@ type MessageContent struct {
 	Command   int     `json:"command,integer"`
 }
 type User struct {
-	ID    float64
+	ID    int64
 	Name  string
 	Login string
 	Pass  string
@@ -46,9 +46,9 @@ type User struct {
 
 type NewMessageToUser struct {
 	ID          int64                 `json:"id"`
-	ChatId      int64                 `json:"chat_id"`
+	ChatID      int64                 `json:"chat_id"`
 	Content     *MessageContentToUser `json:"message"`
-	AuthorId    int64                 `json:"author_id"`
+	AuthorID    int64                 `json:"author_id"`
 	AuthorName  string                `json:"author_name"`
 	AuthorLogin string                `json:"author_login"`
 	Time        int64                 `json:"time"`
@@ -76,10 +76,26 @@ type MessageContentToUser struct {
 //}
 
 type ForceMsgToUser struct {
-	UserId int64
+	UserID int64
 	Msg    NewMessageToUser
 }
 
 func GetModels() string {
 	return "Info"
+}
+
+type UserSettings struct {
+	Name string
+}
+
+type UserChatsInfo struct {
+	ID         int64  `json:"id"`
+	Login      string `json:"login"`
+	Name       string `json:"name"`
+	DeleteLast int64  `json:"delete"`
+	Ban        int    `json:"blocked"`
+}
+
+type ChatSettings struct {
+	Name string `json:"name"`
 }

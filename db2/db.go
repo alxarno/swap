@@ -1,6 +1,11 @@
-package db
+package db2
 
 import (
+	"fmt"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/jinzhu/gorm"
 	// _ "github.com/jinzhu/gorm/dialects/sqlite"
 	_ "github.com/mattn/go-sqlite3"
@@ -11,30 +16,35 @@ type userRequestedCallback = func(userID int64, chatID int64, messageCommand int
 type chatCreatedCallback = func(AuthorId int64)
 
 var (
-	db                  gorm.DB
+	db                  *gorm.DB
+	testDBPath          string
 	UserRequestedToChat userRequestedCallback = nil
 	ChatCreated         chatCreatedCallback   = nil
 )
 
-func LoadDb() {
-	// register model
+func createTestDB(t *testing.T) {
+	var err error
+	testDBPath = fmt.Sprintf("connection_%d.db", time.Now().UnixNano())
+	db, err = gorm.Open("sqlite3", testDBPath)
+	if err != nil {
+		t.Error("Cannot create DB")
+	}
 
+	db.AutoMigrate(&User{})
+	db.AutoMigrate(&Chat{})
+	db.AutoMigrate(&ChatUser{})
+	db.AutoMigrate(&Message{})
+	db.AutoMigrate(&File{})
+	db.AutoMigrate(&System{})
+	db.AutoMigrate(&Dialog{})
+	db.LogMode(true)
 }
 
-func createDB() error {
-	// err := orm.RunSyncdb("default", true, false)
-	// if err != nil {
-	// 	return err
-	// }
-	// o = orm.NewOrm()
-	// var sys System
-	// sys.Date = time.Now().Unix()
-	// sys.Version = "0.0.1"
-	// _, err = o.Insert(&sys)
-	// if err == nil {
-	// 	return err
-	// }
-	return nil
+func deleteTestDB(t *testing.T) {
+	db.Close()
+	if err := os.Remove(testDBPath); err != nil {
+		t.Error("Cannot delete DB")
+	}
 }
 
 func BeginDB() error {
@@ -44,17 +54,15 @@ func BeginDB() error {
 	if err != nil {
 		panic(err)
 	}
-	if sett.Backend.Test {
-		// orm.Debug = true
-		// orm.RegisterDataBase("default", "sqlite3", "file:test.db")
-		db, err := gorm.Open("sqlite3", "test.db")
-	} else {
-		db, err := gorm.Open("sqlite3", settings.ServiceSettings.DB.SQLite.Path)
-		//orm.RegisterDataBase("default", "sqlite3", "file:"+settings.ServiceSettings.DB.SQLite.Path)
+	var dbPath = "test.db"
+	if !sett.Backend.Test {
+		dbPath = settings.ServiceSettings.DB.SQLite.Path
 	}
+	db, err := gorm.Open("sqlite3", dbPath)
 	if err != nil {
 		panic("Failed connect")
 	}
+	db.LogMode(false)
 
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Chat{})

@@ -4,17 +4,14 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"log"
 	"net"
-	"net/http"
 	"os"
 	"path/filepath"
 
-	db "github.com/swap-messenger/Backend/db"
-	"github.com/swap-messenger/Backend/models"
-	"github.com/swap-messenger/Backend/settings"
-
-	engine "github.com/swap-messenger/Backend/src/message_engine"
+	db "github.com/swap-messenger/swap/db2"
+	"github.com/swap-messenger/swap/models"
+	"github.com/swap-messenger/swap/settings"
+	// engine "github.com/swap-messenger/swap/src/message_engine"
 	// "github.com/AlexeyArno/Gologer"
 )
 
@@ -74,7 +71,7 @@ func main() {
 
 	}
 
-	engine.ConnectActionsToDB()
+	// engine.ConnectActionsToDB()
 	err = db.BeginDB()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -84,9 +81,9 @@ func main() {
 
 	//go broadcaster()
 
-	engine.StartCoreMessenger()
+	// engine.StartCoreMessenger()
 
-	router := newRouter()
+	// router := newRouter()
 	myAddres := ""
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
@@ -112,20 +109,20 @@ func main() {
 	if *test {
 		os.Stderr.WriteString(clearIPs)
 	} else {
-		printLogo()
+		// printLogo()
 		os.Stderr.WriteString("Swap started on \t" + myAddres + "\n")
 	}
 
-	if settings.ServiceSettings.Backend.Encryption {
-		log.Fatal("ListenAndServeTLS: ", http.ListenAndServeTLS(
-			":"+settings.ServiceSettings.Backend.Host,
-			settings.ServiceSettings.Backend.CertFile,
-			settings.ServiceSettings.Backend.KeyFile,
-			router))
-	} else {
-		log.Fatal("ListenAndServe: ", http.ListenAndServe(
-			":"+settings.ServiceSettings.Backend.Host,
-			router))
-	}
+	// if settings.ServiceSettings.Backend.Encryption {
+	// 	log.Fatal("ListenAndServeTLS: ", http.ListenAndServeTLS(
+	// 		":"+settings.ServiceSettings.Backend.Host,
+	// 		settings.ServiceSettings.Backend.CertFile,
+	// 		settings.ServiceSettings.Backend.KeyFile,
+	// 		router))
+	// } else {
+	// 	log.Fatal("ListenAndServe: ", http.ListenAndServe(
+	// 		":"+settings.ServiceSettings.Backend.Host,
+	// 		router))
+	// }
 
 }

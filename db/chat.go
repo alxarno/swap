@@ -15,80 +15,116 @@ import (
 )
 
 const (
-	GET_USER_ERROR             = "Get user error: "
-	INSERT_CHAT_ERROR          = "Insert chat error: "
-	INSERT_USER_IN_CHAT        = "Insert user in chat error: "
-	INSERT_USER_IN_CHANNEL     = "Insert user in channel error: "
-	USER_ALREADY_EXIST_IN_CHAT = "User already in chat: "
-	SEND_MESSAGE_ERROR         = "Send message error: "
-	GET_CHAT_ERROR             = "Getting chat failed: "
-	USER_ISNT_AUTHOR           = "User isnt author: "
-	GET_CHAT_USER_ERROR        = "Gettings chat user failed: "
-	GET_DELETE_POINTS          = "Failed get delete points: "
-	SET_DELETE_POINTS          = "Failed set delete points: "
-	UPDATE_CHAT_USER           = "Failed update chat user: "
-	UPDATE_CHAT                = "Failed update chat: "
-	USER_YET_DIDNT_DELETE      = "User wasn't delete: "
+	//GetUserError - cannot get user by query
+	GetUserError             = "Get user error: "
+	//InsertChatError - insertion failed
+	InsertChatError          = "Insert chat error: "
+	InsertUserInChatError        = "Insert user in chat error: "
+	InsertUserInChannelError     = "Insert user in channel error: "
+	UserAlreadyExistInChatError = "User already in chat: "
+	SendMessageError         = "Send message error: "
+	GetChatError             = "Getting chat failed: "
+	UserIsntAuthorError           = "User isnt author: "
+	GetChatUserError        = "Gettings chat user failed: "
+	GetDeletePointsError          = "Failed get delete points: "
+	SetDeletePointsError          = "Failed set delete points: "
+	UpdateChatUserErrro           = "Failed update chat user: "
+	UpdateChatError                = "Failed update chat: "
+	UserYetDidntDeleteError      = "User wasn't delete: "
 )
-
-func CreateChat(name string, AuthorId int64) (int64, error) {
+// Create - creating chat or channel with the author's insertion
+func Create(name string, authorID int64, chatChannel int)(int64, error){
 	u := User{}
-	err := o.QueryTable("users").Filter("id", AuthorId).
-		One(&u)
-	if err != nil {
-		return 0, newError(GET_USER_ERROR + err.Error())
+
+	db.First(&u, authorID)
+	if u.ID == 0{
+		return 0, DBE(GetUserError, nil)
 	}
-	o.Begin()
-	c := Chat{Name: name, Author: &u, Type: 0}
-	id, err := o.Insert(&c)
-	if err != nil {
-		o.Rollback()
-		return 0, newError(INSERT_CHAT_ERROR + err.Error())
+	tx := db.Begin()
+	c := Chat{Name: name, Author: u, Type: chatChannel}
+	if err := tx.Create(&c).Error; err != nil {
+		tx.Rollback()
+		return 0, DBE(InsertChatError, err)
 	}
-	o.Commit()
-	err = InsertUserInChat(u.Id, id, false)
+	tx.Commit()
+	err := InsertUserInChat(u.ID, c.ID, false)
 	if err != nil {
-		return id, newError(INSERT_USER_IN_CHAT + err.Error())
+		if chatChannel == 0{
+			return c.ID, DBE(InsertUserInChatError, err)
+		}else{
+			return c.ID, DBE(InsertUserInChannelError, err)
+		}
 	}
-	o.Commit()
 	if ChatCreated != nil {
-		ChatCreated(AuthorId)
+		ChatCreated(authorID)
 	}
-	return id, nil
+	return c.ID, nil
 }
 
-func CreateChannel(name string, AuthorId int64) (int64, error) {
-	u := User{}
-	err := o.QueryTable("users").Filter("id", AuthorId).One(&u)
-	if err != nil {
-		return 0, err
-	}
-	c := Chat{Name: name, Author: &u, Type: 2}
-	o.Begin()
-	id, err := o.Insert(&c)
-	if err != nil {
-		o.Rollback()
-		return 0, newError(INSERT_CHAT_ERROR + err.Error())
-	}
-	// o.Commit()
+// func CreateChat(name string, AuthorID int64) (int64, error) {
+// 	u := User{}
+// 	// err := db.QueryTable("users").Filter("id", AuthorId).
+// 	// 	One(&u)
+// 	db.First(&u, AuthorID)
+// 	// if u.Id != 
+// 	// err := db.First(&u, AuthorId)
+// 	// if err != nil {
+// 	// 	return 0, newError(GET_USER_ERROR + err.Error())
+// 	// }
+// 	tx := db.Begin()
+// 	c := Chat{Name: name, Author: u, Type: 0}
+// 	// tx.Create(&c)
+// 	if err := tx.Create(&c).Error; err != nil {
+// 		tx.Rollback()
+// 		return 0, newError(INSERT_CHAT_ERROR + err.Error())
+// 	}
+// 	tx.Commit()
+// 	err := InsertUserInChat(u.ID, c.ID, false)
+// 	if err != nil {
+// 		return c.ID, newError(INSERT_USER_IN_CHAT + err.Error())
+// 	}
+// 	// o.Commit()
+// 	if ChatCreated != nil {
+// 		ChatCreated(AuthorID)
+// 	}
+// 	return c.ID, nil
+// }
 
-	err = InsertUserInChat(u.Id, id, false)
-	if err != nil {
-		o.Rollback()
-		return id, newError(INSERT_USER_IN_CHANNEL + err.Error())
-	}
-	o.Commit()
-	return id, nil
-}
+// func CreateChannel(name string, AuthorID int64) (int64, error) {
+// 	u := User{}
+// 	db.First(&u, AuthorID)
+// 	// err := o.QueryTable("users").Filter("id", AuthorId).One(&u)
+// 	// if err != nil {
+// 	// 	return 0, err
+// 	// }
+// 	c := Chat{Name: name, Author: &u, Type: 2}
+// 	o.Begin()
+// 	id, err := o.Insert(&c)
+// 	if err != nil {
+// 		o.Rollback()
+// 		return 0, newError(INSERT_CHAT_ERROR + err.Error())
+// 	}
+// 	// o.Commit()
 
-func CheckUserInChatDelete(UserId int64, ChatId int64) (bool, error) {
+// 	err = InsertUserInChat(u.Id, id, false)
+// 	if err != nil {
+// 		o.Rollback()
+// 		return id, newError(INSERT_USER_IN_CHANNEL + err.Error())
+// 	}
+// 	o.Commit()
+// 	return id, nil
+// }
+
+func CheckUserInChatDelete(UserID int64, ChatID int64) (bool, error) {
 	var cUser ChatUser
-	query := o.QueryTable("chat_users").Filter("user_id", UserId).Filter("chat_id", ChatId)
-	err := query.One(&cUser)
-	if err != nil {
-		return false, newError(GET_USER_ERROR + err.Error())
+	// query := o.QueryTable("chat_users").Filter("user_id", UserId).Filter("chat_id", ChatId)
+	// err := query.One(&cUser)
+	db.Where("user_id = ?", UserID).Where("chat_id = ?", ChatID).Find(&cUser)
+
+	if cUser.ID == 0 {
+		return false, DBE(GetUserError,nil)
 	}
-	if cUser.List_Invisible || cUser.Delete_last != 0 {
+	if cUser.ListInvisible || cUser.DeleteLast != 0 {
 		return true, nil
 	}
 	return false, nil

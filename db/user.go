@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"log"
 	"strconv"
 	"strings"
 
@@ -102,7 +103,7 @@ func GetUserChats(userId int64) ([]*models.UserChatInfo, error) {
 	if err != nil {
 		return final, newError(GET_CHAT_INFO_FAILED)
 	}
-
+	log.Println("NILLL", ChatInfoBuffer)
 	// LAST Messages
 	msg, _ := orm.NewQueryBuilder(driver)
 	msg.Select("messages.content",
@@ -113,15 +114,18 @@ func GetUserChats(userId int64) ([]*models.UserChatInfo, error) {
 		On("messages.author_id = users.id").
 		Where("messages.chat_id = ?").OrderBy("messages.time").Desc().Limit(1)
 	sql = msg.String()
+
 	for _, v := range ChatInfoBuffer {
 		o.Raw(sql, v.ID).Values(&messagesBuffer)
 		if len(messagesBuffer) == 0 {
+			log.Println("C1", v.ID)
 			continue
 		}
 
 		var msgNow models.MessageContent
 		err := json.Unmarshal([]byte(messagesBuffer[0]["content"].(string)), &msgNow)
 		if err != nil {
+			log.Println("C2")
 			continue
 		}
 		var deleteV = true
@@ -130,6 +134,7 @@ func GetUserChats(userId int64) ([]*models.UserChatInfo, error) {
 		}
 		t, err := strconv.ParseInt(messagesBuffer[0]["time"].(string), 10, 64)
 		if err != nil {
+			log.Println("C3")
 			continue
 		}
 		final = append(final,

@@ -1,15 +1,17 @@
 package models
 
 const (
-	MESSAGE_COMMAND_USER_INSERTED_TO_CHAT = iota + 1
-	MESSAGE_COMMAND_USER_CREATED_CHAT
-	MESSAGE_COMMAND_USER_INSERTED_TO_CHANNEL
-	MESSAGE_COMMAND_USER_CREATED_CHANNEL
+	MessageCommandUserInsertedToChat = iota + 1
+	MessageCommandUserCreatedChat
+	MessageCommandUserInsertedToChannel
+	MessageCommandUserCreatedChannel
+	MessageCommandUserInsertedToDialog
+	MessageCommandUserCreatedDialog
 )
 
 const (
-	MESSAGE_ACTION_ONLINE_USER        = "online_user"
-	MESSAGE_ACTION_USER_CHAT_INSERTED = "user_inserted"
-	MESSAGE_ACTION_CHAT_CREATED       = "chat_created"
-	MESSAGE_ACTION_TYPE_SYSTEM        = "system"
+	MessageActionOnlineUser       = "online_sser"
+	MessageActionUserChatInserted = "sser_inserted"
+	MessageActionChatCreated      = "chat_created"
+	MessageActionTypeSystem       = "system"
 )

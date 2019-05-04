@@ -3,8 +3,10 @@ TODO:
     Send message about request to chat
   Send message to websocket, about request to chat
   + Delete reflection
-  Make class for errors send
-  Make errors codes
+  + Make class for errors send
+  + Make errors codes
+
+  Migrate to GORM
   Make comments
   Greaceful shootdown
 
