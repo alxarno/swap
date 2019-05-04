@@ -1,6 +1,7 @@
 package db2
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -11,6 +12,10 @@ const (
 	testCreatedUserWithSameLogin = "Created user with the same login: "
 	testGotWrongUser             = "Got wrong user: "
 	testGotWrongSettings         = "Got wrong settings: "
+	testGotUserChats             = "Getting user chats failed: "
+	testGotWornUserChats         = "Got wrong user chats: "
+	testGetUsersChatsIDsError    = "Getting users chats IDs failed: "
+	testGotWrongUserChatsIDs     = "Got wrong users chats IDs: "
 )
 
 func TestCreateUser(t *testing.T) {
@@ -92,6 +97,71 @@ func TestGetUserByLoginAndPass(t *testing.T) {
 	}
 	if u.ID != user.ID || u.Login != user.Login {
 		t.Error(testGotWrongUser)
+		return
+	}
+}
+
+func TestGetUserChats(t *testing.T) {
+	createTestDB(t)
+	defer deleteTestDB(t)
+	user := User{Login: "user1", Pass: "1234"}
+	lindex, err := CreateUser(user.Login, user.Pass, user.Login)
+	if err != nil {
+		t.Error(testCannotCreateFirstUser, err.Error())
+		return
+	}
+	user.ID = lindex
+	chatName := "chat1"
+	_, err = Create(chatName, user.ID, DialogType)
+	if err != nil {
+		t.Error(testCreateChatError, err.Error())
+		return
+	}
+	chatsInfo, err := GetUserChats(user.ID)
+	if err != nil {
+		t.Error(testGotUserChats, err.Error())
+		return
+	}
+	if len(*chatsInfo) != 1 {
+		t.Error(testGotUserChats, fmt.Sprintf("Chats count should be equal 1, but got %d", len(*chatsInfo)))
+		return
+	}
+	if (*chatsInfo)[0].AdminID != user.ID {
+		t.Error(testGotWornUserChats,
+			fmt.Sprintf("Chat's admin should be user with id %d, but got %d", user.ID, (*chatsInfo)[0].AdminID))
+		return
+	}
+}
+
+func TestGetUsersChatsIDs(t *testing.T) {
+	createTestDB(t)
+	defer deleteTestDB(t)
+	user := User{Login: "user1", Pass: "1234"}
+	lindex, err := CreateUser(user.Login, user.Pass, user.Login)
+	if err != nil {
+		t.Error(testCannotCreateFirstUser, err.Error())
+		return
+	}
+	user.ID = lindex
+	chatName := "chat1"
+	chatID, err := Create(chatName, user.ID, DialogType)
+	if err != nil {
+		t.Error(testCreateChatError, err.Error())
+		return
+	}
+	chatsIDs, err := GetUsersChatsIDs(user.ID)
+	if err != nil {
+		t.Error(testGetUsersChatsIDsError, err.Error())
+		return
+	}
+	if len(*chatsIDs) != 1 {
+		t.Error(testGotWrongUserChatsIDs,
+			fmt.Sprintf("Chat IDs should be 1, but got %d", len(*chatsIDs)))
+		return
+	}
+	if (*chatsIDs)[0] != chatID {
+		t.Error(testGotWrongUserChatsIDs,
+			fmt.Sprintf("First chat ID should be 1, but got %d", (*chatsIDs)[0]))
 		return
 	}
 }

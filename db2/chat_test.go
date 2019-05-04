@@ -8,21 +8,25 @@ import (
 )
 
 const (
-	testCreateChatError            = "Chat's creation is failed: "
-	testChatCreatedWithWrongAuthor = "Chat created with wrong author ID: "
-	testChatUserNotFound           = "Chat's user not found: "
-	testGetChatTypeError           = "Getting chat's type failed: "
-	testGotWrongChatType           = "Got wrong chat's type: "
-	testCheckUserError             = "Got wrong user's rights check: "
-	testGetChatUsersError          = "Getting chat users failed: "
-	testGotWrongChatUsers          = "Got wrong chat's users: "
-	testGetChatUsersInfo           = "Getting chat's users info failed: "
-	testGotWrongChatUsersInfo      = "Got wrong chat's users info: "
-	testDeleteUsersInChatFailed    = "Deleting users in chat failed: "
-	testRecoveryUsersInChatFailed  = "Recovery users in chat failed: "
-	testGotChatSettingsError       = "Gettings chat settings failed: "
-	testGotWrongChatSettigns       = "Got wrong chat's settings: "
-	testSetChatSettingsError       = "Settings chat's settings failed: "
+	testCreateChatError              = "Chat's creation is failed: "
+	testChatCreatedWithWrongAuthor   = "Chat created with wrong author ID: "
+	testChatUserNotFound             = "Chat's user not found: "
+	testGetChatTypeError             = "Getting chat's type failed: "
+	testGotWrongChatType             = "Got wrong chat's type: "
+	testCheckUserError               = "Got wrong user's rights check: "
+	testGetChatUsersError            = "Getting chat users failed: "
+	testGotWrongChatUsers            = "Got wrong chat's users: "
+	testGetChatUsersInfo             = "Getting chat's users info failed: "
+	testGotWrongChatUsersInfo        = "Got wrong chat's users info: "
+	testDeleteUsersInChatFailed      = "Deleting users in chat failed: "
+	testRecoveryUsersInChatFailed    = "Recovery users in chat failed: "
+	testGotChatSettingsError         = "Gettings chat settings failed: "
+	testGotWrongChatSettigns         = "Got wrong chat's settings: "
+	testSetChatSettingsError         = "Settings chat's settings failed: "
+	testCheckUseInChatDeleted        = "Checking user delete in chat failed: "
+	testGotWrongUserChatDeletedCheck = "Got wrong value from delete checking: "
+	testGetUsersForAddFailed         = "Getting users for add to chat failed: "
+	testGotWrongUsersForAdd          = "Got wrong users for add: "
 )
 
 func TestCreate(t *testing.T) {
@@ -215,6 +219,38 @@ func TestDeleteUsersInChat(t *testing.T) {
 	}
 }
 
+func TestCheckUserInChatDeleted(t *testing.T) {
+	createTestDB(t)
+	defer deleteTestDB(t)
+	user := User{Login: "user1", Pass: "1234"}
+	lindex, err := CreateUser(user.Login, user.Pass, user.Login)
+	if err != nil {
+		t.Error(testCannotCreateFirstUser, err.Error())
+		return
+	}
+	user.ID = lindex
+	chatID, err := Create("chat1", user.ID, DialogType)
+	if err != nil {
+		t.Error(testCreateChatError, err.Error())
+		return
+	}
+	err = DeleteUsersInChat([]int64{lindex}, chatID, true)
+	if err != nil {
+		t.Error(testDeleteUsersInChatFailed, err.Error())
+		return
+	}
+	deleted, err := CheckUserInChatDeleted(user.ID, chatID)
+	if err != nil {
+		t.Error(testCheckUseInChatDeleted, err.Error())
+		return
+	}
+	if !deleted {
+		t.Error(testGotWrongUserChatDeletedCheck,
+			fmt.Sprintf("User with id=%d should be deleted from chat with id=%d", user.ID, chatID))
+		return
+	}
+}
+
 func TestRecoveryUsersInChat(t *testing.T) {
 	createTestDB(t)
 	defer deleteTestDB(t)
@@ -310,6 +346,46 @@ func TestSetChatSettings(t *testing.T) {
 	}
 	if chatSettings.Name != newChatName {
 		t.Error(testGotWrongChatSettigns)
+		return
+	}
+}
+
+func TestGetUsersForAddByName(t *testing.T) {
+	createTestDB(t)
+	defer deleteTestDB(t)
+	user := User{Login: "user1", Pass: "1234"}
+	user2 := User{Login: "user2", Pass: "1234"}
+	lindex, err := CreateUser(user.Login, user.Pass, user.Login)
+	if err != nil {
+		t.Error(testCannotCreateFirstUser, err.Error())
+		return
+	}
+	user.ID = lindex
+	lindex, err = CreateUser(user2.Login, user2.Pass, user2.Login)
+	if err != nil {
+		t.Error(testCannotCreateFirstUser, err.Error())
+		return
+	}
+	user2.ID = lindex
+	chatName := "chat1"
+	chatID, err := Create(chatName, user.ID, ChatType)
+	if err != nil {
+		t.Error(testCreateChatError, err.Error())
+		return
+	}
+	users, err := GetUsersForAddByName(chatID, "user")
+	if err != nil {
+		t.Error(testGetUsersForAddFailed, err.Error())
+		return
+	}
+	if len(*users) != 1 {
+		t.Error(testGotWrongUsersForAdd,
+			fmt.Sprintf("Count of users for add should be 1, but got %d", len(*users)))
+		return
+	}
+	if (*users)[0].ID != user2.ID {
+		t.Error(testGotWrongUsersForAdd,
+			fmt.Sprintf("User's ID for add should be 1, but got %d", (*users)[0].ID))
 		return
 	}
 

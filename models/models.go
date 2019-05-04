@@ -91,3 +91,11 @@ type UserSettings struct {
 type ChatSettings struct {
 	Name string `json:"name"`
 }
+
+type UserChatsInfo struct {
+	ID         int64
+	Login      string
+	Name       string
+	DeleteLast int64
+	Ban        bool
+}

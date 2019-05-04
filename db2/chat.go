@@ -43,6 +43,10 @@ const (
 	WrongChatType = "Got wrong chat't type: "
 	//GettingUsersChatInfoFailed - getting user's chat info failed
 	GettingUsersChatInfoFailed = "Getting user's chat info failed: "
+	//CheckingUserDeletedInChatFailed - checking user deleted in chat failed
+	CheckingUserDeletedInChatFailed = "Checking user deleted in chat failed: "
+	//GetChatsUsersFailed - getting chat's users failed
+	GetChatsUsersFailed = "Getting chat's users failed: "
 )
 
 const (
@@ -156,7 +160,8 @@ func CheckUserRights(userID int64, chatID int64) error {
 //GetChatsUsers - returning user's ids in the certain chat
 func GetChatsUsers(chatID int64) (*[]int64, error) {
 	users := []int64{}
-	if err := db.Find(&User{}).Pluck("ID", &users).Error; err != nil {
+	if err := db.Find(&ChatUser{}).Where("chat_id = ?", chatID).
+		Pluck("user_id", &users).Error; err != nil {
 		return &users, DBE(GetUserError, err)
 	}
 	return &users, nil
@@ -216,6 +221,18 @@ func DeleteUsersInChat(usersIDs []int64, chatID int64, deleteByYourself bool) er
 		}
 	}
 	return nil
+}
+
+//CheckUserInChatDeleted - check user delete stat, if users deleted return true, else false
+func CheckUserInChatDeleted(userID int64, chatID int64) (bool, error) {
+	cuser := ChatUser{UserID: userID, ChatID: chatID}
+	if err := db.Where(&cuser).First(&cuser).Error; err != nil {
+		return false, DBE(GetChatUserError, err)
+	}
+	if cuser.ListInvisible || cuser.DeleteLast != 0 {
+		return true, nil
+	}
+	return false, nil
 }
 
 //RecoveryUsersInChat - recovery users for chats if they're was deleted, but not banned
@@ -285,13 +302,37 @@ func SetChatSettings(chatID int64, settings *models.ChatSettings) error {
 	return nil
 }
 
+//DeleteChatFromList - delete chat from certain user's menu
 func DeleteChatFromList(userID int64, chatID int64) error {
 	c := ChatUser{ChatID: chatID, UserID: userID}
 	if err := db.Where(&c).Where("delete_last = ?", 0).First(&c).Error; err != nil {
 		return DBE(GetChatUserError, err)
 	}
-	//
+	deleted, err := CheckUserInChatDeleted(userID, chatID)
+	if err != nil {
+		return DBE(CheckingUserDeletedInChatFailed, err)
+	}
+	if !deleted {
+		return DBE(UserYetDidntDeleteError, nil)
+	}
+	c.ListInvisible = true
+	if err := db.Save(&c).Error; err != nil {
+		return DBE(UpdateChatUserError, err)
+	}
 	return nil
 }
 
-// func FullDeleteChat()
+//GetUsersForAddByName - return users for add to certain chat if yet aren't there
+func GetUsersForAddByName(chatID int64, name string) (*[]models.User, error) {
+	found := []models.User{}
+	existsUsersInChat, err := GetChatsUsers(chatID)
+	if err != nil {
+		return nil, DBE(GetChatsUsersFailed, err)
+	}
+	query := db.Model(&User{}).Not("id in (?)", *existsUsersInChat).Where("name LIKE ?", "%"+name+"%").
+		Or("login LIKE ?", "%"+name+"%")
+	if err := query.Find(&found).Error; err != nil {
+		return nil, DBE(GetUserError, err)
+	}
+	return &found, nil
+}
