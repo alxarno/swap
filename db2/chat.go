@@ -49,17 +49,20 @@ const (
 	GetChatsUsersFailed = "Getting chat's users failed: "
 )
 
+// ChatMode - type for decalring chat's modesChatMode
+type ChatMode int
+
 const (
 	//ChatType - chat's type for Create funnction
-	ChatType = iota
+	ChatType ChatMode = iota
 	//DialogType - dialog's type for Create funnction
 	DialogType
 	//ChannelType - channel's type for Create funnction
 	ChannelType
 )
 
-//Create - creating chat, dialog or channel
-func Create(name string, authorID int64, chattype int) (int64, error) {
+//Create - creating chat, dialog or channel and auto inserting author in it
+func Create(name string, authorID int64, chattype ChatMode) (int64, error) {
 	u := User{}
 	if err := db.First(&u, authorID).Error; err != nil {
 		return 0, DBE(GetUserError, err)
@@ -105,9 +108,9 @@ func InsertUserInChat(userID int64, chatID int64, invited bool) error {
 	if err := db.Create(&chatUser).Error; err != nil {
 		return DBE(InsertUserInChatError, err)
 	}
-	var command int
+	var command models.MessageCommand
 	if !invited {
-		switch chatUser.Chat.Type {
+		switch ChatMode(chatUser.Chat.Type) {
 		case ChatType:
 			command = models.MessageCommandUserCreatedChat
 		case DialogType:
@@ -116,7 +119,7 @@ func InsertUserInChat(userID int64, chatID int64, invited bool) error {
 			command = models.MessageCommandUserCreatedChannel
 		}
 	} else {
-		switch chatUser.Chat.Type {
+		switch ChatMode(chatUser.Chat.Type) {
 		case ChatType:
 			command = models.MessageCommandUserInsertedToChat
 		case DialogType:
@@ -128,16 +131,16 @@ func InsertUserInChat(userID int64, chatID int64, invited bool) error {
 			UserRequestedToChat(userID, chatID, command)
 		}
 	}
-	// _, err = SendMessage(UserId, ChatId, content, 1, command)
-	// if err != nil {
-	// 	return DBE(SendMessageError, err)
-	// }
+	_, err := SendMessage(userID, chatID, "", SystemMessageType, command)
+	if err != nil {
+		return DBE(SendMessageError, err)
+	}
 
 	return nil
 }
 
-//GetChatType - returning chat's type
-func GetChatType(chatID int64) (int, error) {
+//GetChatMode - returning chat's type
+func GetChatMode(chatID int64) (ChatMode, error) {
 	chat := Chat{}
 	if err := db.First(&chat, chatID).Error; err != nil {
 		return 0, DBE(GetChatError, err)

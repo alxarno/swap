@@ -10,7 +10,11 @@ type DBError struct {
 }
 
 func (e *DBError) Error() string {
-	return e.errorType + " " + e.originalError.Error()
+	if e.originalError != nil {
+		return e.errorType + " " + e.originalError.Error()
+	}
+	return e.errorType
+
 }
 
 func (e *DBError) Type() string {

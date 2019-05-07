@@ -21,7 +21,7 @@ type Chat struct {
 	Name     string `gorm:"size:100"`
 	AuthorID int64
 	Author   User
-	Type     int `gorm:"DEFAULT:0"`
+	Type     ChatMode `gorm:"DEFAULT:0"`
 	Files    []File
 	Messages []Message
 }
@@ -117,4 +117,13 @@ type message struct {
 	LastSender      string
 	LastMessage     string
 	LastMessageTime int64
+}
+
+type messageTemplate struct {
+	ID       int64
+	Content  string
+	AuthorID int64
+	Name     string
+	Login    string
+	Time     int64
 }

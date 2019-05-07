@@ -69,7 +69,7 @@ func TestGetChatType(t *testing.T) {
 		t.Error(testCreateChatError, err.Error())
 		return
 	}
-	chattype, err := GetChatType(chatID)
+	chattype, err := GetChatMode(chatID)
 	if err != nil {
 		t.Error(testGetChatTypeError)
 		return

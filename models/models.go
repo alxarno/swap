@@ -63,10 +63,20 @@ type CreateDHData struct {
 }
 
 type MessageContentToUser struct {
-	Message   string                   `json:"content"`
-	Documents []map[string]interface{} `json:"documents"`
-	Type      string                   `json:"type"`
-	Command   int                      `json:"command,integer"`
+	Message   string  `json:"content"`
+	Documents *[]File `json:"documents"`
+	Type      string  `json:"type"`
+	Command   int     `json:"command,integer"`
+}
+
+type File struct {
+	ID        int64   `json:"id"`
+	AuthorID  int64   `json:"author_id"`
+	ChatID    int64   `json:"chat_id"`
+	Name      string  `json:"name"`
+	Path      string  `json:"path"`
+	RatioSize float64 `josn:"ratio"`
+	Size      int64   `json:"size"`
 }
 
 //type MessageContent struct{
