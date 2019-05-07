@@ -189,7 +189,7 @@ func GetChatUsersInfo(chatID int64) (*[]models.UserChatsInfo, error) {
 	return &data, nil
 }
 
-//DeleteUsersInChat - delete users from certain chat or ban them
+//DeleteUsersInChat - delete users from certain chat or ban them(if deleteByYourself = false)
 func DeleteUsersInChat(usersIDs []int64, chatID int64, deleteByYourself bool) error {
 	for _, v := range usersIDs {
 		chatUser := ChatUser{UserID: v, ChatID: chatID, DeleteLast: 0}
