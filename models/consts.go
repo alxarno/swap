@@ -3,7 +3,8 @@ package models
 type MessageCommand int
 
 const (
-	MessageCommandUserInsertedToChat MessageCommand = iota + 1
+	MessageCommandNull MessageCommand = iota
+	MessageCommandUserInsertedToChat
 	MessageCommandUserCreatedChat
 	MessageCommandUserInsertedToChannel
 	MessageCommandUserCreatedChannel

@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/swap-messenger/swap/db"
+	db "github.com/swap-messenger/swap/db2"
 	"github.com/swap-messenger/swap/models"
-	//"github.com/AlexeyArno/Gologer"
 )
 
 func getMessages(w http.ResponseWriter, r *http.Request) {
@@ -30,17 +29,17 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//There is no need check user is in chat, because func "GetMessage" check it auto
-	var mes []*models.NewMessageToUser
+	var mes *[]models.NewMessageToUser
 	if data.LastID == 0 {
-		mes, err = db.GetMessages(user.Id, data.ChatID, false, 0)
+		mes, err = db.GetMessages(user.ID, data.ChatID, false, 0)
 		if err != nil {
-			sendAnswerError(ref, err, map[string]interface{}{"userID": user.Id, "chatID": data.ChatID}, FAILED_GET_MESSAGES, 2, w)
+			sendAnswerError(ref, err, map[string]interface{}{"userID": user.ID, "chatID": data.ChatID}, FAILED_GET_MESSAGES, 2, w)
 			return
 		}
 	} else {
-		mes, err = db.GetMessages(user.Id, data.ChatID, true, data.LastID)
+		mes, err = db.GetMessages(user.ID, data.ChatID, true, data.LastID)
 		if err != nil {
-			sendAnswerError(ref, err, map[string]interface{}{"userID": user.Id, "chatID": data.ChatID}, FAILED_GET_ADDITIONAL_MESSAGES, 3, w)
+			sendAnswerError(ref, err, map[string]interface{}{"userID": user.ID, "chatID": data.ChatID}, FAILED_GET_ADDITIONAL_MESSAGES, 3, w)
 			return
 		}
 	}
@@ -49,7 +48,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	if mes == nil {
 		finish, _ = json.Marshal([]string{})
 	} else {
-		finish, _ = json.Marshal(mes)
+		finish, _ = json.Marshal(*mes)
 	}
 	fmt.Fprintf(w, string(finish))
 }

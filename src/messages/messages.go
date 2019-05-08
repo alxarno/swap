@@ -3,28 +3,27 @@ package messages
 import (
 	"encoding/json"
 
-	// "github.com/AlexeyArno/Gologer"
-	"github.com/swap-messenger/swap/db"
+	db "github.com/swap-messenger/swap/db2"
 	"github.com/swap-messenger/swap/models"
 	"github.com/swap-messenger/swap/src/api"
 )
 
 type NewMessageFormUser struct {
-	ChatId  int64                  `json:"Chat_Id"`
+	ChatID  int64                  `json:"Chat_Id"`
 	Content *models.MessageContent `json:"Content"`
 	Token   string                 `json:"Token"`
 }
 
 type NewMessageReceive struct {
-	ChatId  int64                  `json:"Chat_Id"`
+	ChatID  int64                  `json:"Chat_Id"`
 	Content *MessageContentReceive `json:"Content"`
 	Token   string                 `json:"Token"`
 }
 
 type MessageContentReceive struct {
-	Message   string    `json:"content"`
-	Documents []float64 `json:"documents"`
-	Type      string    `json:"type"`
+	Message   string  `json:"content"`
+	Documents []int64 `json:"documents"`
+	Type      string  `json:"type"`
 }
 
 func NewMessage(userQuest *string) (models.NewMessageToUser, error) {
@@ -60,12 +59,13 @@ func NewMessage(userQuest *string) (models.NewMessageToUser, error) {
 		// Gologer.PError(err.Error())
 		return send, err
 	}
-	content, err := json.Marshal(*data.Content)
-	if err != nil {
-		// Gologer.PError(err.Error())
-		return send, err
-	}
-	messageId, err := db.SendMessage(user.Id, data.ChatId, string(content), 0, 0)
+	//	content, err := json.Marshal(*data.Content)
+	//	if err != nil {
+	//		return send, err
+	//	}
+	messageID, err := db.SendMessage(user.ID, data.ChatID,
+		(*data.Content).Message, (*data.Content).Documents,
+		db.UserMessageType, models.MessageCommandNull)
 	if err != nil {
 		// Gologer.PError(err.Error())
 		return send, err
@@ -77,32 +77,35 @@ func NewMessage(userQuest *string) (models.NewMessageToUser, error) {
 	//fmt.Println(newContent)
 
 	//Get file information
-	var documents []map[string]interface{}
+	var documents []models.File
 
 	for _, v := range data.Content.Documents {
-		doc, err := db.GetFileInformation(v)
+		doc, err := db.GetFile(v)
 		if err != nil {
 			continue
 		}
-		documents = append(documents, doc)
+		documents = append(documents, models.File{
+			AuthorID: doc.AuthorID, ChatID: doc.ChatID, ID: doc.ID,
+			Name: doc.Name, Path: doc.Path, RatioSize: doc.RatioSize, Size: doc.Size,
+		})
 	}
 
 	var newMess models.MessageContentToUser
 
 	newMess.Message = data.Content.Message
 	newMess.Type = data.Content.Type
-	newMess.Documents = documents
+	newMess.Documents = &documents
 
-	send.ID = messageId
-	send.AuthorId = user.Id
+	send.ID = messageID
+	send.AuthorID = user.ID
 	send.AuthorName = user.Name
-	send.ChatId = data.ChatId
+	send.ChatID = data.ChatID
 	send.Content = &newMess
 	return send, nil
 
 }
 
-func NewMessageAnother(userQuest *string) (models.NewMessageToUser, error) {
+func NewMessageAnother(userQuest string) (models.NewMessageToUser, error) {
 	// log.Println(*userQuest)
 	var send models.NewMessageToUser
 	var dataReceive struct {
@@ -110,7 +113,7 @@ func NewMessageAnother(userQuest *string) (models.NewMessageToUser, error) {
 		Content NewMessageReceive
 	}
 
-	message := []byte(*userQuest)
+	message := []byte(userQuest)
 	err := json.Unmarshal(message, &dataReceive)
 	if err != nil {
 		return send, err
@@ -146,12 +149,13 @@ func NewMessageAnother(userQuest *string) (models.NewMessageToUser, error) {
 	//	//Gologer.PError(err.Error())
 	//	return  send,err
 	//}
-	messageCon, err := json.Marshal(dataReceive.Content.Content)
-	if err != nil {
-		// Gologer.PError(err.Error())
-		return send, err
-	}
-	mId, err := db.SendClearMessage(user.Id, dataReceive.Content.ChatId, string(messageCon))
+	//	messageCon, err := json.Marshal(dataReceive.Content.Content.)
+	//	if err != nil {
+	//		return send, err
+	//	}
+	messageID, err := db.SendMessage(user.ID, dataReceive.Content.ChatID,
+		dataReceive.Content.Content.Message, dataReceive.Content.Content.Documents,
+		db.UserMessageType, models.MessageCommandNull)
 	if err != nil {
 		//Gologer.PError(err.Error())
 		return send, err
@@ -162,26 +166,30 @@ func NewMessageAnother(userQuest *string) (models.NewMessageToUser, error) {
 	//	return  send,err
 	//}
 	//fmt.Println(newContent)
-	var documents []map[string]interface{}
+	var documents []models.File
 
 	for _, v := range dataReceive.Content.Content.Documents {
-		doc, err := db.GetFileInformation(int64(v))
+		doc, err := db.GetFile(v)
 		if err != nil {
 			continue
 		}
-		documents = append(documents, doc)
+		documents = append(documents, models.File{
+			AuthorID: doc.AuthorID, ChatID: doc.ChatID,
+			ID: doc.ID, Name: doc.Name, Path: doc.Path,
+			RatioSize: doc.RatioSize, Size: doc.Size,
+		})
 	}
 
 	var newMess models.MessageContentToUser
 
 	newMess.Message = dataReceive.Content.Content.Message
 	newMess.Type = dataReceive.Content.Content.Type
-	newMess.Documents = documents
+	newMess.Documents = &documents
 
-	send.ID = mId
-	send.AuthorId = user.Id
+	send.ID = messageID
+	send.AuthorID = user.ID
 	send.AuthorName = user.Name
-	send.ChatId = dataReceive.Content.ChatId
+	send.ChatID = dataReceive.Content.ChatID
 	send.Content = &newMess
 	return send, nil
 

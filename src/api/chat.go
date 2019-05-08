@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/swap-messenger/swap/db"
+	"github.com/swap-messenger/swap/models"
+
+	db "github.com/swap-messenger/swap/db2"
 )
 
 type dataTokenChat struct {
@@ -36,16 +38,16 @@ func create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if data.Type == "chat" {
-		_, err = db.CreateChat(data.Name, user.Id)
+		_, err = db.Create(data.Name, user.ID, db.ChatType)
 		if err != nil {
-			sendAnswerError(ref, err, map[string]interface{}{"name": data.Name, "userID": user.Id}, CREATED_CHAT, 3, w)
+			sendAnswerError(ref, err, map[string]interface{}{"name": data.Name, "userID": user.ID}, CREATED_CHAT, 3, w)
 			return
 		}
 	}
 	if data.Type == "channel" {
-		_, err = db.CreateChannel(data.Name, user.Id)
+		_, err = db.Create(data.Name, user.ID, db.ChannelType)
 		if err != nil {
-			sendAnswerError(ref, err, map[string]interface{}{"name": data.Name, "userID": user.Id}, CREATED_CHANNEL, 4, w)
+			sendAnswerError(ref, err, map[string]interface{}{"name": data.Name, "userID": user.ID}, CREATED_CHANNEL, 4, w)
 			log.Println("Chat create API: 4 - ", err.Error())
 			return
 		}
@@ -71,10 +73,10 @@ func addUsers(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
-	res, err := db.CheckUserInChatDelete(user.Id, data.ChatID)
+	res, err := db.CheckUserInChatDeleted(user.ID, data.ChatID)
 	if err != nil {
 		sendAnswerError(ref, err,
-			map[string]interface{}{"chatID": data.ChatID, "userID": user.Id},
+			map[string]interface{}{"chatID": data.ChatID, "userID": user.ID},
 			USER_CHAT_CHECK_FAILED, 2, w)
 		return
 	}
@@ -110,12 +112,18 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
-	users, err := db.GetChatUserInfo(data.ChatID)
+	users, err := db.GetChatUsersInfo(data.ChatID)
 	if err != nil {
 		sendAnswerError(ref, err, map[string]interface{}{"chatID": data.ChatID}, FAILED_GET_USER_INFO, 2, w)
 		return
 	}
-	fmt.Fprintf(w, string(users))
+
+	jsondata, err := json.Marshal(users)
+	if err != nil {
+		return
+	}
+
+	fmt.Fprintf(w, string(jsondata))
 	return
 }
 
@@ -146,7 +154,7 @@ func getUsersForAdd(w http.ResponseWriter, r *http.Request) {
 	}
 	var finish []byte
 	var x = make(map[string]interface{})
-	x["result"] = SUCCESS_ANSWER
+	x["result"] = successResult
 	if users == nil {
 		x["users"] = [0]map[string]interface{}{}
 	} else {
@@ -173,10 +181,10 @@ func deleteUsers(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
-	err = db.CheckUserRightsInChat(user.Id, data.ChatID)
+	err = db.CheckUserRights(user.ID, data.ChatID)
 	if err != nil {
 		sendAnswerError(ref, err,
-			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			map[string]interface{}{"chatID": data.ChatID, "id": user.ID},
 			HAVENT_RIGHTS_FOR_ACTION, 2, w)
 		return
 	}
@@ -207,10 +215,10 @@ func recoveryUsers(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
-	err = db.CheckUserRightsInChat(user.Id, data.ChatID)
+	err = db.CheckUserRights(user.ID, data.ChatID)
 	if err != nil {
 		sendAnswerError(ref, err,
-			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			map[string]interface{}{"chatID": data.ChatID, "id": user.ID},
 			HAVENT_RIGHTS_FOR_ACTION, 2, w)
 		return
 	}
@@ -239,10 +247,10 @@ func getChatSettings(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
-	err = db.CheckUserRightsInChat(user.Id, data.ChatID)
+	err = db.CheckUserRights(user.ID, data.ChatID)
 	if err != nil {
 		sendAnswerError(ref, err,
-			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			map[string]interface{}{"chatID": data.ChatID, "id": user.ID},
 			HAVENT_RIGHTS_FOR_ACTION, 2, w)
 		return
 	}
@@ -282,14 +290,14 @@ func setChatSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// log.Println(user)
-	err = db.CheckUserRightsInChat(user.Id, data.ChatID)
+	err = db.CheckUserRights(user.ID, data.ChatID)
 	if err != nil {
 		sendAnswerError(ref, err,
-			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			map[string]interface{}{"chatID": data.ChatID, "id": user.ID},
 			HAVENT_RIGHTS_FOR_ACTION, 2, w)
 		return
 	}
-	err = db.SetNameChat(data.ChatID, data.Name)
+	err = db.SetChatSettings(data.ChatID, models.ChatSettings{Name: data.Name})
 	if err != nil {
 		sendAnswerError(ref, err,
 			map[string]interface{}{"chatID": data.ChatID, "name": data.Name},
@@ -314,10 +322,10 @@ func deleteFromDialog(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
-	err = db.DeleteUsersInChat([]int64{user.Id}, data.ChatID, true)
+	err = db.DeleteUsersInChat([]int64{user.ID}, data.ChatID, true)
 	if err != nil {
 		sendAnswerError(ref, err,
-			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			map[string]interface{}{"chatID": data.ChatID, "id": user.ID},
 			FAILED_DELETE_USERS, 2, w)
 		return
 	}
@@ -339,23 +347,23 @@ func recoveryUserInDialog(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
-	res, err := db.CheckUserInChatDelete(user.Id, data.ChatID)
+	res, err := db.CheckUserInChatDeleted(user.ID, data.ChatID)
 	if err != nil {
 		sendAnswerError(ref, err,
-			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			map[string]interface{}{"chatID": data.ChatID, "id": user.ID},
 			USER_CHAT_CHECK_FAILED, 2, w)
 		return
 	}
 	if !res {
 		sendAnswerError(ref, err,
-			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			map[string]interface{}{"chatID": data.ChatID, "id": user.ID},
 			USER_IS_DELETED_FROM_CHAT, 2, w)
 		return
 	}
-	err = db.RecoveryUsersInChat([]int64{user.Id}, data.ChatID, true)
+	err = db.RecoveryUsersInChat([]int64{user.ID}, data.ChatID, true)
 	if err != nil {
 		sendAnswerError(ref, err,
-			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			map[string]interface{}{"chatID": data.ChatID, "id": user.ID},
 			FAILED_RECOVERY_USERS, 2, w)
 		return
 	}
@@ -377,10 +385,10 @@ func deleteChatFromList(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
-	err = db.DeleteChatFromList(user.Id, data.ChatID)
+	err = db.DeleteChatFromList(user.ID, data.ChatID)
 	if err != nil {
 		sendAnswerError(ref, err,
-			map[string]interface{}{"chatID": data.ChatID, "id": user.Id},
+			map[string]interface{}{"chatID": data.ChatID, "id": user.ID},
 			FAILED_DELETE_FROM_LIST, 2, w)
 		return
 	}

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/robbert229/jwt"
-	"github.com/swap-messenger/swap/db"
+	db "github.com/swap-messenger/swap/db2"
 	"github.com/swap-messenger/swap/settings"
 )
 
@@ -79,7 +79,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, buff, FAILED_REBUILD_DATATYPES, 3, w)
 		return
 	}
-	id, path, err := db.CreateFile(fD.name, handler.Size, user.Id, fD.chatId, fD.ratioSize)
+	id, path, err := db.CreateFile(fD.name, handler.Size, user.ID, fD.chatId, fD.ratioSize)
 	if err != nil {
 		sendAnswerError(ref, err, nil, FAILED_CREATE_FILE, 4, w)
 		return
@@ -94,7 +94,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	f.Close()
 	compressionImage(fD.fileType, fD.ratioSize, path)
 	var x = make(map[string]string)
-	x["result"] = SUCCESS_ANSWER
+	x["result"] = successResult
 	x["FileId"] = strconv.FormatInt(id, 10)
 	finish, _ := json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
@@ -118,9 +118,9 @@ func deleteFile(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
-	path, err := db.DeleteFile(user.Id, data.FileID)
+	path, err := db.DeleteFile(data.FileID, user.ID)
 	if err != nil {
-		sendAnswerError(ref, err, map[string]interface{}{"userID": user.Id, "fileID": data.FileID}, FAILED_DELETE_FILE_DB, 2, w)
+		sendAnswerError(ref, err, map[string]interface{}{"userID": user.ID, "fileID": data.FileID}, FAILED_DELETE_FILE_DB, 2, w)
 		return
 	}
 
@@ -136,7 +136,7 @@ func deleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var x = make(map[string]string)
-	x["result"] = SUCCESS_ANSWER
+	x["result"] = successResult
 	finish, _ := json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
 }
@@ -160,9 +160,9 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
-	path, err := db.CheckFileRights(user.Id, data.FileID)
+	path, err := db.CheckFileRights(user.ID, data.FileID)
 	if err != nil {
-		sendAnswerError(ref, err, map[string]interface{}{"userID": user.Id, "fileID": data.FileID}, HAVENT_RIGHTS_FOR_ACTION, 2, w)
+		sendAnswerError(ref, err, map[string]interface{}{"userID": user.ID, "fileID": data.FileID}, HAVENT_RIGHTS_FOR_ACTION, 2, w)
 		return
 	}
 	sett, err := settings.GetSettings()
@@ -174,7 +174,7 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request) {
 	algorithm := jwt.HmacSha256(secret)
 	claims := jwt.NewClaim()
 	claims.Set("path", path)
-	claims.Set("user_id", user.Id)
+	claims.Set("user_id", user.ID)
 	claims.Set("time", time.Now().Unix()+60)
 	link, err := algorithm.Encode(claims)
 	if err != nil {
@@ -183,7 +183,7 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request) {
 	}
 	var x = make(map[string]string)
 	x["link"] = link
-	x["result"] = SUCCESS_ANSWER
+	x["result"] = successResult
 	finish, _ := json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
 
@@ -209,9 +209,9 @@ func getFile(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
-	path, err := db.CheckFileRights(user.Id, data.FileID)
+	path, err := db.CheckFileRights(user.ID, data.FileID)
 	if err != nil {
-		sendAnswerError(ref, err, map[string]interface{}{"userID": user.Id, "fileID": data.FileID}, HAVENT_RIGHTS_FOR_ACTION, 2, w)
+		sendAnswerError(ref, err, map[string]interface{}{"userID": user.ID, "fileID": data.FileID}, HAVENT_RIGHTS_FOR_ACTION, 2, w)
 		return
 	}
 	file := settings.ServiceSettings.Backend.FilesPath + path

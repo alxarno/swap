@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/swap-messenger/swap/db"
+	db "github.com/swap-messenger/swap/db2"
 	"github.com/swap-messenger/swap/models"
 )
 
@@ -49,12 +49,12 @@ func RequestedToChat(userID int64, chatID int64, command int) {
 		return
 	}
 	var usersOnline []int64
-	for _, b := range users {
+	for _, b := range *users {
 		if b.Authoriz == true {
 			usersOnline = append(usersOnline, b.UserId)
 		}
 	}
-	notificationIds, err := db.GetOnlineUsersIdsInChats(&userChats, &usersOnline)
+	notificationIds, err := db.GetOnlineUsersIDsInChat(&userChats, &usersOnline)
 	if err != nil {
 		return
 	}
@@ -73,7 +73,7 @@ func RequestedToChat(userID int64, chatID int64, command int) {
 	data["self"] = false
 	finish, _ := json.Marshal(data)
 	// log.Println()
-	for _, i := range notificationIds {
+	for _, i := range *notificationIds {
 		for _, v := range users {
 			if v.UserId == i {
 				if i == userID {
@@ -91,7 +91,7 @@ func RequestedToChat(userID int64, chatID int64, command int) {
 }
 
 func UserMove(userId int64, mType string) {
-	userChats, err := db.GetUsersChatsIds(userId)
+	userChats, err := db.GetUsersChatsIDs(userId)
 	if err != nil {
 		return
 	}
@@ -101,14 +101,14 @@ func UserMove(userId int64, mType string) {
 			usersOnline = append(usersOnline, b.UserId)
 		}
 	}
-	notificationIds, err := db.GetOnlineUsersIdsInChats(&userChats, &usersOnline)
+	notificationIds, err := db.GetOnlineUsersIdsInChats(userChats, &usersOnline)
 	if err != nil {
 		return
 	}
 	var data = make(map[string]interface{})
 	data["action"] = models.MESSAGE_ACTION_ONLINE_USER
 	data["type"] = mType
-	data["chats"] = userChats
+	data["chats"] = *userChats
 	data["type_a"] = models.MESSAGE_ACTION_TYPE_SYSTEM
 	data["self"] = false
 	finish, _ := json.Marshal(data)

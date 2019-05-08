@@ -6,7 +6,13 @@ TODO:
   + Make class for errors send
   + Make errors codes
 
-  Migrate to GORM
-  Make comments
+  + Migrate to GORM
+  + Make comments
+
+  Add Message check for channel
+  Change Error sending in messages
+  Refactor Message Engine and message
+
+
   Greaceful shootdown
 

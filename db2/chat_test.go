@@ -334,7 +334,7 @@ func TestSetChatSettings(t *testing.T) {
 	}
 	newChatName := "chat228"
 	settings := models.ChatSettings{Name: newChatName}
-	err = SetChatSettings(chatID, &settings)
+	err = SetChatSettings(chatID, settings)
 	if err != nil {
 		t.Error(testSetChatSettingsError, err)
 		return

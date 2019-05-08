@@ -8,12 +8,8 @@ import (
 	"github.com/swap-messenger/swap/models"
 	"github.com/swap-messenger/swap/src/api"
 	messagesWork "github.com/swap-messenger/swap/src/messages"
-	//"github.com/swap-messenger/Backend/settings"
 )
 
-//var (
-//	secret = settings.ServiceSettings.Backend.SecretKeyForToken
-//)
 func SystemMsg(msg string) (map[string]interface{}, error) {
 	var final = make(map[string]interface{})
 	var user_msg_sys = struct {
@@ -48,7 +44,7 @@ func UserMsg(msg string) (*models.NewMessageToUser, error) {
 	//	Content models
 	//}{}
 
-	message, err := messagesWork.NewMessageAnother(&msg)
+	message, err := messagesWork.NewMessageAnother(msg)
 	if err != nil {
 		return nil, err
 	}

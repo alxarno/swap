@@ -4,15 +4,16 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"log"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 
 	db "github.com/swap-messenger/swap/db2"
 	"github.com/swap-messenger/swap/models"
 	"github.com/swap-messenger/swap/settings"
-	// engine "github.com/swap-messenger/swap/src/message_engine"
-	// "github.com/AlexeyArno/Gologer"
+	engine "github.com/swap-messenger/swap/src/message_engine"
 )
 
 type ProveConnection struct {
@@ -79,11 +80,11 @@ func main() {
 		return
 	}
 
-	//go broadcaster()
+	go broadcaster()
 
-	// engine.StartCoreMessenger()
+	engine.StartCoreMessenger()
 
-	// router := newRouter()
+	router := newRouter()
 	myAddres := ""
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
@@ -109,20 +110,20 @@ func main() {
 	if *test {
 		os.Stderr.WriteString(clearIPs)
 	} else {
-		// printLogo()
+		printLogo()
 		os.Stderr.WriteString("Swap started on \t" + myAddres + "\n")
 	}
 
-	// if settings.ServiceSettings.Backend.Encryption {
-	// 	log.Fatal("ListenAndServeTLS: ", http.ListenAndServeTLS(
-	// 		":"+settings.ServiceSettings.Backend.Host,
-	// 		settings.ServiceSettings.Backend.CertFile,
-	// 		settings.ServiceSettings.Backend.KeyFile,
-	// 		router))
-	// } else {
-	// 	log.Fatal("ListenAndServe: ", http.ListenAndServe(
-	// 		":"+settings.ServiceSettings.Backend.Host,
-	// 		router))
-	// }
+	if settings.ServiceSettings.Backend.Encryption {
+		log.Fatal("ListenAndServeTLS: ", http.ListenAndServeTLS(
+			":"+settings.ServiceSettings.Backend.Host,
+			settings.ServiceSettings.Backend.CertFile,
+			settings.ServiceSettings.Backend.KeyFile,
+			router))
+	} else {
+		log.Fatal("ListenAndServe: ", http.ListenAndServe(
+			":"+settings.ServiceSettings.Backend.Host,
+			router))
+	}
 
 }

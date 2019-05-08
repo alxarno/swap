@@ -131,11 +131,11 @@ func GetMessages(userID int64, chatID int64, tranches bool, lastID int64) (*[]mo
 }
 
 //SendMessage - handle inserting message into db
-func SendMessage(userID int64, chatID int64, content string,
+func SendMessage(userID int64, chatID int64, content string, docs []int64,
 	mtype MessageType, command models.MessageCommand) (int64, error) {
 	mcontent := models.MessageContent{
 		Command: int(command), Type: string(mtype),
-		Documents: []int64{}, Message: content,
+		Documents: docs, Message: content,
 	}
 
 	jcontent, err := json.Marshal(mcontent)

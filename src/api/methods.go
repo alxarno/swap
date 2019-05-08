@@ -9,14 +9,14 @@ import (
 	"time"
 
 	"github.com/robbert229/jwt"
-	"github.com/swap-messenger/swap/db"
+	db "github.com/swap-messenger/swap/db2"
 	"github.com/swap-messenger/swap/settings"
 	//"strconv"
 )
 
 const (
-	SUCCESS_ANSWER = "Success"
-	ERROR_ANSWER   = "Error"
+	successResult = "Success"
+	errorResult   = "Error"
 )
 
 func decodeFail(ref string, err error, r *http.Request, w http.ResponseWriter) {
@@ -44,7 +44,7 @@ func sendAnswerError(reference string, err error, data interface{}, eType int, e
 	log.Println()
 
 	var answer = make(map[string]interface{})
-	answer["result"] = ERROR_ANSWER
+	answer["result"] = errorResult
 	answer["code"] = errCode
 	answer["type"] = eType
 	finish, _ := json.Marshal(answer)
@@ -53,7 +53,7 @@ func sendAnswerError(reference string, err error, data interface{}, eType int, e
 
 func sendAnswerSuccess(w http.ResponseWriter) {
 	var x = make(map[string]string)
-	x["result"] = SUCCESS_ANSWER
+	x["result"] = successResult
 	finish, _ := json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
 }
@@ -100,7 +100,7 @@ func TestUserToken(token string) (*db.User, error) {
 
 	if int64(tokenTime.(float64)) > time.Now().Unix() {
 		//u:=db.User{Id: id.(int64)}
-		u, err := db.GetUser("id", map[string]interface{}{"id": int64(id.(float64))})
+		u, err := db.GetUserByID(int64(id.(float64)))
 		if err != nil {
 			return nil, err
 		}

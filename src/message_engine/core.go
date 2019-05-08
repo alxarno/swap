@@ -17,17 +17,14 @@ package message_engine
 //
 //
 import (
-	//methods "github.com/swap-messenger/Backend/src/api/methods"
 	"encoding/json"
-	"fmt"
 	"log"
 
 	models "github.com/swap-messenger/swap/models"
 	"github.com/swap-messenger/swap/src/api"
 	"golang.org/x/net/websocket"
-	//"github.com/swap-messenger/Backend/src/api/methods"
-	"github.com/swap-messenger/swap/db"
-	// "github.com/AlexeyArno/Gologer"
+
+	db "github.com/swap-messenger/swap/db2"
 )
 
 type ConnectionSpatium struct {
@@ -76,7 +73,7 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium) {
 	var data = make(map[string]interface{})
 	if err := json.Unmarshal([]byte(msg), &data); err != nil {
 		//panic(err)
-		fmt.Println(err)
+		// fmt.Println(err)
 		return
 	}
 	//fmt.Println(data)
@@ -96,7 +93,7 @@ func decodeNewMessage(msg string, connect *ConnectionSpatium) {
 				answer["action"] = "authoriz"
 				answer["type"] = err.Error()
 			} else {
-				connect.UserId = user.Id
+				connect.UserId = user.ID
 				connect.Authoriz = true
 				answer["type_a"] = "system"
 				answer["result"] = "Success"

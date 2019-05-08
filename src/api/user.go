@@ -6,8 +6,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/swap-messenger/swap/db"
-	// "github.com/AlexeyArno/Gologer"
+	"github.com/swap-messenger/swap/models"
+
+	db "github.com/swap-messenger/swap/db2"
 )
 
 func enter(w http.ResponseWriter, r *http.Request) {
@@ -22,21 +23,21 @@ func enter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	mapData := map[string]interface{}{"login": data.Login, "pass": data.Pass}
-	user, err := db.GetUser("login", mapData)
+	user, err := db.GetUserByLoginAndPass(data.Login, data.Pass)
 	if err != nil {
 		sendAnswerError(ref, err, mapData, FAILED_GET_USER, 1, w)
 		return
 	}
 
 	//if user.CheckPass(data.Pass){
-	token, err := generateToken(user.Id)
+	token, err := generateToken(user.ID)
 	if err != nil {
-		sendAnswerError(ref, err, user.Id, FAILED_GENERATE_TOKEN, 2, w)
+		sendAnswerError(ref, err, user.ID, FAILED_GENERATE_TOKEN, 2, w)
 		return
 	}
 	var x = make(map[string]string)
 	x["token"] = token
-	x["result"] = SUCCESS_ANSWER
+	x["result"] = successResult
 	finish, _ := json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
 	return
@@ -55,9 +56,9 @@ func proveToken(w http.ResponseWriter, r *http.Request) {
 	var x = make(map[string]interface{})
 	_, err = TestUserToken(userGetToken.Token)
 	if err == nil {
-		x["result"] = "Success"
+		x["result"] = successResult
 	} else {
-		x["result"] = "Error"
+		x["result"] = errorResult
 		x["code"] = 0
 	}
 	finish, _ := json.Marshal(x)
@@ -91,7 +92,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	}
 	var x = make(map[string]string)
 	x["token"] = token
-	x["result"] = "Success"
+	x["result"] = successResult
 	finish, _ := json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
 	return
@@ -104,10 +105,9 @@ func getMyChats(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, nil, INVALID_TOKEN, 1, w)
 		return
 	}
-	// log.Println()
-	chats, err := db.GetUserChats(user.Id)
+	chats, err := db.GetUserChats(user.ID)
 	if err != nil {
-		sendAnswerError(ref, err, user.Id, FAILED_GET_USER_CHATS, 2, w)
+		sendAnswerError(ref, err, user.ID, FAILED_GET_USER_CHATS, 2, w)
 		return
 	}
 	var finish []byte
@@ -116,7 +116,7 @@ func getMyChats(w http.ResponseWriter, r *http.Request) {
 		finish = []byte("[]")
 	} else {
 		log.Println("Not empty chats")
-		finish, _ = json.Marshal(chats)
+		finish, _ = json.Marshal(*chats)
 	}
 	fmt.Fprintf(w, string(finish))
 }
@@ -129,7 +129,7 @@ func getMyData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := make(map[string]interface{})
-	data["id"] = user.Id
+	data["id"] = user.ID
 	finish, _ := json.Marshal(data)
 	fmt.Fprintf(w, string(finish))
 }
@@ -141,7 +141,7 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, nil, INVALID_TOKEN, 1, w)
 		return
 	}
-	setts, err := db.GetUserSettings(user.Id)
+	setts, err := db.GetUserSettings(user.ID)
 	if err != nil {
 		sendAnswerError(ref, err, nil, FAILED_GET_SETTINGS, 2, w)
 		return
@@ -168,7 +168,7 @@ func setSettings(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
 		return
 	}
-	err = db.SetUserSettings(user.Id, data.Name)
+	err = db.SetUserSettigns(user.ID, models.UserSettings{Name: data.Name})
 	if err != nil {
 		sendAnswerError(ref, err, nil, FAILED_SET_SETTINGS, 2, w)
 		return
