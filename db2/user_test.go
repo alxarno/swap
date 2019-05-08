@@ -105,14 +105,13 @@ func TestGetUserChats(t *testing.T) {
 	createTestDB(t)
 	defer deleteTestDB(t)
 	user := User{Login: "user1", Pass: "1234"}
-	lindex, err := CreateUser(user.Login, user.Pass, user.Login)
+	var err error
+	user.ID, err = CreateUser(user.Login, user.Pass, user.Login)
 	if err != nil {
 		t.Error(testCannotCreateFirstUser, err.Error())
 		return
 	}
-	user.ID = lindex
-	chatName := "chat1"
-	_, err = Create(chatName, user.ID, DialogType)
+	_, err = Create("chat1", user.ID, DialogType)
 	if err != nil {
 		t.Error(testCreateChatError, err.Error())
 		return

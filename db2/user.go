@@ -4,27 +4,28 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"log"
 
 	"github.com/swap-messenger/swap/models"
 )
 
 const (
 	//UserInsertError - User insertion into DB failed
-	UserInsertError = "User insert error: "
+	UserInsertError = "User insert error -> "
 	//UserUpdateError - User updation into DB failed
-	UserUpdateError = "User updating failed: "
+	UserUpdateError = "User updating failed -> "
 	//UserWithThisLoginAlreadyExists - User with this login already exists in DB
-	UserWithThisLoginAlreadyExists = "User with this login already exists: "
+	UserWithThisLoginAlreadyExists = "User with this login already exists -> "
 	//GetChatInfoError - Getting chat's info failed
-	GetChatInfoError = "Getting chat info failed: "
+	GetChatInfoError = "Getting chat info failed -> "
 	//UserNotFound - User with this data doesnt exist
-	UserNotFound = "User not found: "
+	UserNotFound = "User not found -> "
 	//PasswordEncodingFailed - Password encoding failed
-	PasswordEncodingFailed = "Pass encoding failed"
+	PasswordEncodingFailed = "Pass encoding failed -> "
 	//GetMessageError - getting message failed
-	GetMessageError = "Getting message failed"
+	GetMessageError = "Getting message failed -> "
 	//MessageContentDecodeError - decoding message was failed
-	MessageContentDecodeError = "Message's content decoding failed"
+	MessageContentDecodeError = "Message's content decoding failed -> "
 )
 
 func encodePass(pass string) (string, error) {
@@ -89,29 +90,28 @@ func CreateUser(login string, pass string, name string) (int64, error) {
 //GetUserChats - return users chats
 func GetUserChats(userID int64) (*[]models.UserChatInfo, error) {
 	info := []chatInfo{}
-	mes := message{}
+	mes := Message{}
 	res := []models.UserChatInfo{}
 	//Query for chat's info
 	query := db.Table("chat_users").
 		Select(`chats.id, chats.name, chats.author_id,
 		chats.type, chat_users.delete_last,chat_users.ban`).
 		Joins("inner join chats on chat_users.chat_id = chats.id").
-		Where("list__invisible = ?", 0).
+		Where("list_invisible = ?", 0).
 		Where("user_id = ?", userID)
 	if err := query.Scan(&info).Error; err != nil {
 		return nil, DBE(GetChatInfoError, err)
 	}
 	//Query for last messages
 	query = db.Table("messages").
-		Select("messages.content, messages.time, users.name").
-		Joins("inner join users on messages.author_id = users.id").
-		Order("messages.time desc")
+		Joins("inner join users on messages.author_id = users.id")
 	msgContent := models.MessageContent{}
 	for _, v := range info {
-		if err := query.Where("messages.chat_id=?", v.ID).First(&mes).Error; err != nil {
+		if err := query.Where("messages.chat_id=?", v.ID).Last(&mes).Error; err != nil {
 			return nil, DBE(GetMessageError, err)
 		}
-		err := json.Unmarshal([]byte(mes.LastMessage), &msgContent)
+		log.Println(mes, v.ID)
+		err := json.Unmarshal([]byte(mes.Content), &msgContent)
 		if err != nil {
 			return nil, DBE(MessageContentDecodeError, err)
 		}
@@ -121,8 +121,8 @@ func GetUserChats(userID int64) (*[]models.UserChatInfo, error) {
 		}
 		res = append(res, models.UserChatInfo{
 			ID: v.ID, Name: v.Name, Type: v.Type,
-			LastSender: mes.LastSender, AdminID: v.AuthorID,
-			LastMessage: &msgContent, LastMessageTime: mes.LastMessageTime,
+			LastSender: mes.Author.Name, AdminID: v.AuthorID,
+			LastMessage: &msgContent, LastMessageTime: mes.Time,
 			View: 0, Delete: deleted, Online: 0})
 	}
 	return &res, nil

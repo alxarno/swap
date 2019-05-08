@@ -355,20 +355,18 @@ func TestGetUsersForAddByName(t *testing.T) {
 	defer deleteTestDB(t)
 	user := User{Login: "user1", Pass: "1234"}
 	user2 := User{Login: "user2", Pass: "1234"}
-	lindex, err := CreateUser(user.Login, user.Pass, user.Login)
+	var err error
+	user.ID, err = CreateUser(user.Login, user.Pass, user.Login)
 	if err != nil {
 		t.Error(testCannotCreateFirstUser, err.Error())
 		return
 	}
-	user.ID = lindex
-	lindex, err = CreateUser(user2.Login, user2.Pass, user2.Login)
+	user2.ID, err = CreateUser(user2.Login, user2.Pass, user2.Login)
 	if err != nil {
 		t.Error(testCannotCreateFirstUser, err.Error())
 		return
 	}
-	user2.ID = lindex
-	chatName := "chat1"
-	chatID, err := Create(chatName, user.ID, ChatType)
+	chatID, err := Create("chat1", user.ID, ChatType)
 	if err != nil {
 		t.Error(testCreateChatError, err.Error())
 		return

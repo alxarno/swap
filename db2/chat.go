@@ -332,8 +332,8 @@ func GetUsersForAddByName(chatID int64, name string) (*[]models.User, error) {
 	if err != nil {
 		return nil, DBE(GetChatsUsersFailed, err)
 	}
-	query := db.Model(&User{}).Not("id in (?)", *existsUsersInChat).Where("name LIKE ?", "%"+name+"%").
-		Or("login LIKE ?", "%"+name+"%")
+	query := db.Model(&User{}).Where("id not in (?)", *existsUsersInChat).Where("(name LIKE ?", "%"+name+"%").
+		Or("login LIKE ?)", "%"+name+"%")
 	if err := query.Find(&found).Error; err != nil {
 		return nil, DBE(GetUserError, err)
 	}

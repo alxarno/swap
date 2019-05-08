@@ -114,9 +114,9 @@ type chatInfo struct {
 	Ban        bool
 }
 type message struct {
-	LastSender      string
-	LastMessage     string
-	LastMessageTime int64
+	name    string
+	content string
+	time    int64
 }
 
 type messageTemplate struct {

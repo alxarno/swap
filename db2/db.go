@@ -31,13 +31,7 @@ func createTestDB(t *testing.T) {
 		t.Error("Cannot create DB")
 	}
 
-	db.AutoMigrate(&User{})
-	db.AutoMigrate(&Chat{})
-	db.AutoMigrate(&ChatUser{})
-	db.AutoMigrate(&Message{})
-	db.AutoMigrate(&File{})
-	db.AutoMigrate(&System{})
-	db.AutoMigrate(&Dialog{})
+	registerModels()
 	db.LogMode(true)
 }
 
@@ -65,6 +59,12 @@ func BeginDB() error {
 	}
 	db.LogMode(false)
 
+	registerModels()
+
+	return nil
+}
+
+func registerModels() {
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Chat{})
 	db.AutoMigrate(&ChatUser{})
@@ -72,23 +72,4 @@ func BeginDB() error {
 	db.AutoMigrate(&File{})
 	db.AutoMigrate(&System{})
 	db.AutoMigrate(&Dialog{})
-
-	// orm.RegisterModel(new(User))
-	// orm.RegisterModel(new(Chat))
-	// orm.RegisterModel(new(ChatUser))
-	// orm.RegisterModel(new(Message))
-	// orm.RegisterModel(new(File))
-	// orm.RegisterModel(new(System))
-	// orm.RegisterModel(new(Dialog))
-
-	// o = orm.NewOrm()
-	// sys := System{}
-	// err = o.QueryTable("sys").Filter("id", 1).One(&sys)
-	// if err != nil {
-	// 	err = createDB()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
-	return nil
 }
