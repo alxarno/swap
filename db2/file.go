@@ -31,6 +31,14 @@ func getRandomString(len int) (string, error) {
 func CreateFile(name string, size int64, userID int64,
 	chatID int64, ratio float64) (int64, string, error) {
 
+	deleted, err := CheckUserInChatDeleted(userID, chatID)
+	if err != nil {
+		return 0, "", DBE(CheckingUserInChatFailed, err)
+	}
+	if deleted {
+		return 0, "", DBE(UserDeletedFromChat, nil)
+	}
+
 	if len(name) > 20 {
 		runes := []rune(name)
 		name = string(runes[len(runes)-20:])
