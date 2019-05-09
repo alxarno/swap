@@ -10,8 +10,9 @@ TODO:
   + Make comments
 
   Add Message check for channel
-  Change Error sending in messages
+  + Change Error sending in messages
   Refactor Message Engine and message
+  Remake urls to REST Spec(GET,POST,DELETE,PUT)
 
 
   Greaceful shootdown

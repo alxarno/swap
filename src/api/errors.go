@@ -2,54 +2,54 @@ package api
 
 const (
 	// Common
-	FAILED_DECODE_DATA       = iota + 1
-	FAILED_GET_SETTINGS      //2
-	HAVENT_RIGHTS_FOR_ACTION //3
-	FAILED_ENCODE_DATA       //4
-	END_POINT_NOT_FOUND      //5
-	INVALID_TOKEN            //6
+	failedDecodeData      = iota + 1
+	failedGetSettings     //2
+	haventRightsForAction //3
+	failedEncodeData      //5
+	endPointNotFound      //6
+	invalidToken          //6
 )
 
 // Chat API
 const (
-	CREATED_CHANNEL           = iota + 1
-	USER_CHAT_CHECK_FAILED    //2
-	USER_IS_DELETED_FROM_CHAT //3
-	FAILED_GET_USER_INFO      //4
-	FAILED_GET_USERS_FOR_ADD  //5
-	FAILED_DELETE_USERS       //6
-	FAILED_RECOVERY_USERS     //7
-	FAILED_GET_CHAT_SETTINGS  //8
-	SHORT_CHAT_NAME           //9
-	FAILED_SET_NAME_CHAT      //10
-	FAILED_DELETE_FROM_LIST   //11
-	CREATED_CHAT              //12
+	createdCahnnel        = iota + 1
+	userChatCheckFailed   //2
+	userIsDeletedFromChat //3
+	failedGetUserInfo     //4
+	failedGetUsersForAdd  //5
+	failedDeleteUsers     //6
+	failedRecoveryUsers   //7
+	failedGetChatSettings //8
+	shortChatName         //9
+	failedSetChatSettings //10
+	failedDeleteFromList  //11
+	createdChat           //12
 )
 
 //File API
 const (
-	FAILED_DECODE_FORM_DATA   = iota + 1
-	FAILED_GET_DATA_FROM_FORM //2
-	FAILED_REBUILD_DATATYPES  //3
-	FAILED_CREATE_FILE        //4
-	FAILED_OPEN_FILE          //5
-	FAILED_DELETE_FILE_DB     //6
-	FAILED_DELETE_FILE_OS     //7
-	FILE_DOESNT_EXIST         //8
+	failedDecodeFromData   = iota + 1
+	failedGetDataFromForm  //2
+	failedRebuildDataTypes //3
+	failedCreatFile        //4
+	failedOpenFile         //5
+	failedDeleteFileDB     //6
+	failedDeleteFileOS     //7
+	fileDoesntExist        //8
 )
 
 //Messages API
 const (
-	FAILED_GET_ADDITIONAL_MESSAGES = iota + 1
-	FAILED_GET_MESSAGES            //2
+	failedGetAdditionalMessages = iota + 1
+	failedGetMessages
 )
 
 //User API
 const (
-	FAILED_GET_USER       = iota + 1
-	FAILED_GENERATE_TOKEN //2
-	SOME_EMPTY_FIELDS     //3
-	FAILED_CREATE_USER    //4
-	FAILED_GET_USER_CHATS //5
-	FAILED_SET_SETTINGS   //2
+	failedGetUser         = iota + 1
+	failedGenerateToken   //2
+	someEmptyFields       //3
+	failedCreateUser      //4
+	failedGetUserChats    //5
+	failedSetUserSettings //6
 )

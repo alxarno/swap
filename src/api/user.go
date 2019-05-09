@@ -22,17 +22,18 @@ func enter(w http.ResponseWriter, r *http.Request) {
 		decodeFail(ref, err, r, w)
 		return
 	}
-	mapData := map[string]interface{}{"login": data.Login, "pass": data.Pass}
 	user, err := db.GetUserByLoginAndPass(data.Login, data.Pass)
 	if err != nil {
-		sendAnswerError(ref, err, mapData, FAILED_GET_USER, 1, w)
+		sendAnswerError(ref, err,
+			fmt.Sprintf("login - %s, pass -%s", data.Login, data.Pass),
+			failedGetUser, 1, w)
 		return
 	}
 
 	//if user.CheckPass(data.Pass){
 	token, err := generateToken(user.ID)
 	if err != nil {
-		sendAnswerError(ref, err, user.ID, FAILED_GENERATE_TOKEN, 2, w)
+		sendAnswerError(ref, err, fmt.Sprintf("userID - %d", user.ID), failedGenerateToken, 2, w)
 		return
 	}
 	var x = make(map[string]string)
@@ -48,7 +49,7 @@ func proveToken(w http.ResponseWriter, r *http.Request) {
 	var userGetToken struct {
 		Token string `json:"token"`
 	}
-	err := getJson(&userGetToken, r)
+	err := getJSON(&userGetToken, r)
 	if err != nil {
 		decodeFail(ref, err, r, w)
 		return
@@ -71,23 +72,23 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		Login string `json:"login"`
 		Pass  string `json:"pass"`
 	}
-	err := getJson(&data, r)
+	err := getJSON(&data, r)
 	if err != nil {
 		decodeFail(ref, err, r, w)
 		return
 	}
 	if data.Login == "" || data.Pass == "" {
-		sendAnswerError(ref, err, map[string]interface{}{"login": data.Login, "pass": data.Pass}, SOME_EMPTY_FIELDS, 1, w)
+		sendAnswerError(ref, err, fmt.Sprintf("login - %s, pass - %s", data.Login, data.Pass), someEmptyFields, 1, w)
 		return
 	}
 	id, err := db.CreateUser(data.Login, data.Pass, data.Login)
 	if err != nil {
-		sendAnswerError(ref, err, map[string]interface{}{"login": data.Login, "pass": data.Pass}, FAILED_CREATE_USER, 2, w)
+		sendAnswerError(ref, err, fmt.Sprintf("login - %s, pass - %s", data.Login, data.Pass), failedCreateUser, 2, w)
 		return
 	}
 	token, err := generateToken(id)
 	if err != nil {
-		sendAnswerError(ref, err, id, FAILED_GENERATE_TOKEN, 3, w)
+		sendAnswerError(ref, err, fmt.Sprintf("userID - %d", id), failedGenerateToken, 3, w)
 		return
 	}
 	var x = make(map[string]string)
@@ -102,12 +103,12 @@ func getMyChats(w http.ResponseWriter, r *http.Request) {
 	const ref string = "User get chats API:"
 	user, err := getUserByToken(r)
 	if err != nil {
-		sendAnswerError(ref, err, nil, INVALID_TOKEN, 1, w)
+		sendAnswerError(ref, err, "", invalidToken, 1, w)
 		return
 	}
 	chats, err := db.GetUserChats(user.ID)
 	if err != nil {
-		sendAnswerError(ref, err, user.ID, FAILED_GET_USER_CHATS, 2, w)
+		sendAnswerError(ref, err, fmt.Sprintf("userID - %d", user.ID), failedGetUserChats, 2, w)
 		return
 	}
 	var finish []byte
@@ -125,7 +126,7 @@ func getMyData(w http.ResponseWriter, r *http.Request) {
 	const ref string = "User get data API:"
 	user, err := getUserByToken(r)
 	if err != nil {
-		sendAnswerError(ref, err, nil, INVALID_TOKEN, 1, w)
+		sendAnswerError(ref, err, "", invalidToken, 1, w)
 		return
 	}
 	data := make(map[string]interface{})
@@ -138,12 +139,12 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 	const ref string = "User get settings API:"
 	user, err := getUserByToken(r)
 	if err != nil {
-		sendAnswerError(ref, err, nil, INVALID_TOKEN, 1, w)
+		sendAnswerError(ref, err, "", invalidToken, 1, w)
 		return
 	}
 	setts, err := db.GetUserSettings(user.ID)
 	if err != nil {
-		sendAnswerError(ref, err, nil, FAILED_GET_SETTINGS, 2, w)
+		sendAnswerError(ref, err, fmt.Sprintf("userID - %d", user.ID), failedGetSettings, 2, w)
 		return
 	}
 	finish, _ := json.Marshal(setts)
@@ -165,18 +166,18 @@ func setSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(ref, err, data.Token, INVALID_TOKEN, 1, w)
+		sendAnswerError(ref, err, data.Token, invalidToken, 1, w)
 		return
 	}
 	err = db.SetUserSettigns(user.ID, models.UserSettings{Name: data.Name})
 	if err != nil {
-		sendAnswerError(ref, err, nil, FAILED_SET_SETTINGS, 2, w)
+		sendAnswerError(ref, err, fmt.Sprintf("userID - %d", user.ID), failedSetUserSettings, 2, w)
 		return
 	}
 	sendAnswerSuccess(w)
 }
 
-func UserApi(var1 string, w http.ResponseWriter, r *http.Request) {
+func userAPI(var1 string, w http.ResponseWriter, r *http.Request) {
 	switch var1 {
 	case "enter":
 		enter(w, r)
@@ -193,6 +194,6 @@ func UserApi(var1 string, w http.ResponseWriter, r *http.Request) {
 	case "setSettings":
 		setSettings(w, r)
 	default:
-		sendAnswerError("User API Router", nil, nil, END_POINT_NOT_FOUND, 0, w)
+		sendAnswerError("User API Router", nil, "", endPointNotFound, 0, w)
 	}
 }
