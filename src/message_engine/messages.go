@@ -1,4 +1,4 @@
-package messages
+package message_engine
 
 import (
 	"encoding/json"

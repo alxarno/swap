@@ -27,8 +27,8 @@ func ChatCreated(AuthorId int64) {
 	// }
 
 	var data = make(map[string]interface{})
-	data["action"] = models.MESSAGE_ACTION_CHAT_CREATED
-	data["type_a"] = models.MESSAGE_ACTION_TYPE_SYSTEM
+	data["action"] = models.MessageActionChatCreated
+	data["type_a"] = models.MessageActionTypeSystem
 	data["self"] = false
 	finish, _ := json.Marshal(data)
 	// log.Println()
@@ -43,18 +43,18 @@ func ChatCreated(AuthorId int64) {
 	log.Println("Chat Created ", AuthorId, users)
 }
 
-func RequestedToChat(userID int64, chatID int64, command int) {
-	userChats, err := db.GetUsersChatsIds(userID)
+func RequestedToChat(userID int64, chatID int64, command models.MessageCommand) {
+	userChats, err := db.GetUsersChatsIDs(userID)
 	if err != nil {
 		return
 	}
 	var usersOnline []int64
-	for _, b := range *users {
+	for _, b := range users {
 		if b.Authoriz == true {
 			usersOnline = append(usersOnline, b.UserId)
 		}
 	}
-	notificationIds, err := db.GetOnlineUsersIDsInChat(&userChats, &usersOnline)
+	notificationIds, err := db.GetOnlineUsersIDsInChat(userChats, &usersOnline)
 	if err != nil {
 		return
 	}
@@ -65,8 +65,8 @@ func RequestedToChat(userID int64, chatID int64, command int) {
 
 	// userInfo,err := db.GetUser
 	var data = make(map[string]interface{})
-	data["action"] = models.MESSAGE_ACTION_USER_CHAT_INSERTED
-	data["type_a"] = models.MESSAGE_ACTION_TYPE_SYSTEM
+	data["action"] = models.MessageActionUserChatInserted
+	data["type_a"] = models.MessageActionTypeSystem
 	data["chat_id"] = chatID
 	// data["command"] = command
 	// data["user_name"] = userSettings["name"]
@@ -101,18 +101,18 @@ func UserMove(userId int64, mType string) {
 			usersOnline = append(usersOnline, b.UserId)
 		}
 	}
-	notificationIds, err := db.GetOnlineUsersIdsInChats(userChats, &usersOnline)
+	notificationIDs, err := db.GetOnlineUsersIDsInChat(userChats, &usersOnline)
 	if err != nil {
 		return
 	}
 	var data = make(map[string]interface{})
-	data["action"] = models.MESSAGE_ACTION_ONLINE_USER
+	data["action"] = models.MessageActionOnlineUser
 	data["type"] = mType
 	data["chats"] = *userChats
-	data["type_a"] = models.MESSAGE_ACTION_TYPE_SYSTEM
+	data["type_a"] = models.MessageActionTypeSystem
 	data["self"] = false
 	finish, _ := json.Marshal(data)
-	for _, i := range notificationIds {
+	for _, i := range *notificationIDs {
 		for _, v := range users {
 			if v.UserId == i {
 				if i == userId {

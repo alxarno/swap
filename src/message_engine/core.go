@@ -193,13 +193,13 @@ func broadcaster() {
 	for {
 		select {
 		case msg := <-sendMessages:
-			chatsUsers, err := db.GetChatsUsers(msg.ChatId)
+			chatsUsers, err := db.GetChatsUsers(msg.ChatID)
 			if err != nil {
 				// Gologer.PError(err.Error())
 				continue
 			}
 			for _, user := range users {
-				for _, v := range chatsUsers {
+				for _, v := range *chatsUsers {
 					if v == user.UserId {
 						user.MessChan <- msg
 					}
@@ -207,7 +207,7 @@ func broadcaster() {
 			}
 		case msg := <-forceSendMessages:
 			for _, user := range users {
-				if user.UserId == msg.UserId {
+				if user.UserId == msg.UserID {
 					user.MessChan <- msg.Msg
 				}
 			}

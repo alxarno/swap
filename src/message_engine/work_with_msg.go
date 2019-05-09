@@ -7,7 +7,6 @@ import (
 
 	"github.com/swap-messenger/swap/models"
 	"github.com/swap-messenger/swap/src/api"
-	messagesWork "github.com/swap-messenger/swap/src/messages"
 )
 
 func SystemMsg(msg string) (map[string]interface{}, error) {
@@ -44,7 +43,7 @@ func UserMsg(msg string) (*models.NewMessageToUser, error) {
 	//	Content models
 	//}{}
 
-	message, err := messagesWork.NewMessageAnother(msg)
+	message, err := NewMessageAnother(msg)
 	if err != nil {
 		return nil, err
 	}
