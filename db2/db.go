@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-	// _ "github.com/jinzhu/gorm/dialects/sqlite"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/swap-messenger/swap/models"
 	"github.com/swap-messenger/swap/settings"
@@ -17,10 +16,12 @@ type userRequestedCallback = func(userID int64, chatID int64, messageCommand mod
 type chatCreatedCallback = func(authorId int64)
 
 var (
-	db                  *gorm.DB
-	testDBPath          string
-	UserRequestedToChat userRequestedCallback = nil
-	ChatCreated         chatCreatedCallback   = nil
+	db         *gorm.DB
+	testDBPath string
+	//UserRequestedToChat - is a callback triggered when user requesting in chat(uses for sending notifications by WS)
+	UserRequestedToChat userRequestedCallback
+	//ChatCreated - is a callback triggered when user creating chat(uses for sending notifications by WS)
+	ChatCreated chatCreatedCallback
 )
 
 func createTestDB(t *testing.T) {
@@ -43,8 +44,6 @@ func deleteTestDB(t *testing.T) {
 }
 
 func BeginDB() error {
-
-	// orm.RegisterDriver("sqlite3", orm.DRSqlite)
 	sett, err := settings.GetSettings()
 	if err != nil {
 		panic(err)
@@ -53,7 +52,7 @@ func BeginDB() error {
 	if !sett.Backend.Test {
 		dbPath = settings.ServiceSettings.DB.SQLite.Path
 	}
-	db, err := gorm.Open("sqlite3", dbPath)
+	db, err = gorm.Open("sqlite3", dbPath)
 	if err != nil {
 		panic("Failed connect")
 	}

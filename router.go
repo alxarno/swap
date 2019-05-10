@@ -9,10 +9,10 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/robbert229/jwt"
-	db "github.com/swap-messenger/swap/db"
+	db "github.com/swap-messenger/swap/db2"
 	"github.com/swap-messenger/swap/settings"
 	api "github.com/swap-messenger/swap/src/api"
-	engine "github.com/swap-messenger/swap/src/message_engine"
+	engine "github.com/swap-messenger/swap/src/messages"
 	"golang.org/x/net/websocket"
 	// "google.golang.org/genproto/protobuf/api"
 )
@@ -75,7 +75,7 @@ func proveConnect(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	_, err = db.GetUser("login", map[string]interface{}{"login": data.Login, "pass": data.Pass})
+	_, err = db.GetUserByLoginAndPass(data.Login, data.Pass)
 	if err != nil {
 		fmt.Fprintf(w, "Error")
 		return
@@ -125,7 +125,7 @@ func newRouter() *mux.Router {
 	myRouter.HandleFunc("/messages", stand)
 	myRouter.HandleFunc("/messages/{key}", stand)
 	myRouter.HandleFunc("/getFile/{link}/{name}", downloadFile)
-	myRouter.Handle("/ws", websocket.Handler(engine.SocketListener))
+	myRouter.Handle("/ws", websocket.Handler(engine.ConnectionHandler))
 	myRouter.HandleFunc("/proveConnect", proveConnect)
 	myRouter.HandleFunc("/api/{key}/{var1}", apiRouter)
 	myRouter.HandleFunc("/{key1}", logos)

@@ -2,14 +2,14 @@ package db2
 
 type User struct {
 	ID       int64
-	Login    string `gorm:"size:32"`
-	Name     string `gorm:"size:100"`
-	Pass     string `gorm:"size:45"`
-	Chats    []ChatUser
-	Messages []Message
-	Files    []File
-	MyChats  []Chat
-	Dialogs  []Dialog
+	Login    string     `gorm:"size:32"`
+	Name     string     `gorm:"size:100"`
+	Pass     string     `gorm:"size:45"`
+	Chats    []ChatUser `gorm:"PRELOAD:false"`
+	Messages []Message  `gorm:"PRELOAD:false"`
+	Files    []File     `gorm:"PRELOAD:false"`
+	MyChats  []Chat     `gorm:"PRELOAD:false"`
+	Dialogs  []Dialog   `gorm:"PRELOAD:false"`
 }
 
 func (u *User) TableName() string {

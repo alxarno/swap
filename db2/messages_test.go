@@ -160,7 +160,7 @@ func TestSendMessage(t *testing.T) {
 		t.Error(testCreateChatError, err.Error())
 		return
 	}
-	messageID, err := SendMessage(user1.ID, chatID, "test", UserMessageType, models.MessageCommand(0))
+	messageID, err := SendMessage(user1.ID, chatID, "test", []int64{}, UserMessageType, models.MessageCommand(0))
 	if err != nil {
 		t.Error(testSendingMessageFailed, err.Error())
 		return
@@ -185,7 +185,7 @@ func TestSendMessage(t *testing.T) {
 	}
 	/********************************************************/
 
-	messageID, err = SendMessage(user2.ID, chatID, "test", UserMessageType, models.MessageCommand(0))
+	messageID, err = SendMessage(user2.ID, chatID, "test", []int64{}, UserMessageType, models.MessageCommandNull)
 	if err == nil {
 		t.Error("User aren't in chat but has sent message to it")
 		return
@@ -197,7 +197,7 @@ func TestSendMessage(t *testing.T) {
 		return
 	}
 
-	messageID, err = SendMessage(user1.ID, chatID, "test", UserMessageType, models.MessageCommand(0))
+	messageID, err = SendMessage(user1.ID, chatID, "test", []int64{}, UserMessageType, models.MessageCommand(0))
 	if err == nil {
 		t.Error("User was deleted from chat but sent message to it")
 		return

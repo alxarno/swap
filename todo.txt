@@ -13,6 +13,7 @@ TODO:
   + Change Error sending in messages
   Refactor Message Engine and message
   Remake urls to REST Spec(GET,POST,DELETE,PUT)
+  Dont recreate DB file in db tests
 
 
   Greaceful shootdown

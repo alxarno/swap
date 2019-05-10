@@ -13,20 +13,20 @@ import (
 	db "github.com/swap-messenger/swap/db2"
 	"github.com/swap-messenger/swap/models"
 	"github.com/swap-messenger/swap/settings"
-	engine "github.com/swap-messenger/swap/src/message_engine"
+	engine "github.com/swap-messenger/swap/src/messages"
 )
 
-type ProveConnection struct {
+type proveConnection struct {
 	Login string
 	Pass  string
 }
 
-type RequestGetMessage struct {
-	Author  string
-	Chat_Id float64
+type requestGetMessage struct {
+	Author string
+	ChatID int64
 }
 
-type ErrorAnswer struct {
+type errorAnswer struct {
 	Result string
 	Type   string
 }
@@ -79,8 +79,6 @@ func main() {
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		return
 	}
-
-	go broadcaster()
 
 	engine.StartCoreMessenger()
 

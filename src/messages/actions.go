@@ -1,4 +1,4 @@
-package message_engine
+package messageengine
 
 import (
 	"encoding/json"
@@ -8,12 +8,14 @@ import (
 	"github.com/swap-messenger/swap/models"
 )
 
+//ConnectActionsToDB - Bind callbacks
 func ConnectActionsToDB() {
-	db.ChatCreated = ChatCreated
-	db.UserRequestedToChat = RequestedToChat
+	db.ChatCreated = chatCreated
+	db.UserRequestedToChat = requestedToChat
 }
 
-func ChatCreated(AuthorId int64) {
+//chatCreated - send notifications about chat creation
+func chatCreated(AuthorID int64) {
 	// chatsUsers, err := db.GetChatsUsers(chatID)
 	// if err != nil {
 	// 	log.Println("Error: Chat Created: GetChatUsers: ", err)
@@ -27,31 +29,32 @@ func ChatCreated(AuthorId int64) {
 	// }
 
 	var data = make(map[string]interface{})
-	data["action"] = models.MessageActionChatCreated
-	data["type_a"] = models.MessageActionTypeSystem
+	data["action"] = messageActionChatCreated
+	data["type_a"] = messageTypeSystem
 	data["self"] = false
 	finish, _ := json.Marshal(data)
 	// log.Println()
 	for _, v := range users {
-		log.Println(v.UserId)
-		if v.UserId == AuthorId {
+		// log.Println(v.UserID)
+		if v.UserID == AuthorID {
 
-			v.SystemMessChan <- string(finish)
+			v.SystemMessageChan <- string(finish)
 		}
 	}
 
-	log.Println("Chat Created ", AuthorId, users)
+	// log.Println("Chat Created ", AuthorID, users)
 }
 
-func RequestedToChat(userID int64, chatID int64, command models.MessageCommand) {
+//requestedToChat - send notifification about chat invitation
+func requestedToChat(userID int64, chatID int64, command models.MessageCommand) {
 	userChats, err := db.GetUsersChatsIDs(userID)
 	if err != nil {
 		return
 	}
 	var usersOnline []int64
 	for _, b := range users {
-		if b.Authoriz == true {
-			usersOnline = append(usersOnline, b.UserId)
+		if b.Auth == true {
+			usersOnline = append(usersOnline, b.UserID)
 		}
 	}
 	notificationIds, err := db.GetOnlineUsersIDsInChat(userChats, &usersOnline)
@@ -65,8 +68,8 @@ func RequestedToChat(userID int64, chatID int64, command models.MessageCommand) 
 
 	// userInfo,err := db.GetUser
 	var data = make(map[string]interface{})
-	data["action"] = models.MessageActionUserChatInserted
-	data["type_a"] = models.MessageActionTypeSystem
+	data["action"] = messageActionUserChatInserted
+	data["type_a"] = messageTypeSystem
 	data["chat_id"] = chatID
 	// data["command"] = command
 	// data["user_name"] = userSettings["name"]
@@ -75,14 +78,14 @@ func RequestedToChat(userID int64, chatID int64, command models.MessageCommand) 
 	// log.Println()
 	for _, i := range *notificationIds {
 		for _, v := range users {
-			if v.UserId == i {
+			if v.UserID == i {
 				if i == userID {
 					data["self"] = true
 					finish, _ := json.Marshal(data)
-					v.SystemMessChan <- string(finish)
+					v.SystemMessageChan <- string(finish)
 					data["self"] = false
 				} else {
-					v.SystemMessChan <- string(finish)
+					v.SystemMessageChan <- string(finish)
 				}
 			}
 		}
@@ -90,15 +93,16 @@ func RequestedToChat(userID int64, chatID int64, command models.MessageCommand) 
 	log.Println("Request To Chat")
 }
 
-func UserMove(userId int64, mType string) {
-	userChats, err := db.GetUsersChatsIDs(userId)
+//UserMove - send notification about inc and dec online users in chats
+func userMove(userID int64, moveType onlineUsersMove) {
+	userChats, err := db.GetUsersChatsIDs(userID)
 	if err != nil {
 		return
 	}
 	var usersOnline []int64
 	for _, b := range users {
-		if b.Authoriz == true {
-			usersOnline = append(usersOnline, b.UserId)
+		if b.Auth == true {
+			usersOnline = append(usersOnline, b.UserID)
 		}
 	}
 	notificationIDs, err := db.GetOnlineUsersIDsInChat(userChats, &usersOnline)
@@ -106,24 +110,24 @@ func UserMove(userId int64, mType string) {
 		return
 	}
 	var data = make(map[string]interface{})
-	data["action"] = models.MessageActionOnlineUser
-	data["type"] = mType
+	data["action"] = messageActionOnlineUser
+	data["type"] = moveType
 	data["chats"] = *userChats
-	data["type_a"] = models.MessageActionTypeSystem
+	data["type_a"] = messageTypeSystem
 	data["self"] = false
 	finish, _ := json.Marshal(data)
 	for _, i := range *notificationIDs {
 		for _, v := range users {
-			if v.UserId == i {
-				if i == userId {
-					if mType != "-" {
+			if v.UserID == i {
+				if i == userID {
+					if moveType != onlineUserDec {
 						data["self"] = true
 						finish, _ := json.Marshal(data)
-						v.SystemMessChan <- string(finish)
+						v.SystemMessageChan <- string(finish)
 						data["self"] = false
 					}
 				} else {
-					v.SystemMessChan <- string(finish)
+					v.SystemMessageChan <- string(finish)
 				}
 			}
 		}
