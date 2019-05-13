@@ -15,6 +15,7 @@ TODO:
   Remake urls to REST Spec(GET,POST,DELETE,PUT)
   Dont recreate DB file in db tests
 
+  Check GetUsersForAdd(return chat's autthor when extenal user was added)
 
   Greaceful shootdown
 

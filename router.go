@@ -69,7 +69,11 @@ func fonts(w http.ResponseWriter, r *http.Request) {
 
 func proveConnect(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	var data *ProveConnection
+	var data struct {
+		Login string `json:"login"`
+		Pass  string `json:"pass"`
+	}
+	// var data *ProveConnection
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&data)
 	if err != nil {

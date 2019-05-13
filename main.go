@@ -80,7 +80,7 @@ func main() {
 		return
 	}
 
-	engine.StartCoreMessenger()
+	engine.StartCoreMessenger(*test)
 
 	router := newRouter()
 	myAddres := ""

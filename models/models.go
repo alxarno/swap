@@ -38,10 +38,10 @@ type MessageContent struct {
 	Command   int     `json:"command,integer"`
 }
 type User struct {
-	ID    int64
-	Name  string
-	Login string
-	Pass  string
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Login string `json:"login"`
+	pass  string
 }
 
 type NewMessageToUser struct {
@@ -103,9 +103,9 @@ type ChatSettings struct {
 }
 
 type UserChatsInfo struct {
-	ID         int64
-	Login      string
-	Name       string
-	DeleteLast int64
-	Ban        bool
+	ID         int64  `json:"id"`
+	Login      string `json:"login"`
+	Name       string `json:"name"`
+	DeleteLast int64  `json:"delete_last"`
+	Ban        bool   `json:"ban"`
 }
