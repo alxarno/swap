@@ -16,10 +16,14 @@ TODO:
   Dont recreate DB file in db tests
   Replace anon functions and create handlers for user prof...
 
+<<<<<<< HEAD
   Generate pem keys
   Add encryption to websockets
   Add encryption to http calls
   Create bundling
+=======
+  Check GetUsersForAdd(return chat's autthor when extenal user was added)
+>>>>>>> 8f0bbaff87bdee4c3e0272618a29ba7cae3c1d57
 
   Greaceful shootdown
 
