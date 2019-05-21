@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 
+	swapcrypto "github.com/swap-messenger/swap/crypto"
+
 	db "github.com/swap-messenger/swap/db2"
 	"github.com/swap-messenger/swap/models"
 	"github.com/swap-messenger/swap/settings"
@@ -73,6 +75,7 @@ func main() {
 	}
 
 	// engine.ConnectActionsToDB()
+	swapcrypto.GenerateKeys()
 	err = db.BeginDB()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -80,7 +83,7 @@ func main() {
 		return
 	}
 
-	engine.StartCoreMessenger()
+	engine.StartCoreMessenger(*test)
 
 	router := newRouter()
 	myAddres := ""
@@ -103,8 +106,6 @@ func main() {
 		}
 	}
 
-	// log.Println(models.MESSAGE_COMMAND_USER_CREATED_CHAT)
-
 	if *test {
 		os.Stderr.WriteString(clearIPs)
 	} else {
@@ -112,16 +113,8 @@ func main() {
 		os.Stderr.WriteString("Swap started on \t" + myAddres + "\n")
 	}
 
-	if settings.ServiceSettings.Backend.Encryption {
-		log.Fatal("ListenAndServeTLS: ", http.ListenAndServeTLS(
-			":"+settings.ServiceSettings.Backend.Host,
-			settings.ServiceSettings.Backend.CertFile,
-			settings.ServiceSettings.Backend.KeyFile,
-			router))
-	} else {
-		log.Fatal("ListenAndServe: ", http.ListenAndServe(
-			":"+settings.ServiceSettings.Backend.Host,
-			router))
-	}
+	log.Fatal("ListenAndServe: ", http.ListenAndServe(
+		":"+settings.ServiceSettings.Backend.Host,
+		router))
 
 }

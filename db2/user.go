@@ -78,12 +78,9 @@ func CreateUser(login string, pass string, name string) (int64, error) {
 	u.Pass = encodedPass
 	u.Name = name
 	u.Login = login
-	tx := db.Begin()
-	if err := tx.Create(&u).Error; err != nil {
-		tx.Rollback()
+	if err := db.Create(&u).Error; err != nil {
 		return 0, DBE(UserInsertError, err)
 	}
-	tx.Commit()
 	return u.ID, nil
 }
 

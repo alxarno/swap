@@ -14,7 +14,12 @@ TODO:
   Refactor Message Engine and message
   Remake urls to REST Spec(GET,POST,DELETE,PUT)
   Dont recreate DB file in db tests
+  Replace anon functions and create handlers for user prof...
 
+  Generate pem keys
+  Add encryption to websockets
+  Add encryption to http calls
+  Create bundling
 
   Greaceful shootdown
 

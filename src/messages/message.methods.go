@@ -16,6 +16,10 @@ func systemMsg(msg string) (map[string]interface{}, error) {
 		Content struct {
 			Type  string
 			Token string
+			Key   struct {
+				e string
+				n string
+			}
 		}
 	}{}
 	if err := json.Unmarshal([]byte(msg), &userMessageSystem); err != nil {
@@ -29,6 +33,8 @@ func systemMsg(msg string) (map[string]interface{}, error) {
 		}
 		final["Action"] = messageActionAuth
 		final["Payload"] = userMessageSystem.Content.Token
+		final["e"] = userMessageSystem.Content.Key.e
+		final["n"] = userMessageSystem.Content.Key.n
 		return final, nil
 
 	}

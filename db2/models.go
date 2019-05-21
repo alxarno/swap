@@ -36,11 +36,11 @@ type ChatUser struct {
 	User          User
 	ChatID        int64
 	Chat          Chat
-	Start         int64 `gorm:"DEFAULT:0"`
-	DeleteLast    int64 `gorm:"DEFAULT:0"`
-	DeletePoints  string
-	Ban           bool `gorm:"DEFAULT:false"`
-	ListInvisible bool `gorm:"DEFAULT:false"`
+	Start         int64  `gorm:"DEFAULT:0"`
+	DeleteLast    int64  `gorm:"DEFAULT:0"`
+	DeletePoints  string `gorm:"size:1024"`
+	Ban           bool   `gorm:"DEFAULT:false"`
+	ListInvisible bool   `gorm:"DEFAULT:false"`
 }
 
 func (c *ChatUser) TableName() string {
@@ -53,8 +53,8 @@ type Message struct {
 	Author   User
 	ChatID   int64
 	Chat     Chat
-	Content  string
-	Time     int64 `gorm:"DEFAULT:0"`
+	Content  string `gorm:"size:1024"`
+	Time     int64  `gorm:"DEFAULT:0"`
 }
 
 func (u *Message) TableName() string {

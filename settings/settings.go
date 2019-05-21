@@ -19,8 +19,8 @@ type Settings struct {
 	Backend struct {
 		Test              bool   `json:"test"`
 		Encryption        bool   `json:"encryption"`
-		CertFile          string `json:"cert_file"`
-		KeyFile           string `json:"key_file"`
+		PubKey            string `json:"public_key"`
+		PrivateKey        string `json:"private_key"`
 		Host              string `json:"host"`
 		SecretKeyForToken string `json:"secret_key_for_token"`
 		FilesPath         string `json:"files_path"`
@@ -55,8 +55,8 @@ func LoadSettings() error {
 				"backend":{
 					"test": false,
 					"encryption":false,
-					"cert_file": "",
-					"key_file": "",
+					"public_key": "./id_rsa.pub",
+					"private_key": "./id_rsa",
 					"host": "3030",
 					"secret_key_for_token": "MY SECRET",
 					"files_path": "./public/files/"

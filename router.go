@@ -14,7 +14,6 @@ import (
 	api "github.com/swap-messenger/swap/src/api"
 	engine "github.com/swap-messenger/swap/src/messages"
 	"golang.org/x/net/websocket"
-	// "google.golang.org/genproto/protobuf/api"
 )
 
 func apiRouter(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +68,7 @@ func fonts(w http.ResponseWriter, r *http.Request) {
 
 func proveConnect(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	var data *ProveConnection
+	var data proveConnection
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&data)
 	if err != nil {
@@ -93,7 +92,6 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 	secret := sett.Backend.SecretKeyForToken
 	vars := mux.Vars(r)
 	algorithm := jwt.HmacSha256(secret)
-	// Gologer.PInfo(vars["link"])
 
 	claims, err := algorithm.Decode(vars["link"])
 	if err != nil {
@@ -112,7 +110,6 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 	if int64(iTime) < time.Now().Unix() {
 		w.Write([]byte("Link is unavailable"))
 	}
-	// Gologer.PInfo(sPath)
 	file := "./public/files/" + sPath
 	http.ServeFile(w, r, file)
 }

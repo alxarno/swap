@@ -29,10 +29,12 @@ package messageengine
 //
 
 import (
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"log"
 
+	swapcrypto "github.com/swap-messenger/swap/crypto"
 	models "github.com/swap-messenger/swap/models"
 	"github.com/swap-messenger/swap/src/api"
 	"golang.org/x/net/websocket"
@@ -45,6 +47,7 @@ type userConnection struct {
 	MessageChan       chan models.NewMessageToUser
 	SystemMessageChan chan string
 	Auth              bool
+	PublicKey         *rsa.PublicKey
 }
 
 type answer struct {
@@ -107,9 +110,22 @@ func decodeNewMessage(msg string, connect *userConnection) {
 			return
 		}
 		if action["Action"] == messageActionAuth {
-			token := action["Payload"].(string)
-			user, err := api.TestUserToken(token)
 			var answer = answer{}
+			token := action["Payload"].(string)
+			connect.PublicKey = swapcrypto.RsaPublicKeyByModulusAndExponent(action["n"].(string), action["e"].(string))
+			if connect.PublicKey == nil {
+				answer.MessageType = messageTypeSystem
+				answer.Result = messageFailed
+				answer.Action = messageActionAuth
+				answer.Error = "Public key is wrong"
+				finish, _ := json.Marshal(answer)
+				connect.SystemMessageChan <- string(finish)
+				return
+			}
+			log.Println("Rsa key successful")
+
+			user, err := api.TestUserToken(token)
+
 			if err != nil {
 				answer.MessageType = messageTypeSystem
 				answer.Result = messageFailed
@@ -123,6 +139,7 @@ func decodeNewMessage(msg string, connect *userConnection) {
 				answer.Action = messageActionAuth
 				userMove(connect.UserID, onlineUserInc)
 			}
+
 			finish, _ := json.Marshal(answer)
 			connect.SystemMessageChan <- string(finish)
 		}
