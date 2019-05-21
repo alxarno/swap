@@ -136,8 +136,8 @@ func getUsersForAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var response struct {
-		result string
-		users  []models.User
+		Result string        `json:"result"`
+		Users  []models.User `json:"users"`
 	}
 
 	err := getJSON(&data, r)
@@ -158,12 +158,14 @@ func getUsersForAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var finish []byte
-	response.result = successResult
+	response.Result = successResult
 
 	// var x = make(map[string]interface{})
 	// x["result"] = successResult
 	if users != nil {
-		response.users = *users
+		response.Users = *users
+	} else {
+		response.Users = []models.User{}
 	}
 	// if users == nil {
 	// 	x["users"] = [0]map[string]interface{}{}
