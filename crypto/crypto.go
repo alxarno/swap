@@ -18,9 +18,16 @@ const (
 	bitSize = 2048
 )
 
+type JWKkey struct {
+	Kty string `json:"kty"`
+	E   string `json:"e"`
+	N   string `json:"n"`
+}
+
 var (
 	PrivateKey       *rsa.PrivateKey
 	EncodedPublicKey []byte
+	JWKPublicKey     JWKkey
 )
 
 func GenerateKeys() {
@@ -30,7 +37,9 @@ func GenerateKeys() {
 	}
 	PrivateKey = key
 	EncodedPublicKey = encodePublicKeyToPEM(&PrivateKey.PublicKey)
-	// return key
+	JWKPublicKey.Kty = "RSA"
+	JWKPublicKey.E = base64.RawURLEncoding.EncodeToString(big.NewInt(int64(PrivateKey.PublicKey.E)).Bytes())
+	JWKPublicKey.N = base64.RawURLEncoding.EncodeToString(PrivateKey.PublicKey.N.Bytes())
 }
 
 func generatePrivateKey() (*rsa.PrivateKey, error) {
@@ -45,7 +54,7 @@ func generatePrivateKey() (*rsa.PrivateKey, error) {
 		return nil, err
 	}
 
-	log.Println("Private Key generated")
+	// log.Println("RSA keys generated")
 	return privateKey, nil
 }
 

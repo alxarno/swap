@@ -51,10 +51,12 @@ type userConnection struct {
 }
 
 type answer struct {
-	MessageType string `json:"mtype"`
-	Result      string `json:"result"`
-	Action      string `json:"action"`
-	Error       string `json:"error"`
+	MessageType string            `json:"mtype"`
+	Result      string            `json:"result"`
+	Action      string            `json:"action"`
+	Error       string            `json:"error"`
+	Payload     interface{}       `json:"payload,omniempty"`
+	Key         swapcrypto.JWKkey `json:"key"`
 }
 
 var (
@@ -122,10 +124,7 @@ func decodeNewMessage(msg string, connect *userConnection) {
 				connect.SystemMessageChan <- string(finish)
 				return
 			}
-			log.Println("Rsa key successful")
-
 			user, err := api.TestUserToken(token)
-
 			if err != nil {
 				answer.MessageType = messageTypeSystem
 				answer.Result = messageFailed
@@ -137,6 +136,7 @@ func decodeNewMessage(msg string, connect *userConnection) {
 				answer.MessageType = messageTypeSystem
 				answer.Result = messageSuccess
 				answer.Action = messageActionAuth
+				answer.Key = swapcrypto.JWKPublicKey
 				userMove(connect.UserID, onlineUserInc)
 			}
 

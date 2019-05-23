@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/swap-messenger/swap/models"
@@ -113,10 +112,10 @@ func getMyChats(w http.ResponseWriter, r *http.Request) {
 	}
 	var finish []byte
 	if chats == nil {
-		log.Println("empty chats")
+		// log.Println("empty chats")
 		finish = []byte("[]")
 	} else {
-		log.Println("Not empty chats")
+		// log.Println("Not empty chats")
 		finish, _ = json.Marshal(*chats)
 	}
 	fmt.Fprintf(w, string(finish))

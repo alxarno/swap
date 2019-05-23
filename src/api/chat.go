@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/swap-messenger/swap/models"
@@ -48,7 +47,7 @@ func create(w http.ResponseWriter, r *http.Request) {
 		_, err = db.Create(data.Name, user.ID, db.ChannelType)
 		if err != nil {
 			sendAnswerError(ref, err, fmt.Sprintf("name - %s, userid - %d", data.Name, user.ID), createdCahnnel, 4, w)
-			log.Println("Chat create API: 4 - ", err.Error())
+			// log.Println("Chat create API: 4 - ", err.Error())
 			return
 		}
 	}
