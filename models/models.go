@@ -45,6 +45,7 @@ type User struct {
 }
 
 type NewMessageToUser struct {
+	Type        string                `json:"mtype"`
 	ID          int64                 `json:"id"`
 	ChatID      int64                 `json:"chat_id"`
 	Content     *MessageContentToUser `json:"message"`
@@ -108,4 +109,11 @@ type UserChatsInfo struct {
 	Name       string `json:"name"`
 	DeleteLast int64  `json:"delete_last"`
 	Ban        bool   `json:"ban"`
+}
+
+type EncryptedMessage struct {
+	Type string `json:"mtype"`
+	Data string `json:"data"`
+	IV   string `json:"iv"`
+	Key  string `json:"key"`
 }

@@ -42,21 +42,25 @@ import (
 	db "github.com/swap-messenger/swap/db2"
 )
 
+type systemMessage struct {
+	data   string
+	encode bool
+}
 type userConnection struct {
 	UserID            int64
 	MessageChan       chan models.NewMessageToUser
+	EncryptedChan     chan models.EncryptedMessage
 	SystemMessageChan chan string
 	Auth              bool
 	PublicKey         *rsa.PublicKey
 }
 
 type answer struct {
-	MessageType string            `json:"mtype"`
-	Result      string            `json:"result"`
-	Action      string            `json:"action"`
-	Error       string            `json:"error"`
-	Payload     interface{}       `json:"payload,omniempty"`
-	Key         swapcrypto.JWKkey `json:"key"`
+	MessageType string `json:"mtype"`
+	Result      string `json:"result"`
+	Action      string `json:"action"`
+	Error       string `json:"error"`
+	Key         string `json:"key,omniempty"`
 }
 
 var (
@@ -69,8 +73,25 @@ var (
 	forceSendMessages = make(chan models.ForceMsgToUser)
 )
 
-func writerUserSys(ws *websocket.Conn, sysCh <-chan string) {
-	for sysMsg := range sysCh {
+func (s *userConnection) writerUserSys(ws *websocket.Conn) {
+	for sysMsg := range s.SystemMessageChan {
+
+		if s.Auth {
+			encryptedData, err := swapcrypto.EncryptMessage([]byte(sysMsg), s.PublicKey)
+			if err != nil {
+				if debug {
+					log.Println("System encryption error - ", err.Error())
+				}
+				continue
+			}
+			encryptedMessage := models.EncryptedMessage{
+				Data: encryptedData.Data, IV: encryptedData.IV, Key: encryptedData.Key,
+				Type: messageEncrypted,
+			}
+			s.EncryptedChan <- encryptedMessage
+			continue
+		}
+
 		if err := websocket.Message.Send(ws, string(sysMsg)); err != nil {
 			if debug {
 				log.Println(fmt.Sprintf("%s  %s", writingSystemChannelFailed, err.Error()))
@@ -80,15 +101,29 @@ func writerUserSys(ws *websocket.Conn, sysCh <-chan string) {
 	}
 }
 
-func writerUser(ws *websocket.Conn, ch <-chan models.NewMessageToUser) {
-	for msg := range ch {
+func (s *userConnection) writerUser(ws *websocket.Conn) {
+	for msg := range s.MessageChan {
 		nowMessage, err := json.Marshal(msg)
 		if err != nil {
 			if debug {
 				log.Println(fmt.Sprintf("Writer User -> %s  %s", marshalingMessageFailed, err.Error()))
 			}
-			return
+			continue
 		}
+
+		if s.Auth {
+			encryptedData, err := swapcrypto.EncryptMessage(nowMessage, s.PublicKey)
+			if err != nil {
+				continue
+			}
+			encryptedMessage := models.EncryptedMessage{
+				Data: encryptedData.Data, IV: encryptedData.IV, Key: encryptedData.Key,
+				Type: messageEncrypted,
+			}
+			s.EncryptedChan <- encryptedMessage
+			continue
+		}
+
 		if err := websocket.Message.Send(ws, string(nowMessage)); err != nil {
 			if debug {
 				log.Println(fmt.Sprintf("Writer User -> %s  %s", writingMessageChannelFailed, err.Error()))
@@ -98,53 +133,97 @@ func writerUser(ws *websocket.Conn, ch <-chan models.NewMessageToUser) {
 	}
 }
 
+func (s *userConnection) writeEncrypted(ws *websocket.Conn) {
+	for emsg := range s.EncryptedChan {
+		encryptedMessage, err := json.Marshal(emsg)
+		if err != nil {
+			if debug {
+				log.Println(fmt.Sprintf("Writer Encrypted-> %s  %s", marshalingMessageFailed, err.Error()))
+			}
+			continue
+		}
+		if err := websocket.Message.Send(ws, string(encryptedMessage)); err != nil {
+			if debug {
+				log.Println(fmt.Sprintf("Writer Encrypted -> %s  %s", writingEncryptedChannelFailed, err.Error()))
+			}
+			break
+		}
+	}
+}
+
 func decodeNewMessage(msg string, connect *userConnection) {
 	var data = make(map[string]interface{})
+	var ans = answer{}
+
+	messageTypeField := "mtype"
+	// messageActionField := "action"
+	// messagePayloadField := "payload"
+
 	if err := json.Unmarshal([]byte(msg), &data); err != nil {
 		if debug {
 			log.Println(fmt.Sprintf("Decode New Message -> %s  %s", unmarshalingMessageFailed, err.Error()))
 		}
 		return
 	}
-	if data["type"] == messageTypeSystem {
-		action, err := systemMsg(msg)
+	switch data[messageTypeField] {
+	case messageTypeSystem:
+		systemM, err := systemMsg(msg)
 		if err != nil {
+			log.Println(fmt.Sprintf("Decode Sytem Message -> %s  %s", unmarshalingMessageFailed, err.Error()))
 			return
 		}
-		if action["Action"] == messageActionAuth {
-			var answer = answer{}
-			token := action["Payload"].(string)
-			connect.PublicKey = swapcrypto.RsaPublicKeyByModulusAndExponent(action["n"].(string), action["e"].(string))
+
+		if systemM.Action == messageActionAuth {
+			token := systemM.Payload
+			connect.PublicKey = swapcrypto.RsaPublicKeyByModulusAndExponent(
+				systemM.N,
+				systemM.E)
 			if connect.PublicKey == nil {
-				answer.MessageType = messageTypeSystem
-				answer.Result = messageFailed
-				answer.Action = messageActionAuth
-				answer.Error = "Public key is wrong"
-				finish, _ := json.Marshal(answer)
+				ans = answer{MessageType: messageTypeSystem, Result: messageFailed,
+					Action: messageActionAuth, Error: "Public key is wrong"}
+				if debug {
+					log.Println("Public key is wrong")
+				}
+				finish, _ := json.Marshal(ans)
 				connect.SystemMessageChan <- string(finish)
 				return
 			}
 			user, err := api.TestUserToken(token)
 			if err != nil {
-				answer.MessageType = messageTypeSystem
-				answer.Result = messageFailed
-				answer.Action = messageActionAuth
-				answer.Error = err.Error()
+				ans = answer{MessageType: messageTypeSystem, Result: messageFailed,
+					Action: messageActionAuth, Error: err.Error()}
 			} else {
 				connect.UserID = user.ID
 				connect.Auth = true
-				answer.MessageType = messageTypeSystem
-				answer.Result = messageSuccess
-				answer.Action = messageActionAuth
-				answer.Key = swapcrypto.JWKPublicKey
+				ans = answer{MessageType: messageTypeSystem, Result: messageSuccess,
+					Action: messageActionAuth, Key: string(swapcrypto.EncodedPublicKey)}
 				userMove(connect.UserID, onlineUserInc)
 			}
-
-			finish, _ := json.Marshal(answer)
+			finish, _ := json.Marshal(ans)
 			connect.SystemMessageChan <- string(finish)
 		}
-
-	} else {
+		break
+	case messageEncrypted:
+		encryptedMessage, err := encryptedMsg(msg)
+		if err != nil {
+			log.Println(fmt.Sprintf("Decode Encrypted Message -> %s  %s", unmarshalingMessageFailed, err.Error()))
+			return
+		}
+		// log.Println("Got encrypted message")
+		msg, err := swapcrypto.DecryptMessage(encryptedMessage.Key, encryptedMessage.IV, encryptedMessage.Data)
+		if err != nil {
+			ans = answer{MessageType: messageTypeSystem, Result: messageSuccess,
+				Action: messageActionAuth, Error: "Encryption is failed"}
+			// log.Println("Decode Failed")
+			finish, _ := json.Marshal(ans)
+			connect.SystemMessageChan <- string(finish)
+			return
+		}
+		// log.Println("Got encrypted message - ", msg)
+		decodeNewMessage(msg, connect)
+		return
+	case messageTypeUser:
+		log.Println(msg)
 		messageToUser, err := userMsg(msg)
 		if err != nil {
 			if debug {
@@ -165,6 +244,10 @@ func SendNotificationAddUserInChat(userID int64) error {
 	finish, _ := json.Marshal(message)
 	for _, v := range users {
 		if v.UserID == userID {
+			// encryptedMessage, err := swapcrypto.EncryptMessage(finish, v.PublicKey)
+			// if err != nil {
+			// 	return err
+			// }
 			v.SystemMessageChan <- string(finish)
 		}
 	}
@@ -180,6 +263,10 @@ func SendNotificationDeleteChat(userID int64) error {
 	finish, _ := json.Marshal(message)
 	for _, v := range users {
 		if v.UserID == userID {
+			// encryptedMessage, err := swapcrypto.EncryptMessage(finish, v.PublicKey)
+			// if err != nil {
+			// 	return err
+			// }
 			v.SystemMessageChan <- string(finish)
 		}
 	}
@@ -213,13 +300,13 @@ func SendForceMessage(msg models.ForceMsgToUser) {
 //ConnectionHandler - handles new WS connection
 func ConnectionHandler(ws *websocket.Conn) {
 	var err error
-	ch := make(chan models.NewMessageToUser)
-	systemChannel := make(chan string)
 	user := &userConnection{}
-	user.MessageChan = ch
-	user.SystemMessageChan = systemChannel
-	go writerUser(ws, user.MessageChan)
-	go writerUserSys(ws, user.SystemMessageChan)
+	user.MessageChan = make(chan models.NewMessageToUser)
+	user.SystemMessageChan = make(chan string)
+	user.EncryptedChan = make(chan models.EncryptedMessage)
+	go user.writeEncrypted(ws)
+	go user.writerUser(ws)
+	go user.writerUserSys(ws)
 
 	entering <- user
 	for {

@@ -15,9 +15,9 @@ type newMessageFormUser struct {
 }
 
 type newMessageReceive struct {
-	ChatID  int64                  `json:"Chat_Id"`
-	Content *messageContentReceive `json:"Content"`
-	Token   string                 `json:"Token"`
+	ChatID  int64                  `json:"chatID"`
+	Content *messageContentReceive `json:"content"`
+	Token   string                 `json:"token"`
 }
 
 type messageContentReceive struct {
@@ -81,8 +81,8 @@ func newMessage(userQuest *string) (models.NewMessageToUser, error) {
 func newMessageAnother(userQuest string) (models.NewMessageToUser, error) {
 	var send models.NewMessageToUser
 	var dataReceive struct {
-		Type    string
-		Content newMessageReceive
+		Type    string            `json:"mtype"`
+		Content newMessageReceive `json:"content"`
 	}
 
 	message := []byte(userQuest)
@@ -128,6 +128,7 @@ func newMessageAnother(userQuest string) (models.NewMessageToUser, error) {
 	send.AuthorName = user.Name
 	send.ChatID = dataReceive.Content.ChatID
 	send.Content = &newMess
+	send.Type = messageTypeUser
 	return send, nil
 
 }

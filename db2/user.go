@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"log"
 
 	"github.com/swap-messenger/swap/models"
 )
@@ -107,7 +106,7 @@ func GetUserChats(userID int64) (*[]models.UserChatInfo, error) {
 		if err := query.Where("messages.chat_id=?", v.ID).Last(&mes).Error; err != nil {
 			return nil, DBE(GetMessageError, err)
 		}
-		log.Println(mes, v.ID)
+		// log.Println(mes, v.ID)
 		err := json.Unmarshal([]byte(mes.Content), &msgContent)
 		if err != nil {
 			return nil, DBE(MessageContentDecodeError, err)

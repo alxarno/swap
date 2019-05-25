@@ -9,36 +9,52 @@ import (
 	"github.com/swap-messenger/swap/src/api"
 )
 
-func systemMsg(msg string) (map[string]interface{}, error) {
-	var final = make(map[string]interface{})
+type SystemMessage struct {
+	Action  string
+	Payload string
+	E       string
+	N       string
+}
+
+// type Encrypte
+
+func encryptedMsg(msg string) (final models.EncryptedMessage, err error) {
+	if err = json.Unmarshal([]byte(msg), &final); err != nil {
+		return
+	}
+	return
+	//
+}
+
+func systemMsg(msg string) (final SystemMessage, err error) {
 	var userMessageSystem = struct {
-		Type    string
+		Type    string `json:"mtype"`
 		Content struct {
-			Type  string
-			Token string
-			Key   struct {
-				e string
-				n string
-			}
-		}
+			Type   string `json:"type"`
+			Token  string `json:"token"`
+			PubKey struct {
+				E string `json:"e"`
+				N string `json:"n"`
+			} `json:"key"`
+		} `json:"content"`
 	}{}
-	if err := json.Unmarshal([]byte(msg), &userMessageSystem); err != nil {
-		return nil, err
+	if err = json.Unmarshal([]byte(msg), &userMessageSystem); err != nil {
+		return
 	}
 	if userMessageSystem.Content.Type == messageActionAuth {
-		_, err := api.TestUserToken(userMessageSystem.Content.Token)
+		_, err = api.TestUserToken(userMessageSystem.Content.Token)
 		if err != nil {
 			fmt.Println(err)
-			return nil, err
+			return
 		}
-		final["Action"] = messageActionAuth
-		final["Payload"] = userMessageSystem.Content.Token
-		final["e"] = userMessageSystem.Content.Key.e
-		final["n"] = userMessageSystem.Content.Key.n
+		final.Action = messageActionAuth
+		final.Payload = userMessageSystem.Content.Token
+		final.E = userMessageSystem.Content.PubKey.E
+		final.N = userMessageSystem.Content.PubKey.N
 		return final, nil
 
 	}
-	return nil, nil
+	return
 }
 
 func userMsg(msg string) (*models.NewMessageToUser, error) {

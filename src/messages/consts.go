@@ -14,16 +14,19 @@ const (
 	messageActionUserAddedToChat  = "add_in_chat"
 	messageActionDeleteChat       = "delete_chat"
 	messageTypeSystem             = "system"
+	messageTypeUser               = "user"
+	messageEncrypted              = "encrypted"
 	messageActionAuth             = "auth"
 	messageSuccess                = "Success"
 	messageFailed                 = "Error"
 )
 
 const (
-	writingSystemChannelFailed  = "Writing to system channel failed: "
-	writingMessageChannelFailed = "Writing message to channel failed: "
-	marshalingMessageFailed     = "Message marshaling failed: "
-	unmarshalingMessageFailed   = "Message unmarshaling failed: "
+	writingSystemChannelFailed    = "Writing to system channel failed: "
+	writingMessageChannelFailed   = "Writing message to channel failed: "
+	marshalingMessageFailed       = "Message marshaling failed: "
+	unmarshalingMessageFailed     = "Message unmarshaling failed: "
+	writingEncryptedChannelFailed = "Writing to encrypted channel failed: "
 )
 
 const ()

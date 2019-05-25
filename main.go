@@ -74,8 +74,8 @@ func main() {
 
 	}
 
-	// engine.ConnectActionsToDB()
 	swapcrypto.GenerateKeys()
+	// swapcrypto.Test()
 	err = db.BeginDB()
 	if err != nil {
 		fmt.Println(err.Error())
