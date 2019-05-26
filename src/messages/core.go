@@ -29,39 +29,20 @@ package messageengine
 //
 
 import (
-	"crypto/rsa"
+	"github.com/swap-messenger/swap/settings"
+	// "crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"log"
 
 	swapcrypto "github.com/swap-messenger/swap/crypto"
 	models "github.com/swap-messenger/swap/models"
-	"github.com/swap-messenger/swap/src/api"
+
+	// "github.com/swap-messenger/swap/src/api"
 	"golang.org/x/net/websocket"
 
 	db "github.com/swap-messenger/swap/db2"
 )
-
-type systemMessage struct {
-	data   string
-	encode bool
-}
-type userConnection struct {
-	UserID            int64
-	MessageChan       chan models.NewMessageToUser
-	EncryptedChan     chan models.EncryptedMessage
-	SystemMessageChan chan string
-	Auth              bool
-	PublicKey         *rsa.PublicKey
-}
-
-type answer struct {
-	MessageType string `json:"mtype"`
-	Result      string `json:"result"`
-	Action      string `json:"action"`
-	Error       string `json:"error"`
-	Key         string `json:"key,omniempty"`
-}
 
 var (
 	debug    bool
@@ -76,7 +57,7 @@ var (
 func (s *userConnection) writerUserSys(ws *websocket.Conn) {
 	for sysMsg := range s.SystemMessageChan {
 
-		if s.Auth {
+		if s.KeyExchanged && settings.ServiceSettings.Backend.Cert {
 			encryptedData, err := swapcrypto.EncryptMessage([]byte(sysMsg), s.PublicKey)
 			if err != nil {
 				if debug {
@@ -111,7 +92,7 @@ func (s *userConnection) writerUser(ws *websocket.Conn) {
 			continue
 		}
 
-		if s.Auth {
+		if s.KeyExchanged && settings.ServiceSettings.Backend.Cert {
 			encryptedData, err := swapcrypto.EncryptMessage(nowMessage, s.PublicKey)
 			if err != nil {
 				continue
@@ -135,6 +116,9 @@ func (s *userConnection) writerUser(ws *websocket.Conn) {
 
 func (s *userConnection) writeEncrypted(ws *websocket.Conn) {
 	for emsg := range s.EncryptedChan {
+		if !s.KeyExchanged || !settings.ServiceSettings.Backend.Cert {
+			continue
+		}
 		encryptedMessage, err := json.Marshal(emsg)
 		if err != nil {
 			if debug {
@@ -153,12 +137,6 @@ func (s *userConnection) writeEncrypted(ws *websocket.Conn) {
 
 func decodeNewMessage(msg string, connect *userConnection) {
 	var data = make(map[string]interface{})
-	var ans = answer{}
-
-	messageTypeField := "mtype"
-	// messageActionField := "action"
-	// messagePayloadField := "payload"
-
 	if err := json.Unmarshal([]byte(msg), &data); err != nil {
 		if debug {
 			log.Println(fmt.Sprintf("Decode New Message -> %s  %s", unmarshalingMessageFailed, err.Error()))
@@ -167,40 +145,18 @@ func decodeNewMessage(msg string, connect *userConnection) {
 	}
 	switch data[messageTypeField] {
 	case messageTypeSystem:
-		systemM, err := systemMsg(msg)
+		sMessage, err := systemMsg(msg)
 		if err != nil {
 			log.Println(fmt.Sprintf("Decode Sytem Message -> %s  %s", unmarshalingMessageFailed, err.Error()))
 			return
 		}
 
-		if systemM.Action == messageActionAuth {
-			token := systemM.Payload
-			connect.PublicKey = swapcrypto.RsaPublicKeyByModulusAndExponent(
-				systemM.N,
-				systemM.E)
-			if connect.PublicKey == nil {
-				ans = answer{MessageType: messageTypeSystem, Result: messageFailed,
-					Action: messageActionAuth, Error: "Public key is wrong"}
-				if debug {
-					log.Println("Public key is wrong")
-				}
-				finish, _ := json.Marshal(ans)
-				connect.SystemMessageChan <- string(finish)
-				return
-			}
-			user, err := api.TestUserToken(token)
-			if err != nil {
-				ans = answer{MessageType: messageTypeSystem, Result: messageFailed,
-					Action: messageActionAuth, Error: err.Error()}
-			} else {
-				connect.UserID = user.ID
-				connect.Auth = true
-				ans = answer{MessageType: messageTypeSystem, Result: messageSuccess,
-					Action: messageActionAuth, Key: string(swapcrypto.EncodedPublicKey)}
-				userMove(connect.UserID, onlineUserInc)
-			}
-			finish, _ := json.Marshal(ans)
-			connect.SystemMessageChan <- string(finish)
+		if sMessage.Action == messageActionKeyExchange {
+			keyExchangeHandler(sMessage, connect)
+		}
+
+		if sMessage.Action == messageActionAuth {
+			authHandler(sMessage, connect)
 		}
 		break
 	case messageEncrypted:
@@ -209,25 +165,13 @@ func decodeNewMessage(msg string, connect *userConnection) {
 			log.Println(fmt.Sprintf("Decode Encrypted Message -> %s  %s", unmarshalingMessageFailed, err.Error()))
 			return
 		}
-		// log.Println("Got encrypted message")
-		msg, err := swapcrypto.DecryptMessage(encryptedMessage.Key, encryptedMessage.IV, encryptedMessage.Data)
-		if err != nil {
-			ans = answer{MessageType: messageTypeSystem, Result: messageSuccess,
-				Action: messageActionAuth, Error: "Encryption is failed"}
-			// log.Println("Decode Failed")
-			finish, _ := json.Marshal(ans)
-			connect.SystemMessageChan <- string(finish)
-			return
-		}
-		// log.Println("Got encrypted message - ", msg)
-		decodeNewMessage(msg, connect)
-		return
+		encryptedHandler(encryptedMessage, connect)
+		break
 	case messageTypeUser:
-		log.Println(msg)
 		messageToUser, err := userMsg(msg)
 		if err != nil {
 			if debug {
-				log.Println("decodeNewMessage error: " + err.Error())
+				log.Println("Decode User Message -> " + err.Error())
 			}
 			return
 		}
@@ -235,67 +179,7 @@ func decodeNewMessage(msg string, connect *userConnection) {
 	}
 }
 
-//SendNotificationAddUserInChat - Reload only chats list on client side
-func SendNotificationAddUserInChat(userID int64) error {
-	var message = answer{
-		MessageType: messageTypeSystem,
-		Action:      messageActionUserAddedToChat,
-	}
-	finish, _ := json.Marshal(message)
-	for _, v := range users {
-		if v.UserID == userID {
-			// encryptedMessage, err := swapcrypto.EncryptMessage(finish, v.PublicKey)
-			// if err != nil {
-			// 	return err
-			// }
-			v.SystemMessageChan <- string(finish)
-		}
-	}
-	return nil
-}
 
-//SendNotificationDeleteChat - Reload  chats list and now chat window close on client side
-func SendNotificationDeleteChat(userID int64) error {
-	var message = answer{
-		MessageType: messageTypeSystem,
-		Action:      messageActionDeleteChat,
-	}
-	finish, _ := json.Marshal(message)
-	for _, v := range users {
-		if v.UserID == userID {
-			// encryptedMessage, err := swapcrypto.EncryptMessage(finish, v.PublicKey)
-			// if err != nil {
-			// 	return err
-			// }
-			v.SystemMessageChan <- string(finish)
-		}
-	}
-	return nil
-}
-
-//GetOnlineUsersInChat - return count online users in certain chat
-func GetOnlineUsersInChat(userIDs *[]int64) int64 {
-	var count int64
-	count = 0
-	for _, v := range users {
-		for _, b := range *userIDs {
-			if v.UserID == b {
-				count++
-			}
-		}
-	}
-	return count
-}
-
-//SendMessage - send message
-func SendMessage(msg models.NewMessageToUser) {
-	sendMessages <- msg
-}
-
-//SendForceMessage - send force message
-func SendForceMessage(msg models.ForceMsgToUser) {
-	forceSendMessages <- msg
-}
 
 //ConnectionHandler - handles new WS connection
 func ConnectionHandler(ws *websocket.Conn) {
