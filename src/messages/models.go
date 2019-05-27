@@ -45,9 +45,9 @@ type systemMessage struct {
 	encode bool
 }
 type userConnection struct {
-	UserID            int64
-	MessageChan       chan models.NewMessageToUser
-	EncryptedChan     chan models.EncryptedMessage
+	UserID      int64
+	MessageChan chan models.NewMessageToUser
+	// EncryptedChan     chan models.EncryptedMessage
 	SystemMessageChan chan string
 	Auth              bool
 	KeyExchanged      bool

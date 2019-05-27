@@ -22,7 +22,6 @@ const MinFilesDirPath string = FilesDirPath + "min/"
 type settings struct {
 	Backend struct {
 		Test              bool   `json:"test"`
-		Cert              bool   `json:"cert"`
 		Host              string `json:"host"`
 		SecretKeyForToken string `json:"secret_key_for_token"`
 		FilesPath         string `json:"files_path"`
@@ -61,14 +60,13 @@ func createConfig() (data []byte, err error) {
 	defaultConfig := fmt.Sprintf(`{
 		"backend":{
 			"test": false,
-			"cert": false,
 			"host": "3030",
 			"secret_key_for_token": "%s",
 			"files_path": "./files/"
 		},
 		"cert":{
 			"org": "Example Co",
-			"hosts": ["192.168.1.37","localhost"],
+			"hosts": ["192.168.1.38","localhost","127.0.0.1"],
 			"rsa-bits":2048
 		},
 		"service":{

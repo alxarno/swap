@@ -2,18 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
-	"io/ioutil"
-	"log"
 	"net/http"
-	"strings"
 	"time"
-
-	"github.com/swap-messenger/swap/models"
 
 	"github.com/gorilla/mux"
 	"github.com/robbert229/jwt"
-	swapcrypto "github.com/swap-messenger/swap/crypto"
 	"github.com/swap-messenger/swap/settings"
 	api "github.com/swap-messenger/swap/src/api"
 	engine "github.com/swap-messenger/swap/src/messages"
@@ -76,7 +69,7 @@ func info(w http.ResponseWriter, r *http.Request) {
 		Cert        bool  `json:"cert"`
 		MaxFileSize int64 `json:"maxFileSize"`
 	}{
-		Cert:        settings.ServiceSettings.Backend.Cert,
+		Cert:        true,
 		MaxFileSize: settings.ServiceSettings.Service.MaxFileSize,
 	}
 
@@ -132,60 +125,60 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, file)
 }
 
-type customWriter struct {
-	w     http.ResponseWriter
-	token string
-}
+// type customWriter struct {
+// 	w     http.ResponseWriter
+// 	token string
+// }
 
-func (s customWriter) Write(data []byte) (int, error) {
-	key, err := engine.GetKeyByToken(s.token)
-	if err != nil {
-		return 0, errors.New("Cannot get user by key -> " + err.Error())
-	}
-	encMessage, err := swapcrypto.EncryptMessage(data, key)
-	if err != nil {
-		return 0, errors.New("Cannot encrypt data -> " + err.Error())
-	}
+// func (s customWriter) Write(data []byte) (int, error) {
+// 	key, err := engine.GetKeyByToken(s.token)
+// 	if err != nil {
+// 		return 0, errors.New("Cannot get user by key -> " + err.Error())
+// 	}
+// 	encMessage, err := swapcrypto.EncryptMessage(data, key)
+// 	if err != nil {
+// 		return 0, errors.New("Cannot encrypt data -> " + err.Error())
+// 	}
 
-	final, _ := json.Marshal(encMessage)
-	return s.w.Write(final)
-}
+// 	final, _ := json.Marshal(encMessage)
+// 	return s.w.Write(final)
+// }
 
-func (s customWriter) Header() http.Header {
-	return s.w.Header()
-}
+// func (s customWriter) Header() http.Header {
+// 	return s.w.Header()
+// }
 
-func (s customWriter) WriteHeader(statusCode int) {
-	s.w.WriteHeader(statusCode)
-}
+// func (s customWriter) WriteHeader(statusCode int) {
+// 	s.w.WriteHeader(statusCode)
+// }
 
-func customEncryption(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !settings.ServiceSettings.Backend.Cert {
-			token := r.Header.Get("Authorization")
-			if token == "" {
-				log.Println("Token is undefined -> ", token)
-				return
-			}
-			var encryptedMessage models.EncryptedMessage
-			if err := json.NewDecoder(r.Body).Decode(&encryptedMessage); err != nil {
-				log.Println("Decode api call failed -> ", err.Error())
-				return
-			}
-			message, err := swapcrypto.DecryptMessage(encryptedMessage.Key, encryptedMessage.IV, encryptedMessage.Data)
-			if err != nil {
-				log.Println("Decrypt api call failed -> ", err.Error())
-				return
-			}
-			r.Body = ioutil.NopCloser(strings.NewReader(message))
-			r.ContentLength = int64(len(message))
-			cwriter := customWriter{w, token}
-			handler(cwriter, r)
-		} else {
-			handler(w, r)
-		}
-	}
-}
+// func customEncryption(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+// 	return func(w http.ResponseWriter, r *http.Request) {
+// 		if !settings.ServiceSettings.Backend.Cert {
+// 			token := r.Header.Get("Authorization")
+// 			if token == "" {
+// 				log.Println("Token is undefined -> ", token)
+// 				return
+// 			}
+// 			var encryptedMessage models.EncryptedMessage
+// 			if err := json.NewDecoder(r.Body).Decode(&encryptedMessage); err != nil {
+// 				log.Println("Decode api call failed -> ", err.Error())
+// 				return
+// 			}
+// 			message, err := swapcrypto.DecryptMessage(encryptedMessage.Key, encryptedMessage.IV, encryptedMessage.Data)
+// 			if err != nil {
+// 				log.Println("Decrypt api call failed -> ", err.Error())
+// 				return
+// 			}
+// 			r.Body = ioutil.NopCloser(strings.NewReader(message))
+// 			r.ContentLength = int64(len(message))
+// 			cwriter := customWriter{w, token}
+// 			handler(cwriter, r)
+// 		} else {
+// 			handler(w, r)
+// 		}
+// 	}
+// }
 
 func newRouter() *mux.Router {
 	myRouter := mux.NewRouter().StrictSlash(true)
@@ -198,7 +191,7 @@ func newRouter() *mux.Router {
 	myRouter.HandleFunc("/getFile/{link}/{name}", downloadFile)
 	myRouter.Handle("/ws", websocket.Handler(engine.ConnectionHandler))
 	// myRouter.HandleFunc("/proveConnect", proveConnect)
-	myRouter.HandleFunc("/api/{key}/{var1}", customEncryption(apiRouter))
+	myRouter.HandleFunc("/api/{key}/{var1}", apiRouter)
 	// myRouter.HandleFunc("/{key1}", logos)
 	// myRouter.HandleFunc("/{key1}/{key2}", fonts)
 	// myRouter.HandleFunc("/staticingzip/{key2}/{key3}", staticNotGzip)

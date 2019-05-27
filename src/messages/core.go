@@ -29,13 +29,12 @@ package messageengine
 //
 
 import (
-	"github.com/swap-messenger/swap/settings"
+
 	// "crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"log"
 
-	swapcrypto "github.com/swap-messenger/swap/crypto"
 	models "github.com/swap-messenger/swap/models"
 
 	// "github.com/swap-messenger/swap/src/api"
@@ -57,21 +56,21 @@ var (
 func (s *userConnection) writerUserSys(ws *websocket.Conn) {
 	for sysMsg := range s.SystemMessageChan {
 
-		if s.KeyExchanged && settings.ServiceSettings.Backend.Cert {
-			encryptedData, err := swapcrypto.EncryptMessage([]byte(sysMsg), s.PublicKey)
-			if err != nil {
-				if debug {
-					log.Println("System encryption error - ", err.Error())
-				}
-				continue
-			}
-			encryptedMessage := models.EncryptedMessage{
-				Data: encryptedData.Data, IV: encryptedData.IV, Key: encryptedData.Key,
-				Type: messageEncrypted,
-			}
-			s.EncryptedChan <- encryptedMessage
-			continue
-		}
+		// if s.KeyExchanged && settings.ServiceSettings.Backend.Cert {
+		// 	encryptedData, err := swapcrypto.EncryptMessage([]byte(sysMsg), s.PublicKey)
+		// 	if err != nil {
+		// 		if debug {
+		// 			log.Println("System encryption error - ", err.Error())
+		// 		}
+		// 		continue
+		// 	}
+		// 	encryptedMessage := models.EncryptedMessage{
+		// 		Data: encryptedData.Data, IV: encryptedData.IV, Key: encryptedData.Key,
+		// 		Type: messageEncrypted,
+		// 	}
+		// 	s.EncryptedChan <- encryptedMessage
+		// 	continue
+		// }
 
 		if err := websocket.Message.Send(ws, string(sysMsg)); err != nil {
 			if debug {
@@ -92,18 +91,18 @@ func (s *userConnection) writerUser(ws *websocket.Conn) {
 			continue
 		}
 
-		if s.KeyExchanged && settings.ServiceSettings.Backend.Cert {
-			encryptedData, err := swapcrypto.EncryptMessage(nowMessage, s.PublicKey)
-			if err != nil {
-				continue
-			}
-			encryptedMessage := models.EncryptedMessage{
-				Data: encryptedData.Data, IV: encryptedData.IV, Key: encryptedData.Key,
-				Type: messageEncrypted,
-			}
-			s.EncryptedChan <- encryptedMessage
-			continue
-		}
+		// if s.KeyExchanged && settings.ServiceSettings.Backend.Cert {
+		// 	encryptedData, err := swapcrypto.EncryptMessage(nowMessage, s.PublicKey)
+		// 	if err != nil {
+		// 		continue
+		// 	}
+		// 	encryptedMessage := models.EncryptedMessage{
+		// 		Data: encryptedData.Data, IV: encryptedData.IV, Key: encryptedData.Key,
+		// 		Type: messageEncrypted,
+		// 	}
+		// 	s.EncryptedChan <- encryptedMessage
+		// 	continue
+		// }
 
 		if err := websocket.Message.Send(ws, string(nowMessage)); err != nil {
 			if debug {
@@ -114,26 +113,26 @@ func (s *userConnection) writerUser(ws *websocket.Conn) {
 	}
 }
 
-func (s *userConnection) writeEncrypted(ws *websocket.Conn) {
-	for emsg := range s.EncryptedChan {
-		if !s.KeyExchanged || !settings.ServiceSettings.Backend.Cert {
-			continue
-		}
-		encryptedMessage, err := json.Marshal(emsg)
-		if err != nil {
-			if debug {
-				log.Println(fmt.Sprintf("Writer Encrypted-> %s  %s", marshalingMessageFailed, err.Error()))
-			}
-			continue
-		}
-		if err := websocket.Message.Send(ws, string(encryptedMessage)); err != nil {
-			if debug {
-				log.Println(fmt.Sprintf("Writer Encrypted -> %s  %s", writingEncryptedChannelFailed, err.Error()))
-			}
-			break
-		}
-	}
-}
+// func (s *userConnection) writeEncrypted(ws *websocket.Conn) {
+// 	for emsg := range s.EncryptedChan {
+// 		if !s.KeyExchanged || !settings.ServiceSettings.Backend.Cert {
+// 			continue
+// 		}
+// 		encryptedMessage, err := json.Marshal(emsg)
+// 		if err != nil {
+// 			if debug {
+// 				log.Println(fmt.Sprintf("Writer Encrypted-> %s  %s", marshalingMessageFailed, err.Error()))
+// 			}
+// 			continue
+// 		}
+// 		if err := websocket.Message.Send(ws, string(encryptedMessage)); err != nil {
+// 			if debug {
+// 				log.Println(fmt.Sprintf("Writer Encrypted -> %s  %s", writingEncryptedChannelFailed, err.Error()))
+// 			}
+// 			break
+// 		}
+// 	}
+// }
 
 func decodeNewMessage(msg string, connect *userConnection) {
 	var data = make(map[string]interface{})
@@ -179,16 +178,14 @@ func decodeNewMessage(msg string, connect *userConnection) {
 	}
 }
 
-
-
 //ConnectionHandler - handles new WS connection
 func ConnectionHandler(ws *websocket.Conn) {
 	var err error
 	user := &userConnection{}
 	user.MessageChan = make(chan models.NewMessageToUser)
 	user.SystemMessageChan = make(chan string)
-	user.EncryptedChan = make(chan models.EncryptedMessage)
-	go user.writeEncrypted(ws)
+	// user.EncryptedChan = make(chan models.EncryptedMessage)
+	// go user.writeEncrypted(ws)
 	go user.writerUser(ws)
 	go user.writerUserSys(ws)
 

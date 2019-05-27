@@ -1,14 +1,13 @@
 {
 		"backend":{
 			"test": false,
-			"cert": true,
 			"host": "3030",
-			"secret_key_for_token": "eJqRUor3nb7UREjr9eROoA==",
+			"secret_key_for_token": "oor4ze3z+TxVmMCguAzRog==",
 			"files_path": "./files/"
 		},
 		"cert":{
 			"org": "Example Co",
-			"hosts": ["192.168.1.38"],
+			"hosts": ["192.168.1.38","localhost","127.0.0.1"],
 			"rsa-bits":2048
 		},
 		"service":{

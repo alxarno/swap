@@ -76,11 +76,11 @@ func main() {
 
 	}
 
-	if settings.ServiceSettings.Backend.Cert {
-		swapcrypto.InitCert()
-	}
+	// if settings.ServiceSettings.Backend.Cert {
+	swapcrypto.InitCert()
+	// }
 
-	swapcrypto.GenerateKeys()
+	// swapcrypto.GenerateKeys()
 	// swapcrypto.Test()
 	err = db.BeginDB()
 	if err != nil {
@@ -118,19 +118,19 @@ func main() {
 		printLogo()
 		os.Stderr.WriteString("Swap started on \t" + myAddres + "\n")
 	}
-	if settings.ServiceSettings.Backend.Cert {
-		tlsconfig := tls.Config{Certificates: []tls.Certificate{*swapcrypto.Cert}}
-		tlsconfig.Rand = rand.Reader
-		server := http.Server{
-			TLSConfig: &tlsconfig,
-			Handler:   router,
-			Addr:      ":" + settings.ServiceSettings.Backend.Host,
-		}
-		log.Fatal("ListenAndServeTLS: ", server.ListenAndServeTLS("", ""))
-	} else {
-		log.Fatal("ListenAndServe: ", http.ListenAndServe(
-			":"+settings.ServiceSettings.Backend.Host,
-			router))
+	// if settings.ServiceSettings.Backend.Cert {
+	tlsconfig := tls.Config{Certificates: []tls.Certificate{*swapcrypto.Cert}}
+	tlsconfig.Rand = rand.Reader
+	server := http.Server{
+		TLSConfig: &tlsconfig,
+		Handler:   router,
+		Addr:      ":" + settings.ServiceSettings.Backend.Host,
 	}
+	log.Fatal("ListenAndServeTLS: ", server.ListenAndServeTLS("", ""))
+	// } else {
+	// 	log.Fatal("ListenAndServe: ", http.ListenAndServe(
+	// 		":"+settings.ServiceSettings.Backend.Host,
+	// 		router))
+	// }
 
 }
