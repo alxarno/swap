@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/robbert229/jwt"
-	db "github.com/swap-messenger/swap/db2"
-	"github.com/swap-messenger/swap/settings"
+	db "github.com/alxarno/swap/db2"
+	"github.com/alxarno/swap/settings"
 )
 
 type fileInfo struct {

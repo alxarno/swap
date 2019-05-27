@@ -3,7 +3,7 @@ package messageengine
 import (
 	"crypto/rsa"
 
-	"github.com/swap-messenger/swap/models"
+	"github.com/alxarno/swap/models"
 )
 
 type onlineUsersMove int

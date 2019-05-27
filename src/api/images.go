@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/disintegration/imaging"
-	"github.com/swap-messenger/swap/settings"
+	"github.com/alxarno/swap/settings"
 )
 
 func compressionImage(iType string, ratio float64, path string) error {

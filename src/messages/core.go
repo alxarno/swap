@@ -35,12 +35,12 @@ import (
 	"fmt"
 	"log"
 
-	models "github.com/swap-messenger/swap/models"
+	models "github.com/alxarno/swap/models"
 
-	// "github.com/swap-messenger/swap/src/api"
+	// "github.com/alxarno/swap/src/api"
 	"golang.org/x/net/websocket"
 
-	db "github.com/swap-messenger/swap/db2"
+	db "github.com/alxarno/swap/db2"
 )
 
 var (

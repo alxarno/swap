@@ -3,9 +3,9 @@ package messageengine
 import (
 	"encoding/json"
 
-	db "github.com/swap-messenger/swap/db2"
-	"github.com/swap-messenger/swap/models"
-	"github.com/swap-messenger/swap/src/api"
+	db "github.com/alxarno/swap/db2"
+	"github.com/alxarno/swap/models"
+	"github.com/alxarno/swap/src/api"
 )
 
 type newMessageFormUser struct {

@@ -12,12 +12,12 @@ import (
 	"os"
 	"path/filepath"
 
-	swapcrypto "github.com/swap-messenger/swap/crypto"
+	swapcrypto "github.com/alxarno/swap/crypto"
 
-	db "github.com/swap-messenger/swap/db2"
-	"github.com/swap-messenger/swap/models"
-	"github.com/swap-messenger/swap/settings"
-	engine "github.com/swap-messenger/swap/src/messages"
+	db "github.com/alxarno/swap/db2"
+	"github.com/alxarno/swap/models"
+	"github.com/alxarno/swap/settings"
+	engine "github.com/alxarno/swap/src/messages"
 )
 
 type proveConnection struct {

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/swap-messenger/swap/models"
+	"github.com/alxarno/swap/models"
 
-	db "github.com/swap-messenger/swap/db2"
+	db "github.com/alxarno/swap/db2"
 )
 
 func enter(w http.ResponseWriter, r *http.Request) {

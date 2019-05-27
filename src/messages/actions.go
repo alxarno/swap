@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"log"
 
-	db "github.com/swap-messenger/swap/db2"
-	"github.com/swap-messenger/swap/models"
+	db "github.com/alxarno/swap/db2"
+	"github.com/alxarno/swap/models"
 )
 
 //ConnectActionsToDB - Bind callbacks

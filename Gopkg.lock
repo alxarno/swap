@@ -2,34 +2,22 @@
 
 
 [[projects]]
-  name = "github.com/astaxie/beego"
-  packages = ["orm"]
-  revision = "1b6edafc96ad27b6515fafeccd7339dda3e997b1"
-  version = "v1.11.1"
-
-[[projects]]
   name = "github.com/disintegration/imaging"
   packages = ["."]
-  revision = "0bd5694c78c9c3d9a3cd06a706a8f3c59296a9ac"
-  version = "v1.5.0"
-
-[[projects]]
-  name = "github.com/gorilla/context"
-  packages = ["."]
-  revision = "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
-  version = "v1.1.1"
+  revision = "5362c131d56305ce787e79a5b94ffc956df00d62"
+  version = "v1.6.0"
 
 [[projects]]
   name = "github.com/gorilla/mux"
   packages = ["."]
-  revision = "e3702bed27f0d39777b0b37b664b6280e8ef8fbf"
-  version = "v1.6.2"
+  revision = "ed099d42384823742bba0bf9a72b53b55c9e2e38"
+  version = "v1.7.2"
 
 [[projects]]
   name = "github.com/jinzhu/gorm"
   packages = ["."]
-  revision = "29cb2a42d2a41e5ae449435e1c9277d47115775c"
-  version = "v1.9.5"
+  revision = "b7156195f7f3415f97c20abbd6aff894b847fee8"
+  version = "v1.9.8"
 
 [[projects]]
   branch = "master"
@@ -63,17 +51,17 @@
     "tiff",
     "tiff/lzw"
   ]
-  revision = "183bebdce1b249c42a7cf6772817e8c2e873b966"
+  revision = "f03afa92d3ffad9e5ff762aa549908afe674f01e"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["websocket"]
-  revision = "ed066c81e75eba56dd9bd2139ade88125b855585"
+  revision = "f3200d17e092c607f615320ecaad13d87ad9a2b3"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "66de13411e0ef662b7cbbd5d42538f3378aecd9c396917dce8c1f09ec91f8241"
+  inputs-digest = "63f445285d6245a9ad019692c804c828b16f1fc7c1e817e8c8c6e1732b0f8cf1"
   solver-name = "gps-cdcl"
   solver-version = 1

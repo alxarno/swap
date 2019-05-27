@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/swap-messenger/swap/models"
+	"github.com/alxarno/swap/models"
 )
 
 //MessageType - type for message type's aliases

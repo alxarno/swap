@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/alxarno/swap/settings"
+	api "github.com/alxarno/swap/src/api"
+	engine "github.com/alxarno/swap/src/messages"
 	"github.com/gorilla/mux"
 	"github.com/robbert229/jwt"
-	"github.com/swap-messenger/swap/settings"
-	api "github.com/swap-messenger/swap/src/api"
-	engine "github.com/swap-messenger/swap/src/messages"
 	"golang.org/x/net/websocket"
 )
 

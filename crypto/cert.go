@@ -14,7 +14,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/swap-messenger/swap/settings"
+	"github.com/alxarno/swap/settings"
 )
 
 const (

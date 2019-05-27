@@ -8,8 +8,8 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/swap-messenger/swap/models"
-	"github.com/swap-messenger/swap/settings"
+	"github.com/alxarno/swap/models"
+	"github.com/alxarno/swap/settings"
 )
 
 type userRequestedCallback = func(userID int64, chatID int64, messageCommand models.MessageCommand)

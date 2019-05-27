@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/swap-messenger/swap/models"
+	"github.com/alxarno/swap/models"
 )
 
 const (

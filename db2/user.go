@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/swap-messenger/swap/models"
+	"github.com/alxarno/swap/models"
 )
 
 const (

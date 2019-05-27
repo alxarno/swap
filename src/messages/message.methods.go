@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/swap-messenger/swap/models"
-	"github.com/swap-messenger/swap/src/api"
+	"github.com/alxarno/swap/models"
+	"github.com/alxarno/swap/src/api"
 )
 
 type SystemMessage struct {

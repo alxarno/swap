@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"log"
 
-	swapcrypto "github.com/swap-messenger/swap/crypto"
-	"github.com/swap-messenger/swap/models"
-	"github.com/swap-messenger/swap/src/api"
+	swapcrypto "github.com/alxarno/swap/crypto"
+	"github.com/alxarno/swap/models"
+	"github.com/alxarno/swap/src/api"
 )
 
 func authHandler(msg SystemMessage, connect *userConnection) {
