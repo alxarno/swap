@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/alxarno/swap/models"
 
@@ -24,7 +26,7 @@ func enter(w http.ResponseWriter, r *http.Request) {
 	user, err := db.GetUserByLoginAndPass(data.Login, data.Pass)
 	if err != nil {
 		sendAnswerError(ref, err,
-			fmt.Sprintf("login - %s, pass -%s", data.Login, data.Pass),
+			fmt.Sprintf("login - %s, pass -%s", data.Login, strings.Repeat("*", utf8.RuneCountInString(data.Pass))),
 			failedGetUser, 1, w)
 		return
 	}
@@ -76,13 +78,15 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		decodeFail(ref, err, r, w)
 		return
 	}
+
+	passPrint := strings.Repeat("*", utf8.RuneCountInString(data.Pass))
 	if data.Login == "" || data.Pass == "" {
-		sendAnswerError(ref, err, fmt.Sprintf("login - %s, pass - %s", data.Login, data.Pass), someEmptyFields, 1, w)
+		sendAnswerError(ref, err, fmt.Sprintf("login - %s, pass - %s", data.Login, passPrint), someEmptyFields, 1, w)
 		return
 	}
 	id, err := db.CreateUser(data.Login, data.Pass, data.Login)
 	if err != nil {
-		sendAnswerError(ref, err, fmt.Sprintf("login - %s, pass - %s", data.Login, data.Pass), failedCreateUser, 2, w)
+		sendAnswerError(ref, err, fmt.Sprintf("login - %s, pass - %s", data.Login, passPrint), failedCreateUser, 2, w)
 		return
 	}
 	token, err := generateToken(id)

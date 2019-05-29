@@ -12,18 +12,19 @@ const (
 
 // Chat API
 const (
-	createdCahnnel        = iota + 1
-	userChatCheckFailed   //2
-	userIsDeletedFromChat //3
-	failedGetUserInfo     //4
-	failedGetUsersForAdd  //5
-	failedDeleteUsers     //6
-	failedRecoveryUsers   //7
-	failedGetChatSettings //8
-	shortChatName         //9
-	failedSetChatSettings //10
-	failedDeleteFromList  //11
-	createdChat           //12
+	createdCahnnel          = iota + 1
+	userChatCheckFailed     //2
+	userIsDeletedFromChat   //3
+	failedGetUserInfo       //4
+	failedGetUsersForAdd    //5
+	failedDeleteUsers       //6
+	failedRecoveryUsers     //7
+	failedGetChatSettings   //8
+	shortChatName           //9
+	failedSetChatSettings   //10
+	failedDeleteFromList    //11
+	createdChat             //12
+	failedGetUsersForDialog //13
 )
 
 //File API

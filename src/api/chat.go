@@ -407,6 +407,33 @@ func deleteChatFromList(w http.ResponseWriter, r *http.Request) {
 	sendAnswerSuccess(w)
 }
 
+func usersForDialog(w http.ResponseWriter, r *http.Request) {
+	const ref string = "Chat users for dialog API:"
+	var data struct {
+		Token string `json:"token"`
+		Name  string `json:"name"`
+	}
+	err := getJSON(&data, r)
+	if err != nil {
+		decodeFail(ref, err, r, w)
+		return
+	}
+	user, err := TestUserToken(data.Token)
+	if err != nil {
+		sendAnswerError(ref, err, data.Token, invalidToken, 1, w)
+		return
+	}
+	users, err := db.GetUsersForCreateDialog(user.ID, data.Name)
+	if err != nil {
+		sendAnswerError(ref, err,
+			fmt.Sprintf("userID - %d, name - %s", user.ID, data.Name),
+			failedGetUsersForDialog, 2, w)
+		return
+	}
+	finish, _ := json.Marshal(users)
+	fmt.Fprintf(w, string(finish))
+}
+
 func chatAPI(var1 string, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	switch var1 {
@@ -432,6 +459,8 @@ func chatAPI(var1 string, w http.ResponseWriter, r *http.Request) {
 		recoveryUserInDialog(w, r)
 	case "deleteFromList":
 		deleteChatFromList(w, r)
+	case "getUsersForDialog":
+		usersForDialog(w, r)
 	default:
 		sendAnswerError("Chat API Router", nil, "", endPointNotFound, 0, w)
 	}
