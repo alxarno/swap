@@ -76,7 +76,7 @@ type File struct {
 	ChatID    int64   `json:"chat_id"`
 	Name      string  `json:"name"`
 	Path      string  `json:"path"`
-	RatioSize float64 `josn:"ratio"`
+	RatioSize float64 `json:"ratio"`
 	Size      int64   `json:"size"`
 }
 

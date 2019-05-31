@@ -5,6 +5,7 @@ app.db
 data.db
 swap.db
 test.db
+/files
 integration_tests/venv
 /integration_tests/venv
 integration_tests/src/.idea

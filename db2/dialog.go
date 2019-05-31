@@ -53,7 +53,9 @@ func GetUsersForCreateDialog(userID int64, name string) (*[]models.User, error) 
 		Where(fmt.Sprintf("(chat_users.chat_id not in (%s) or chat_users.user_id IS NULL)", s1)).
 		Where("users.id <> ?", userID).
 		// Where("chat_users.user_id <> ?", userID).
-		Where("(users.name like ?", name).Or("users.login like ?)", name)
+		Where("( users.name like ?", name).
+		Or("users.login like ?)", name)
+	// log.Println(query.Get("sql"))
 	if err := query.Scan(&response).Error; err != nil {
 		return nil, DBE(GetChatUserError, err)
 	}

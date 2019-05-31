@@ -134,6 +134,7 @@ func getMyData(w http.ResponseWriter, r *http.Request) {
 	}
 	data := make(map[string]interface{})
 	data["id"] = user.ID
+	data["name"] = user.Name
 	finish, _ := json.Marshal(data)
 	fmt.Fprintf(w, string(finish))
 }
@@ -157,8 +158,8 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 func setSettings(w http.ResponseWriter, r *http.Request) {
 	const ref string = "User set settings API:"
 	var data struct {
-		Token string
-		Name  string
+		Token string `json:"token"`
+		Name  string `json:"name"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	defer r.Body.Close()

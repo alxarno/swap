@@ -56,22 +56,6 @@ var (
 func (s *userConnection) writerUserSys(ws *websocket.Conn) {
 	for sysMsg := range s.SystemMessageChan {
 
-		// if s.KeyExchanged && settings.ServiceSettings.Backend.Cert {
-		// 	encryptedData, err := swapcrypto.EncryptMessage([]byte(sysMsg), s.PublicKey)
-		// 	if err != nil {
-		// 		if debug {
-		// 			log.Println("System encryption error - ", err.Error())
-		// 		}
-		// 		continue
-		// 	}
-		// 	encryptedMessage := models.EncryptedMessage{
-		// 		Data: encryptedData.Data, IV: encryptedData.IV, Key: encryptedData.Key,
-		// 		Type: messageEncrypted,
-		// 	}
-		// 	s.EncryptedChan <- encryptedMessage
-		// 	continue
-		// }
-
 		if err := websocket.Message.Send(ws, string(sysMsg)); err != nil {
 			if debug {
 				log.Println(fmt.Sprintf("%s  %s", writingSystemChannelFailed, err.Error()))
@@ -91,19 +75,6 @@ func (s *userConnection) writerUser(ws *websocket.Conn) {
 			continue
 		}
 
-		// if s.KeyExchanged && settings.ServiceSettings.Backend.Cert {
-		// 	encryptedData, err := swapcrypto.EncryptMessage(nowMessage, s.PublicKey)
-		// 	if err != nil {
-		// 		continue
-		// 	}
-		// 	encryptedMessage := models.EncryptedMessage{
-		// 		Data: encryptedData.Data, IV: encryptedData.IV, Key: encryptedData.Key,
-		// 		Type: messageEncrypted,
-		// 	}
-		// 	s.EncryptedChan <- encryptedMessage
-		// 	continue
-		// }
-
 		if err := websocket.Message.Send(ws, string(nowMessage)); err != nil {
 			if debug {
 				log.Println(fmt.Sprintf("Writer User -> %s  %s", writingMessageChannelFailed, err.Error()))
@@ -112,27 +83,6 @@ func (s *userConnection) writerUser(ws *websocket.Conn) {
 		}
 	}
 }
-
-// func (s *userConnection) writeEncrypted(ws *websocket.Conn) {
-// 	for emsg := range s.EncryptedChan {
-// 		if !s.KeyExchanged || !settings.ServiceSettings.Backend.Cert {
-// 			continue
-// 		}
-// 		encryptedMessage, err := json.Marshal(emsg)
-// 		if err != nil {
-// 			if debug {
-// 				log.Println(fmt.Sprintf("Writer Encrypted-> %s  %s", marshalingMessageFailed, err.Error()))
-// 			}
-// 			continue
-// 		}
-// 		if err := websocket.Message.Send(ws, string(encryptedMessage)); err != nil {
-// 			if debug {
-// 				log.Println(fmt.Sprintf("Writer Encrypted -> %s  %s", writingEncryptedChannelFailed, err.Error()))
-// 			}
-// 			break
-// 		}
-// 	}
-// }
 
 func decodeNewMessage(msg string, connect *userConnection) {
 	var data = make(map[string]interface{})

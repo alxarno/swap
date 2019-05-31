@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/alxarno/swap/models"
 	"github.com/alxarno/swap/settings"
+	"github.com/jinzhu/gorm"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type userRequestedCallback = func(userID int64, chatID int64, messageCommand models.MessageCommand)
@@ -56,7 +56,7 @@ func BeginDB() error {
 	if err != nil {
 		panic("Failed connect")
 	}
-	db.LogMode(false)
+	db.LogMode(true)
 
 	registerModels()
 

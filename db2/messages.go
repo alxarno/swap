@@ -113,8 +113,10 @@ func GetMessages(userID int64, chatID int64, tranches bool, lastID int64) (*[]mo
 				return nil, DBE(GettingFileInfoFailed, err)
 			}
 			docs = append(docs, models.File{
-				ID: doc.ID, AuthorID: doc.AuthorID, ChatID: doc.ChatID,
-				Name: doc.Name, Path: doc.Path, RatioSize: doc.RatioSize,
+				ID: doc.ID, AuthorID: doc.AuthorID,
+				ChatID: doc.ChatID, Size: doc.Size,
+				Name: doc.Name, Path: doc.Path,
+				RatioSize: doc.RatioSize,
 			})
 		}
 		mes := models.MessageContentToUser{
