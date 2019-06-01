@@ -64,7 +64,7 @@ func GetMessages(userID int64, chatID int64, tranches bool, lastID int64) (*[]mo
 	if err := db.Where(&chatUser).First(&chatUser).Error; err != nil {
 		return nil, DBE(GetChatUserError, err)
 	}
-	deletePoints, err := chatUser.GetDeletePoints()
+	deletePoints, err := chatUser.getDeletePoints()
 	if err != nil {
 		return nil, DBE(GetDeletePointsError, err)
 	}

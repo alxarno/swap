@@ -71,6 +71,7 @@ func newMessage(userQuest *string) (models.NewMessageToUser, error) {
 
 	send.ID = messageID
 	send.AuthorID = user.ID
+	send.AuthorLogin = user.Login
 	send.AuthorName = user.Name
 	send.ChatID = data.ChatID
 	send.Content = &newMess
@@ -125,6 +126,7 @@ func newMessageAnother(userQuest string) (models.NewMessageToUser, error) {
 
 	send.ID = messageID
 	send.AuthorID = user.ID
+	send.AuthorLogin = user.Login
 	send.AuthorName = user.Name
 	send.ChatID = dataReceive.Content.ChatID
 	send.Content = &newMess

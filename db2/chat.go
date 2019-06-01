@@ -104,7 +104,7 @@ func InsertUserInChat(userID int64, chatID int64, invited bool) error {
 	var deletePoints [][]int64
 	deletePoints = append(deletePoints, []int64{0, 0})
 	chatUser.Start = time.Now().Unix()
-	chatUser.SetDeletePoints(deletePoints)
+	chatUser.setDeletePoints(deletePoints)
 	if err := db.Create(&chatUser).Error; err != nil {
 		return DBE(InsertUserInChatError, err)
 	}
@@ -197,7 +197,7 @@ func DeleteUsersInChat(usersIDs []int64, chatID int64, deleteByYourself bool) er
 			log.Println(GetChatUserError, err, fmt.Sprintf("User = %d, Chat = %d", v, chatID))
 			continue
 		}
-		deletePoints, err := chatUser.GetDeletePoints()
+		deletePoints, err := chatUser.getDeletePoints()
 		if err != nil {
 			log.Println(GetDeletePointsError, err, fmt.Sprintf("ChatUser = %d", chatUser.ID))
 			continue
@@ -211,7 +211,7 @@ func DeleteUsersInChat(usersIDs []int64, chatID int64, deleteByYourself bool) er
 			if deleteByYourself {
 				chatUser.Ban = false
 			}
-			err := chatUser.SetDeletePoints(deletePoints)
+			err := chatUser.setDeletePoints(deletePoints)
 			if err != nil {
 				log.Println(SetDeletePointsError, err,
 					fmt.Sprintf("Chat User = %d, Delete Points = %#v", chatUser.ID, deletePoints))
@@ -254,7 +254,7 @@ func RecoveryUsersInChat(userIDs []int64, chatID int64, recoveryByYourself bool)
 		} else {
 			c.Ban = false
 		}
-		deletePoints, err := c.GetDeletePoints()
+		deletePoints, err := c.getDeletePoints()
 		if err != nil {
 			log.Println(GetDeletePointsError, err, fmt.Sprintf("ChatUser = %d", c.ID))
 			continue
@@ -266,7 +266,7 @@ func RecoveryUsersInChat(userIDs []int64, chatID int64, recoveryByYourself bool)
 			//Adding new delete point for future
 			deletePoints = append(deletePoints, []int64{0, 0})
 			c.DeleteLast = 0
-			err := c.SetDeletePoints(deletePoints)
+			err := c.setDeletePoints(deletePoints)
 			if err != nil {
 				log.Println(SetDeletePointsError, err,
 					fmt.Sprintf("Chat User = %d, Delete Points = %#v", c.ID, deletePoints))

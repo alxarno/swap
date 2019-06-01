@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
 	"github.com/alxarno/swap/models"
 )
@@ -138,9 +139,11 @@ func GetUsersChatsIDs(userID int64) (*[]int64, error) {
 //GetOnlineUsersIDsInChat - return online users IDs in chats by online usesrs slice
 func GetOnlineUsersIDsInChat(chatsID *[]int64, usersOnlineID *[]int64) (*[]int64, error) {
 	res := []int64{}
-	query := db.Model(&ChatUser{}).Where("user_id", usersOnlineID).
-		Where("chat_id", chatsID).Where("ban = ?", 0).Where("list_invisible = 0").
-		Where("delete_last = ?", 0)
+	// Should transcode []int64 to string because gorm is unsupported []int64 and make wrong default transcode
+	// I think we can optimize the transcode for better performance
+	query := db.Model(&ChatUser{}).Where(fmt.Sprintf("user_id in (%s)", intToString(usersOnlineID))).
+		Where(fmt.Sprintf("chat_id in (%s)", intToString(chatsID))).Where("ban = 0").Where("list_invisible = 0").
+		Where("delete_last = 0")
 	if err := query.Pluck("user_id", &res).Error; err != nil {
 		return nil, DBE(GetChatUserError, err)
 	}
