@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/robbert229/jwt"
 	db "github.com/alxarno/swap/db2"
 	"github.com/alxarno/swap/settings"
+	"github.com/robbert229/jwt"
 )
 
 type fileInfo struct {
@@ -19,12 +19,14 @@ type fileInfo struct {
 	token     string
 	fileType  string
 	chatID    int64
+	duration  int64
 	name      string
 }
 type fileInfoBuff struct {
 	ratioSize string
 	token     string
 	fileType  string
+	duration  string
 	chatID    string
 	name      string
 }
@@ -44,6 +46,11 @@ func rebuildFileDataTypes(buff fileInfoBuff) (fileInfo, error) {
 	res.chatID = cID
 	res.name = buff.name
 	res.fileType = buff.fileType
+	duration, err := strconv.ParseInt(buff.duration, 10, 64)
+	if err != nil {
+		return res, err
+	}
+	res.duration = duration
 	return res, nil
 }
 
@@ -60,6 +67,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	buff.chatID = r.FormValue("chat_id")
 	buff.name = r.FormValue("name")
 	buff.fileType = r.FormValue("type")
+	buff.duration = r.FormValue("duration")
 
 	// fmt.Println(buff)
 
@@ -79,7 +87,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, fmt.Sprintf("Data - %v", buff), failedRebuildDataTypes, 3, w)
 		return
 	}
-	id, path, err := db.CreateFile(fD.name, handler.Size, user.ID, fD.chatID, fD.ratioSize)
+	id, path, err := db.CreateFile(fD.name, handler.Size, user.ID, fD.chatID, fD.ratioSize, fD.duration)
 	if err != nil {
 		sendAnswerError(ref, err, "", failedCreatFile, 4, w)
 		return
@@ -170,18 +178,20 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, "", failedGetSettings, 3, w)
 		return
 	}
+	timeoff := time.Now().Unix() + (60 * 2)
 	secret := sett.Backend.SecretKeyForToken
 	algorithm := jwt.HmacSha256(secret)
 	claims := jwt.NewClaim()
 	claims.Set("path", path)
 	claims.Set("user_id", user.ID)
-	claims.Set("time", time.Now().Unix()+60)
+	claims.Set("time", timeoff)
 	link, err := algorithm.Encode(claims)
 	if err != nil {
 		sendAnswerError(ref, err, "", failedEncodeData, 4, w)
 		return
 	}
-	var x = make(map[string]string)
+	var x = make(map[string]interface{})
+	x["timeoff"] = timeoff
 	x["link"] = link
 	x["result"] = successResult
 	finish, _ := json.Marshal(x)

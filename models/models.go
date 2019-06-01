@@ -78,6 +78,7 @@ type File struct {
 	Path      string  `json:"path"`
 	RatioSize float64 `json:"ratio"`
 	Size      int64   `json:"size"`
+	Duration int64 `json:"duration"`
 }
 
 //type MessageContent struct{

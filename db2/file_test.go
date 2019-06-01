@@ -37,13 +37,13 @@ func TestCreateFile(t *testing.T) {
 		return
 	}
 
-	fileID, filePath, err := CreateFile("file1.png", 1<<20, user1.ID, chatID, 1.9)
+	fileID, filePath, err := CreateFile("file1.png", 1<<20, user1.ID, chatID, 1.9, 0)
 	if err != nil {
 		t.Error(testCreatingFileFailed, err.Error())
 		return
 	}
 
-	_, _, err = CreateFile("file2.png", 1<<20, user2.ID, chatID, 1.5)
+	_, _, err = CreateFile("file2.png", 1<<20, user2.ID, chatID, 1.5, 0)
 	if err == nil {
 		t.Error("User isn't in chat but send file to it")
 		return
@@ -82,7 +82,7 @@ func TestDeleteFile(t *testing.T) {
 		t.Error(testCreateChatError, err.Error())
 		return
 	}
-	fileID, _, err := CreateFile("file1.png", 1<<20, user1.ID, chatID, 1.9)
+	fileID, _, err := CreateFile("file1.png", 1<<20, user1.ID, chatID, 1.9, 0)
 	if err != nil {
 		t.Error(testCreatingFileFailed, err.Error())
 		return
@@ -100,7 +100,7 @@ func TestDeleteFile(t *testing.T) {
 		return
 	}
 
-	fileID, _, err = CreateFile("file2.png", 1<<20, user1.ID, chatID, 1.9)
+	fileID, _, err = CreateFile("file2.png", 1<<20, user1.ID, chatID, 1.9, 0)
 	if err != nil {
 		t.Error(testCreatingFileFailed, err.Error())
 		return
@@ -146,7 +146,7 @@ func TestCheckFileRights(t *testing.T) {
 	if err != nil {
 		t.Error(testCannotInsertUserToChat, err.Error())
 	}
-	fileID, _, err := CreateFile("file2.png", 1<<20, user1.ID, chatID, 1.9)
+	fileID, _, err := CreateFile("file2.png", 1<<20, user1.ID, chatID, 1.9, 0)
 	if err != nil {
 		t.Error(testCreatingFileFailed, err.Error())
 		return

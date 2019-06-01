@@ -29,7 +29,7 @@ func getRandomString(len int) (string, error) {
 
 //CreateFile - insert file data into db
 func CreateFile(name string, size int64, userID int64,
-	chatID int64, ratio float64) (int64, string, error) {
+	chatID int64, ratio float64, duration int64) (int64, string, error) {
 
 	deleted, err := CheckUserInChatDeleted(userID, chatID)
 	if err != nil {
@@ -52,7 +52,7 @@ func CreateFile(name string, size int64, userID int64,
 
 	f := File{
 		Name: name, Path: path, RatioSize: ratio, Size: size,
-		AuthorID: userID, ChatID: chatID,
+		AuthorID: userID, ChatID: chatID, Duration: duration,
 	}
 	if err := db.Create(&f).Error; err != nil {
 		return f.ID, f.Path, DBE(FileInsertingFailed, err)

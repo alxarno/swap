@@ -72,6 +72,7 @@ type File struct {
 	Path      string
 	RatioSize float64 `gorm:"DEFAULT:0"`
 	Size      int64   `gorm:"DEFAULT:0"`
+	Duration int64 `gorm:"DEFAULT:0"`
 }
 
 func (u *File) TableName() string {

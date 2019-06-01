@@ -58,7 +58,7 @@ func newMessage(userQuest *string) (models.NewMessageToUser, error) {
 			continue
 		}
 		documents = append(documents, models.File{
-			AuthorID: doc.AuthorID, ChatID: doc.ChatID, ID: doc.ID,
+			AuthorID: doc.AuthorID, ChatID: doc.ChatID, ID: doc.ID, Duration: doc.Duration,
 			Name: doc.Name, Path: doc.Path, RatioSize: doc.RatioSize, Size: doc.Size,
 		})
 	}
@@ -113,7 +113,8 @@ func newMessageAnother(userQuest string) (models.NewMessageToUser, error) {
 		}
 		documents = append(documents, models.File{
 			AuthorID: doc.AuthorID, ChatID: doc.ChatID,
-			ID: doc.ID, Name: doc.Name, Path: doc.Path,
+			Duration: doc.Duration,
+			ID:       doc.ID, Name: doc.Name, Path: doc.Path,
 			RatioSize: doc.RatioSize, Size: doc.Size,
 		})
 	}
