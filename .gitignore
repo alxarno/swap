@@ -16,3 +16,4 @@ swap.crt
 swap.key
 *.crt
 *.key
+swap.json
