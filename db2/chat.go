@@ -163,7 +163,7 @@ func CheckUserRights(userID int64, chatID int64) error {
 //GetChatsUsers - returning user's ids in the certain chat
 func GetChatsUsers(chatID int64) (*[]int64, error) {
 	users := []int64{}
-	if err := db.Find(&ChatUser{}).Where("chat_id = ?", chatID).
+	if err := db.Model(&ChatUser{}).Where("chat_id = ?", chatID).
 		Pluck("user_id", &users).Error; err != nil {
 		return &users, DBE(GetUserError, err)
 	}

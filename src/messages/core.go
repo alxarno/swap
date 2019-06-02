@@ -67,6 +67,7 @@ func (s *userConnection) writerUserSys(ws *websocket.Conn) {
 
 func (s *userConnection) writerUser(ws *websocket.Conn) {
 	for msg := range s.MessageChan {
+
 		nowMessage, err := json.Marshal(msg)
 		if err != nil {
 			if debug {
@@ -161,6 +162,7 @@ func broadcaster() {
 			if err != nil {
 				continue
 			}
+			log.Println(chatsUsers)
 			for _, user := range users {
 				for _, v := range *chatsUsers {
 					if v == user.UserID {

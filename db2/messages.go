@@ -2,6 +2,7 @@ package db2
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/alxarno/swap/models"
@@ -73,24 +74,31 @@ func GetMessages(userID int64, chatID int64, tranches bool, lastID int64) (*[]mo
 		Joins("INNER JOIN users ON messages.author_id = users.id").
 		Where("messages.chat_id = ?", chatID)
 	if ChatMode(chatUser.Chat.Type) != ChannelType {
+		subquery := ""
 		for i := 0; i < len(deletePoints); i++ {
 			// User never as deleted
 			if i == 0 && deletePoints[0][0] == 0 {
-				query = query.Where("messages.time >= ?", chatUser.Start)
+				// query = query.Where("messages.time >= ?", chatUser.Start)
+				subquery += fmt.Sprintf(" messages.time >= %d", chatUser.Start)
 			} else {
 				if i == 0 {
 					//From chat joined to first delete date
-					query = query.Where("messages.time >= ?", chatUser.Start).
-						Where("messages.time<?", deletePoints[i][0])
+					// query = query.Where("( messages.time >= ?", chatUser.Start).
+					// Where("messages.time<? )", deletePoints[i][0])
+					subquery += fmt.Sprintf(" ((messages.time >= %d) AND (messages.time < %d))", chatUser.Start, deletePoints[i][0])
 				} else {
-					query = query.Where("messages.time >= ?", deletePoints[i-1][1]).
-						Where("messages.time <= ?", deletePoints[i][0])
+					// query = query.Or("( messages.time >= ?", deletePoints[i-1][1]).
+					// Where("messages.time <= ? )", deletePoints[i][0])
+					subquery += fmt.Sprintf(" OR ((messages.time >= %d) AND (messages.time <= %d))", deletePoints[i-1][1], deletePoints[i][0])
 					if deletePoints[i][0] == 0 {
-						query = query.Where("messages.time >= ?", deletePoints[i-1][1])
+						// query = query.Where("messages.time >= ?", deletePoints[i-1][1])
+						subquery += fmt.Sprintf(" OR (messages.time >= %d)", deletePoints[i-1][1])
 					}
 				}
 			}
 		}
+		query = query.Where(subquery)
+		// fmt.Println(subquery)
 		if tranches {
 			query = query.Where("messages.id > ?", lastID)
 		}
