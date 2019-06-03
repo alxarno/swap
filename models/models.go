@@ -28,7 +28,8 @@ type UserChatInfo struct {
 	LastMessage     *MessageContent `json:"last_message"`
 	LastMessageTime int64           `json:"last_message_time"`
 	View            int             `json:"view"`
-	Delete          bool            `json:"delete"`
+	Deleted         bool            `json:"deleted"`
+	Banned          bool            `json:"banned"`
 	Online          int64           `json:"online"`
 }
 type MessageContent struct {
@@ -78,7 +79,7 @@ type File struct {
 	Path      string  `json:"path"`
 	RatioSize float64 `json:"ratio"`
 	Size      int64   `json:"size"`
-	Duration int64 `json:"duration"`
+	Duration  int64   `json:"duration"`
 }
 
 //type MessageContent struct{
@@ -104,7 +105,7 @@ type ChatSettings struct {
 	Name string `json:"name"`
 }
 
-type UserChatsInfo struct {
+type FolkChatsInfo struct {
 	ID         int64  `json:"id"`
 	Login      string `json:"login"`
 	Name       string `json:"name"`

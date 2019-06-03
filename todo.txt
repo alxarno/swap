@@ -16,8 +16,6 @@ TODO:
   Dont recreate DB file in db tests
   Replace anon functions and create handlers for user prof...
 
-  Change audio play architecture
-
   Create bundling
 
   Greaceful shootdown

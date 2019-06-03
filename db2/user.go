@@ -119,8 +119,9 @@ func GetUserChats(userID int64) (*[]models.UserChatInfo, error) {
 		res = append(res, models.UserChatInfo{
 			ID: v.ID, Name: v.Name, Type: v.Type,
 			LastSender: mes.Author.Name, AdminID: v.AuthorID,
+			Banned:      v.Ban,
 			LastMessage: &msgContent, LastMessageTime: mes.Time,
-			View: 0, Delete: deleted, Online: 0})
+			View: 0, Deleted: deleted, Online: 0})
 	}
 	return &res, nil
 }

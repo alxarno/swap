@@ -171,8 +171,8 @@ func GetChatsUsers(chatID int64) (*[]int64, error) {
 }
 
 //GetChatUsersInfo - returning user's chat info by certain chat
-func GetChatUsersInfo(chatID int64) (*[]models.UserChatsInfo, error) {
-	data := []models.UserChatsInfo{}
+func GetChatUsersInfo(chatID int64) (*[]models.FolkChatsInfo, error) {
+	data := []models.FolkChatsInfo{}
 	err := db.Table("chat_users").
 		Select("users.id, users.login,users.name,chat_users.delete_last,chat_users.ban").
 		Joins("inner join users on  chat_users.user_id = users.id").
@@ -221,12 +221,13 @@ func DeleteUsersInChat(usersIDs []int64, chatID int64, deleteByYourself bool) er
 				log.Println(UpdateChatUserError, err)
 				continue
 			}
+			//Send message
 		}
 	}
 	return nil
 }
 
-//CheckUserInChatDeleted - check user delete stat, if users deleted return true, else false
+// CheckUserInChatDeleted - check user delete stat, if users deleted return true, else false
 func CheckUserInChatDeleted(userID int64, chatID int64) (bool, error) {
 	cuser := ChatUser{UserID: userID, ChatID: chatID}
 	if err := db.Where(&cuser).First(&cuser).Error; err != nil {
@@ -238,7 +239,7 @@ func CheckUserInChatDeleted(userID int64, chatID int64) (bool, error) {
 	return false, nil
 }
 
-//RecoveryUsersInChat - recovery users for chats if they're was deleted, but not banned
+// RecoveryUsersInChat - recovery users for chats if they're was deleted, but not banned
 func RecoveryUsersInChat(userIDs []int64, chatID int64, recoveryByYourself bool) error {
 	for _, v := range userIDs {
 		c := ChatUser{UserID: v, ChatID: chatID}
@@ -263,7 +264,7 @@ func RecoveryUsersInChat(userIDs []int64, chatID int64, recoveryByYourself bool)
 		// If user already deleted, because delete point - [startDel, endDel], ...
 		if deletePoints[dplen-1][1] == 0 {
 			deletePoints[dplen-1][1] = time.Now().Unix()
-			//Adding new delete point for future
+			// Adding new delete point for future
 			deletePoints = append(deletePoints, []int64{0, 0})
 			c.DeleteLast = 0
 			err := c.setDeletePoints(deletePoints)
@@ -276,6 +277,7 @@ func RecoveryUsersInChat(userIDs []int64, chatID int64, recoveryByYourself bool)
 				log.Println(UpdateChatUserError, err)
 				continue
 			}
+			//Send message
 		}
 	}
 	return nil
