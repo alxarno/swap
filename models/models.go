@@ -119,3 +119,11 @@ type EncryptedMessage struct {
 	IV   string `json:"iv"`
 	Key  string `json:"key"`
 }
+
+type MiddleWareMessage struct {
+	ID       int64
+	chatID   int64
+	command  MessageCommand
+	authorID int64
+	time     int64
+}

@@ -124,18 +124,22 @@ func InsertUserInChat(userID int64, chatID int64, invited bool) error {
 		case ChannelType:
 			command = models.MessageCommandUserInsertedToChannel
 		}
-		if UserRequestedToChat != nil {
-			UserRequestedToChat(userID, chatID, command)
-		}
 	}
-	index, err := SendMessage(userID, chatID, "", []int64{}, SystemMessageType, command)
+
+	index, err := SendMessage(userID, chatID, "", []int64{}, models.SystemMessageType, command)
 	if err != nil {
 		return DBE(SendMessageError, err)
 	}
-	if SendUserMessageToSocket != nil {
-		SendUserMessageToSocket(index, chatID,
-			&models.MessageContentToUser{Command: int(command), Documents: &([]models.File{}), Message: "", Type: int(SystemMessageType)},
-			userID, chatUser.Start+1)
+
+	if SendUserMessageToSocket != nil && invited {
+		SendUserMessageToSocket(
+			index, chatID,
+			command,
+			userID,
+			chatUser.Start+1)
+	}
+	if UserRequestedToChat != nil && invited {
+		UserRequestedToChat(userID)
 	}
 
 	return nil
@@ -214,7 +218,7 @@ func DeleteUsersInChat(usersIDs []int64, chatID int64, deleteByYourself bool) er
 				messageCommand = models.MessageCommandUserLeaveChat
 			}
 
-			index, err := SendMessage(v, chatID, "", []int64{}, SystemMessageType, messageCommand)
+			index, err := SendMessage(v, chatID, "", []int64{}, models.SystemMessageType, messageCommand)
 			if err != nil {
 				return DBE(SendMessageError, err)
 			}
@@ -232,7 +236,7 @@ func DeleteUsersInChat(usersIDs []int64, chatID int64, deleteByYourself bool) er
 
 			if SendUserMessageToSocket != nil {
 				SendUserMessageToSocket(index, chatID,
-					&models.MessageContentToUser{Command: int(messageCommand), Documents: &([]models.File{}), Message: "", Type: int(SystemMessageType)},
+					messageCommand,
 					v, chatUser.DeleteLast)
 			}
 
@@ -302,14 +306,15 @@ func RecoveryUsersInChat(userIDs []int64, chatID int64, recoveryByYourself bool)
 				continue
 			}
 
-			index, err := SendMessage(v, chatID, "", []int64{}, SystemMessageType, messageCommand)
+			index, err := SendMessage(v, chatID, "", []int64{}, models.SystemMessageType, messageCommand)
 			if err != nil {
 				return DBE(SendMessageError, err)
 			}
 
 			if SendUserMessageToSocket != nil {
 				SendUserMessageToSocket(index, chatID,
-					&models.MessageContentToUser{Command: int(messageCommand), Documents: &([]models.File{}), Message: "", Type: int(SystemMessageType)},
+					// &models.MessageContentToUser{Command: int(messageCommand), Documents: &([]models.File{}), Message: "", Type: int(SystemMessageType)},
+					messageCommand,
 					v, deletePoints[dplen-1][1])
 			}
 

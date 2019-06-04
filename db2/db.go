@@ -12,10 +12,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type userRequestedCallback = func(userID int64, chatID int64, messageCommand models.MessageCommand)
+type userRequestedCallback = func(userID int64)
 type chatCreatedCallback = func(authorId int64)
 type userDeleted = func(userID int64, chatID int64)
-type sendUserMessage = func(mID int64, chatID int64, content *models.MessageContentToUser, authorID int64, time int64)
+type sendUserMessage = func(mID int64, chatID int64, command models.MessageCommand, authorID int64, time int64)
 
 var (
 	db         *gorm.DB

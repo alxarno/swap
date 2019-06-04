@@ -18,4 +18,14 @@ const (
 
 // const
 
+//MessageType - type for message type's aliases
+type MessageType int
+
+const (
+	//SystemMessageType - system message alias
+	SystemMessageType MessageType = 1
+	//UserMessageType - user message alias
+	UserMessageType MessageType = 0
+)
+
 // const User

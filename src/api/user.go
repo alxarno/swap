@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"unicode/utf8"
@@ -10,6 +11,13 @@ import (
 	"github.com/alxarno/swap/models"
 
 	db "github.com/alxarno/swap/db2"
+)
+
+type onlineUsers = func(users *[]int64) int64
+
+var (
+	// GetOnlineUsers - external function in 'messages'  for getting online users count
+	GetOnlineUsers onlineUsers
 )
 
 func enter(w http.ResponseWriter, r *http.Request) {
@@ -116,10 +124,20 @@ func getMyChats(w http.ResponseWriter, r *http.Request) {
 	}
 	var finish []byte
 	if chats == nil {
-		// log.Println("empty chats")
 		finish = []byte("[]")
 	} else {
-		// log.Println("Not empty chats")
+		if GetOnlineUsers != nil {
+			for i, v := range *chats {
+				chatUsers, err := db.GetChatsUsers(v.ID)
+				if err != nil {
+					log.Println(fmt.Sprintf("%s Cant get chat users -> %s", ref, err))
+					continue
+				}
+
+				v.Online = GetOnlineUsers(chatUsers)
+				(*chats)[i] = v
+			}
+		}
 		finish, _ = json.Marshal(*chats)
 	}
 	fmt.Fprintf(w, string(finish))

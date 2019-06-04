@@ -8,15 +8,8 @@ import (
 	"github.com/alxarno/swap/models"
 )
 
-//MessageType - type for message type's aliases
-type MessageType int
-
 const (
-	//SystemMessageType - system message alias - "a_msg"
-	SystemMessageType MessageType = 1
-	//UserMessageType - user message alias - "u_msg"
-	UserMessageType      MessageType = 0
-	messsageTrancheLimit             = 80
+	messsageTrancheLimit = 80
 )
 
 const (
@@ -143,7 +136,7 @@ func GetMessages(userID int64, chatID int64, tranches bool, lastID int64) (*[]mo
 
 //SendMessage - handle inserting message into db
 func SendMessage(userID int64, chatID int64, content string, docs []int64,
-	mtype MessageType, command models.MessageCommand) (int64, error) {
+	mtype models.MessageType, command models.MessageCommand) (int64, error) {
 	mcontent := models.MessageContent{
 		Command: int(command), Type: int(mtype),
 		Documents: docs, Message: content,

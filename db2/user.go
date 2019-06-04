@@ -146,7 +146,7 @@ func GetOnlineUsersIDsInChat(chatsID *[]int64, usersOnlineID *[]int64) (*[]int64
 	query := db.Model(&ChatUser{}).Where(fmt.Sprintf("user_id in (%s)", intToString(usersOnlineID))).
 		Where(fmt.Sprintf("chat_id in (%s)", intToString(chatsID))).Where("ban = 0").Where("list_invisible = 0").
 		Where("delete_last = 0")
-	if err := query.Pluck("user_id", &res).Error; err != nil {
+	if err := query.Pluck("DISTINCT(user_id)", &res).Error; err != nil {
 		return nil, DBE(GetChatUserError, err)
 	}
 	return &res, nil

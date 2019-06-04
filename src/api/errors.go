@@ -26,6 +26,7 @@ const (
 	createdChat              //12
 	failedGetUsersForDialog  //13
 	onlyYourselfForLeaveChat //14
+	failedGetChatUsers       //15
 )
 
 //File API

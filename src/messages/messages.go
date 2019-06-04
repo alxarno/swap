@@ -44,7 +44,7 @@ func newMessage(userQuest *string) (models.NewMessageToUser, error) {
 
 	messageID, err := db.SendMessage(user.ID, data.ChatID,
 		(*data.Content).Message, (*data.Content).Documents,
-		db.UserMessageType, models.MessageCommandNull)
+		models.UserMessageType, models.MessageCommandNull)
 	if err != nil {
 		return send, err
 	}
@@ -99,7 +99,7 @@ func newMessageAnother(userQuest string) (models.NewMessageToUser, error) {
 
 	messageID, err := db.SendMessage(user.ID, dataReceive.Content.ChatID,
 		dataReceive.Content.Content.Message, dataReceive.Content.Content.Documents,
-		db.UserMessageType, models.MessageCommandNull)
+		models.UserMessageType, models.MessageCommandNull)
 	if err != nil {
 		return send, err
 	}
@@ -135,7 +135,7 @@ func newMessageAnother(userQuest string) (models.NewMessageToUser, error) {
 	return send, nil
 }
 
-func userMessageFromPure(mID int64, chatID int64, content *models.MessageContentToUser, authorID int64, time int64) (message models.NewMessageToUser, err error) {
+func userMessageFromPure(mID int64, chatID int64, command models.MessageCommand, authorID int64, time int64) (message models.NewMessageToUser, err error) {
 	user, err := db.GetUserByID(authorID)
 	if err != nil {
 		return
@@ -147,6 +147,6 @@ func userMessageFromPure(mID int64, chatID int64, content *models.MessageContent
 	message.ID = mID
 	message.Time = time
 	message.Type = messageTypeUser
-	message.Content = content
+	message.Content = &models.MessageContentToUser{Command: int(command), Documents: &([]models.File{}), Message: "", Type: int(models.SystemMessageType)}
 	return
 }

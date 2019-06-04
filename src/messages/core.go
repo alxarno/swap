@@ -100,23 +100,11 @@ func decodeNewMessage(msg string, connect *userConnection) {
 			log.Println(fmt.Sprintf("Decode Sytem Message -> %s  %s", unmarshalingMessageFailed, err.Error()))
 			return
 		}
-
-		if sMessage.Action == messageActionKeyExchange {
-			keyExchangeHandler(sMessage, connect)
-		}
-
 		if sMessage.Action == messageActionAuth {
 			authHandler(sMessage, connect)
 		}
 		break
-	case messageEncrypted:
-		encryptedMessage, err := encryptedMsg(msg)
-		if err != nil {
-			log.Println(fmt.Sprintf("Decode Encrypted Message -> %s  %s", unmarshalingMessageFailed, err.Error()))
-			return
-		}
-		encryptedHandler(encryptedMessage, connect)
-		break
+
 	case messageTypeUser:
 		messageToUser, err := userMsg(msg)
 		if err != nil {
@@ -135,8 +123,7 @@ func ConnectionHandler(ws *websocket.Conn) {
 	user := &userConnection{}
 	user.MessageChan = make(chan models.NewMessageToUser)
 	user.SystemMessageChan = make(chan string)
-	// user.EncryptedChan = make(chan models.EncryptedMessage)
-	// go user.writeEncrypted(ws)
+
 	go user.writerUser(ws)
 	go user.writerUserSys(ws)
 
@@ -162,7 +149,7 @@ func broadcaster() {
 			if err != nil {
 				continue
 			}
-			log.Println(chatsUsers)
+			// log.Println(chatsUsers)
 			for _, user := range users {
 				for _, v := range *chatsUsers {
 					if v == user.UserID {
