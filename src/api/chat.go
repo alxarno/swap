@@ -235,6 +235,32 @@ func leaveChat(w http.ResponseWriter, r *http.Request) {
 	sendAnswerSuccess(w)
 }
 
+func turnBackToChat(w http.ResponseWriter, r *http.Request) {
+	const ref string = "Turn Back to Chat API:"
+	var data struct {
+		Token  string `json:"token"`
+		ChatID int64  `json:"chat_id,integer"`
+	}
+	err := getJSON(&data, r)
+	if err != nil {
+		decodeFail(ref, err, r, w)
+		return
+	}
+	user, err := TestUserToken(data.Token)
+	if err != nil {
+		sendAnswerError(ref, err, data.Token, invalidToken, 1, w)
+		return
+	}
+	err = db.RecoveryUsersInChat([]int64{user.ID}, data.ChatID, true)
+	if err != nil {
+		sendAnswerError(ref, err,
+			fmt.Sprintf("chatID - %d, ID - %d", data.ChatID, user.ID),
+			failedDeleteUsers, 4, w)
+		return
+	}
+	sendAnswerSuccess(w)
+}
+
 func recoveryUsers(w http.ResponseWriter, r *http.Request) {
 	const ref string = "Chat recovery users API:"
 	var data struct {
@@ -475,6 +501,8 @@ func chatAPI(var1 string, w http.ResponseWriter, r *http.Request) {
 		deleteUsers(w, r)
 	case "leaveChat":
 		leaveChat(w, r)
+	case "turnBackToChat":
+		turnBackToChat(w, r)
 	case "recoveryUsers":
 		recoveryUsers(w, r)
 	case "getSettings":

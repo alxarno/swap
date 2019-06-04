@@ -92,7 +92,7 @@ func CheckFileRights(userID int64, fileID int64) (string, error) {
 		Joins("inner join files on files.chat_id = chats.id").
 		Where("chat_users.id IS NOT NULL").
 		Where("chat_users.list_invisible = ?", 0).
-		Where("chat_users.delete_last = ?", 0).
+		// Where("chat_users.delete_last = ?", 0).
 		Where("users.id = ?", userID).
 		Where("files.id = ?", fileID)
 	if err := query.Pluck("files.path", &path).Error; err != nil {
