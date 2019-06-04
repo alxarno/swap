@@ -9,13 +9,13 @@ import (
 )
 
 //MessageType - type for message type's aliases
-type MessageType string
+type MessageType int
 
 const (
 	//SystemMessageType - system message alias - "a_msg"
-	SystemMessageType MessageType = "a_msg"
+	SystemMessageType MessageType = 1
 	//UserMessageType - user message alias - "u_msg"
-	UserMessageType      MessageType = "u_msg"
+	UserMessageType      MessageType = 0
 	messsageTrancheLimit             = 80
 )
 
@@ -49,7 +49,7 @@ func addMessage(userID int64, chatID int64, content string) (int64, error) {
 		AuthorID: userID,
 		Content:  content,
 		ChatID:   chatID,
-		Time:     time.Now().Unix(),
+		Time:     time.Now().UnixNano() / 1000000,
 	}
 	if err := db.Create(&m).Error; err != nil {
 		return 0, DBE(MessageInsertingFailed, err)
@@ -145,7 +145,7 @@ func GetMessages(userID int64, chatID int64, tranches bool, lastID int64) (*[]mo
 func SendMessage(userID int64, chatID int64, content string, docs []int64,
 	mtype MessageType, command models.MessageCommand) (int64, error) {
 	mcontent := models.MessageContent{
-		Command: int(command), Type: string(mtype),
+		Command: int(command), Type: int(mtype),
 		Documents: docs, Message: content,
 	}
 
@@ -157,5 +157,6 @@ func SendMessage(userID int64, chatID int64, content string, docs []int64,
 	if err != nil {
 		return 0, DBE(AddingMessageFailed, err)
 	}
+
 	return lastID, nil
 }

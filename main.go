@@ -90,6 +90,7 @@ func main() {
 	}
 
 	engine.StartCoreMessenger(*test)
+	engine.ConnectActionsToDB()
 
 	router := newRouter()
 	myAddres := ""

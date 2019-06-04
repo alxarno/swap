@@ -10,8 +10,9 @@ import (
 
 //ConnectActionsToDB - Bind callbacks
 func ConnectActionsToDB() {
-	db.ChatCreated = chatCreated
-	db.UserRequestedToChat = requestedToChat
+	// db.ChatCreated = chatCreated
+	// db.UserRequestedToChat = requestedToChat
+	db.SendUserMessageToSocket = SendUserMessage
 }
 
 //chatCreated - send notifications about chat creation

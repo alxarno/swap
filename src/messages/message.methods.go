@@ -62,7 +62,7 @@ func userMsg(msg string) (*models.NewMessageToUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	message.Time = time.Now().Unix()
+	message.Time = time.Now().UnixNano() / 1000000
 	return &message, nil
 
 }

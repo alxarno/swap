@@ -14,6 +14,8 @@ import (
 
 type userRequestedCallback = func(userID int64, chatID int64, messageCommand models.MessageCommand)
 type chatCreatedCallback = func(authorId int64)
+type userDeleted = func(userID int64, chatID int64)
+type sendUserMessage = func(mID int64, chatID int64, content *models.MessageContentToUser, authorID int64, time int64)
 
 var (
 	db         *gorm.DB
@@ -22,6 +24,9 @@ var (
 	UserRequestedToChat userRequestedCallback
 	//ChatCreated - is a callback triggered when user creating chat(uses for sending notifications by WS)
 	ChatCreated chatCreatedCallback
+	// SnedUserMessage - using for sending message
+	SendUserMessageToSocket sendUserMessage
+	// MessageAddedCallback
 )
 
 func createTestDB(t *testing.T) {

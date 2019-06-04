@@ -35,7 +35,7 @@ type UserChatInfo struct {
 type MessageContent struct {
 	Message   string  `json:"content"`
 	Documents []int64 `json:"documents"`
-	Type      string  `json:"type"`
+	Type      int     `json:"type"`
 	Command   int     `json:"command,integer"`
 }
 type User struct {
@@ -67,7 +67,7 @@ type CreateDHData struct {
 type MessageContentToUser struct {
 	Message   string  `json:"content"`
 	Documents *[]File `json:"documents"`
-	Type      string  `json:"type"`
+	Type      int     `json:"type"`
 	Command   int     `json:"command,integer"`
 }
 

@@ -23,7 +23,7 @@ type newMessageReceive struct {
 type messageContentReceive struct {
 	Message   string  `json:"content"`
 	Documents []int64 `json:"documents"`
-	Type      string  `json:"type"`
+	Type      int     `json:"type"`
 }
 
 func newMessage(userQuest *string) (models.NewMessageToUser, error) {
@@ -133,5 +133,20 @@ func newMessageAnother(userQuest string) (models.NewMessageToUser, error) {
 	send.Content = &newMess
 	send.Type = messageTypeUser
 	return send, nil
+}
 
+func userMessageFromPure(mID int64, chatID int64, content *models.MessageContentToUser, authorID int64, time int64) (message models.NewMessageToUser, err error) {
+	user, err := db.GetUserByID(authorID)
+	if err != nil {
+		return
+	}
+	message.AuthorID = user.ID
+	message.AuthorLogin = user.Login
+	message.AuthorName = user.Name
+	message.ChatID = chatID
+	message.ID = mID
+	message.Time = time
+	message.Type = messageTypeUser
+	message.Content = content
+	return
 }

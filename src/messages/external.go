@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 	"errors"
+	"log"
 
 	"github.com/alxarno/swap/models"
 	"github.com/alxarno/swap/src/api"
@@ -51,6 +52,17 @@ func GetOnlineUsersInChat(userIDs *[]int64) int64 {
 		}
 	}
 	return count
+}
+
+// SendUserMessage - send user message to sockets
+func SendUserMessage(mID int64, chatID int64, content *models.MessageContentToUser, authorID int64, time int64) {
+	message, err := userMessageFromPure(mID, chatID, content, authorID, time)
+	if err != nil {
+		log.Println("SendUSerMessage extrenal.go -> ", err.Error())
+		return
+	}
+
+	sendMessages <- message
 }
 
 //SendMessage - send message

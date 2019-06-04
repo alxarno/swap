@@ -104,8 +104,9 @@ func GetUserChats(userID int64) (*[]models.UserChatInfo, error) {
 		Joins("inner join users on messages.author_id = users.id")
 	msgContent := models.MessageContent{}
 	for _, v := range info {
-		if err := query.Where("messages.chat_id=?", v.ID).Last(&mes).Error; err != nil {
-			return nil, DBE(GetMessageError, err)
+		if err := query.Where("messages.chat_id = ?", v.ID).Last(&mes).Error; err != nil {
+			// return nil, DBE(GetMessageError, err)
+			msgContent = models.MessageContent{}
 		}
 		// log.Println(mes, v.ID)
 		err := json.Unmarshal([]byte(mes.Content), &msgContent)

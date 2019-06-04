@@ -70,13 +70,10 @@ func Create(name string, authorID int64, chattype ChatMode) (int64, error) {
 	if !(chattype == ChatType || chattype == DialogType || chattype == ChannelType) {
 		return 0, DBE(WrongChatType, nil)
 	}
-	tx := db.Begin()
 	c := Chat{Name: name, Author: u, Type: chattype}
-	if err := tx.Create(&c).Error; err != nil {
-		tx.Rollback()
+	if err := db.Create(&c).Error; err != nil {
 		return 0, DBE(InsertChatError, err)
 	}
-	tx.Commit()
 	err := InsertUserInChat(u.ID, c.ID, false)
 	if err != nil {
 		switch chattype {
@@ -103,7 +100,7 @@ func InsertUserInChat(userID int64, chatID int64, invited bool) error {
 	//Creating new delete points
 	var deletePoints [][]int64
 	deletePoints = append(deletePoints, []int64{0, 0})
-	chatUser.Start = time.Now().Unix()
+	chatUser.Start = time.Now().UnixNano() / 1000000
 	chatUser.setDeletePoints(deletePoints)
 	if err := db.Create(&chatUser).Error; err != nil {
 		return DBE(InsertUserInChatError, err)
@@ -131,9 +128,14 @@ func InsertUserInChat(userID int64, chatID int64, invited bool) error {
 			UserRequestedToChat(userID, chatID, command)
 		}
 	}
-	_, err := SendMessage(userID, chatID, "", []int64{}, SystemMessageType, command)
+	index, err := SendMessage(userID, chatID, "", []int64{}, SystemMessageType, command)
 	if err != nil {
 		return DBE(SendMessageError, err)
+	}
+	if SendUserMessageToSocket != nil {
+		SendUserMessageToSocket(index, chatID,
+			&models.MessageContentToUser{Command: int(command), Documents: &([]models.File{}), Message: "", Type: int(SystemMessageType)},
+			userID, chatUser.Start+1)
 	}
 
 	return nil
@@ -163,7 +165,7 @@ func CheckUserRights(userID int64, chatID int64) error {
 //GetChatsUsers - returning user's ids in the certain chat
 func GetChatsUsers(chatID int64) (*[]int64, error) {
 	users := []int64{}
-	if err := db.Model(&ChatUser{}).Where("chat_id = ?", chatID).
+	if err := db.Model(&ChatUser{}).Where("chat_id = ?", chatID).Where("delete_last = 0").
 		Pluck("user_id", &users).Error; err != nil {
 		return &users, DBE(GetUserError, err)
 	}
@@ -205,18 +207,35 @@ func DeleteUsersInChat(usersIDs []int64, chatID int64, deleteByYourself bool) er
 		dpLen := len(deletePoints)
 		// If user not deleted, because delete point - [startDel, endDel], ...
 		if deletePoints[dpLen-1][0] == 0 {
-			deletePoints[dpLen-1][0] = time.Now().Unix()
-			chatUser.DeleteLast = deletePoints[dpLen-1][0]
+			messageCommand := models.MessageCommandUserWasBanned
 			chatUser.Ban = true
 			if deleteByYourself {
 				chatUser.Ban = false
+				messageCommand = models.MessageCommandUserLeaveChat
 			}
-			err := chatUser.setDeletePoints(deletePoints)
+
+			index, err := SendMessage(v, chatID, "", []int64{}, SystemMessageType, messageCommand)
+			if err != nil {
+				return DBE(SendMessageError, err)
+			}
+
+			deletePoints[dpLen-1][0] = time.Now().UnixNano()/1000000 + 1
+
+			chatUser.DeleteLast = deletePoints[dpLen-1][0]
+
+			err = chatUser.setDeletePoints(deletePoints)
 			if err != nil {
 				log.Println(SetDeletePointsError, err,
 					fmt.Sprintf("Chat User = %d, Delete Points = %#v", chatUser.ID, deletePoints))
 				continue
 			}
+
+			if SendUserMessageToSocket != nil {
+				SendUserMessageToSocket(index, chatID,
+					&models.MessageContentToUser{Command: int(messageCommand), Documents: &([]models.File{}), Message: "", Type: int(SystemMessageType)},
+					v, chatUser.DeleteLast)
+			}
+
 			if err = db.Save(&chatUser).Error; err != nil {
 				log.Println(UpdateChatUserError, err)
 				continue
@@ -247,13 +266,16 @@ func RecoveryUsersInChat(userIDs []int64, chatID int64, recoveryByYourself bool)
 			log.Println(GetChatUserError, err.Error(), fmt.Sprintf("User ID = %d, Chat ID = %d", v, chatID))
 			continue
 		}
+		messageCommand := models.MessageCommandUserWasUnbanned
 		if recoveryByYourself {
 			//If user banned by another user(admin, chat's creator)
 			if c.Ban {
 				continue
 			}
+			messageCommand = models.MessageCommandUserReturnsToChat
 		} else {
 			c.Ban = false
+
 		}
 		deletePoints, err := c.getDeletePoints()
 		if err != nil {
@@ -263,7 +285,8 @@ func RecoveryUsersInChat(userIDs []int64, chatID int64, recoveryByYourself bool)
 		dplen := len(deletePoints)
 		// If user already deleted, because delete point - [startDel, endDel], ...
 		if deletePoints[dplen-1][1] == 0 {
-			deletePoints[dplen-1][1] = time.Now().Unix()
+			deletePoints[dplen-1][1] = time.Now().UnixNano() / 1000000
+
 			// Adding new delete point for future
 			deletePoints = append(deletePoints, []int64{0, 0})
 			c.DeleteLast = 0
@@ -273,10 +296,23 @@ func RecoveryUsersInChat(userIDs []int64, chatID int64, recoveryByYourself bool)
 					fmt.Sprintf("Chat User = %d, Delete Points = %#v", c.ID, deletePoints))
 				continue
 			}
+
 			if err = db.Save(&c).Error; err != nil {
 				log.Println(UpdateChatUserError, err)
 				continue
 			}
+
+			index, err := SendMessage(v, chatID, "", []int64{}, SystemMessageType, messageCommand)
+			if err != nil {
+				return DBE(SendMessageError, err)
+			}
+
+			if SendUserMessageToSocket != nil {
+				SendUserMessageToSocket(index, chatID,
+					&models.MessageContentToUser{Command: int(messageCommand), Documents: &([]models.File{}), Message: "", Type: int(SystemMessageType)},
+					v, deletePoints[dplen-1][1])
+			}
+
 			//Send message
 		}
 	}
