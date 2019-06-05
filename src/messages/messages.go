@@ -42,7 +42,7 @@ func newMessage(userQuest *string) (models.NewMessageToUser, error) {
 		return send, err
 	}
 
-	messageID, err := db.SendMessage(user.ID, data.ChatID,
+	messageID, err := db.AddMessage(user.ID, data.ChatID,
 		(*data.Content).Message, (*data.Content).Documents,
 		models.UserMessageType, models.MessageCommandNull)
 	if err != nil {
@@ -97,7 +97,7 @@ func newMessageAnother(userQuest string) (models.NewMessageToUser, error) {
 		return send, err
 	}
 
-	messageID, err := db.SendMessage(user.ID, dataReceive.Content.ChatID,
+	messageID, err := db.AddMessage(user.ID, dataReceive.Content.ChatID,
 		dataReceive.Content.Content.Message, dataReceive.Content.Content.Documents,
 		models.UserMessageType, models.MessageCommandNull)
 	if err != nil {

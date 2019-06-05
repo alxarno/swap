@@ -12,21 +12,31 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type userRequestedCallback = func(userID int64)
+type userInsertedCallback = func(userID int64)
 type chatCreatedCallback = func(authorId int64)
-type userDeleted = func(userID int64, chatID int64)
-type sendUserMessage = func(mID int64, chatID int64, command models.MessageCommand, authorID int64, time int64)
+type userLeaveChatCallback = func(userID int64)
+type userReturnToChatCallback = func(userID int64)
+type sendUserMessage = func(
+	mID int64,
+	chatID int64,
+	command models.MessageCommand,
+	authorID int64,
+	time int64,
+)
 
 var (
 	db         *gorm.DB
 	testDBPath string
-	//UserRequestedToChat - is a callback triggered when user requesting in chat(uses for sending notifications by WS)
-	UserRequestedToChat userRequestedCallback
+	//UserInsertedToChat - is a callback triggered when user requesting in chat(uses for sending notifications by WS)
+	UserInsertedToChat userInsertedCallback
 	//ChatCreated - is a callback triggered when user creating chat(uses for sending notifications by WS)
 	ChatCreated chatCreatedCallback
-	// SnedUserMessage - using for sending message
+	// SendUserMessageToSocket - using for sending message
 	SendUserMessageToSocket sendUserMessage
-	// MessageAddedCallback
+	// UserLeaveChat - using as callback after user get banned
+	UserLeaveChat userLeaveChatCallback
+	// UserReturnToChat - using as callback after user was unbanned
+	UserReturnToChat userReturnToChatCallback
 )
 
 func createTestDB(t *testing.T) {
@@ -48,6 +58,7 @@ func deleteTestDB(t *testing.T) {
 	}
 }
 
+// BeginDB - create connection or/and new DB file
 func BeginDB() error {
 	sett, err := settings.GetSettings()
 	if err != nil {

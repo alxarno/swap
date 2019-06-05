@@ -12,39 +12,50 @@ import (
 
 //ConnectActionsToDB - Bind callbacks
 func ConnectActionsToDB() {
-	// db.ChatCreated = chatCreated
-	db.UserRequestedToChat = SendNotificationAddUserInChat
-	db.SendUserMessageToSocket = SendUserMessage
+	db.UserReturnToChat = sendNotificationUserReturnToChat
+	db.UserLeaveChat = sendNotificationDeleteChat
+	db.UserInsertedToChat = sendNotificationAddUserInChat
+	db.SendUserMessageToSocket = sendUserMessage
 	api.GetOnlineUsers = GetOnlineUsersFromSlice
 }
 
-//SendNotificationAddUserInChat - Reload only chats list on client side
-func SendNotificationAddUserInChat(userID int64) {
-	var message = answer{MessageType: messageTypeSystem, Result: messageSuccess, Action: messageActionUserAddedToChat}
-	finish, _ := json.Marshal(message)
-	for _, v := range users {
-		if v.UserID == userID {
-			v.SystemMessageChan <- string(finish)
-		}
-	}
-}
-
-//SendNotificationDeleteChat - Reload  chats list and now chat window close on client side
-func SendNotificationDeleteChat(userID int64) error {
+// sendNotificationAddUserInChat - Reload only chats list on client side
+func sendNotificationAddUserInChat(userID int64) {
 	var message = answer{
 		MessageType: messageTypeSystem,
-		Action:      messageActionDeleteChat,
+		Action:      messageActionUserAddedToChat,
 	}
-	finish, _ := json.Marshal(message)
+	sendToSystem(message, userID)
+}
+
+// sendNotificationDeleteChat - Reload  chats list and now chat window close on client side
+func sendNotificationDeleteChat(userID int64) {
+	var message = answer{
+		MessageType: messageTypeSystem,
+		Action:      messageActionLeaveChat,
+	}
+	sendToSystem(message, userID)
+}
+
+// sendNotificationUserReturnToChat -  Reload  chats list and now chat window close on client side
+func sendNotificationUserReturnToChat(userID int64) {
+	var message = answer{
+		MessageType: messageTypeSystem,
+		Action:      messageActionReturnChat,
+	}
+	sendToSystem(message, userID)
+}
+
+func sendToSystem(msg interface{}, userID int64) {
+	finish, _ := json.Marshal(msg)
 	for _, v := range users {
 		if v.UserID == userID {
 			v.SystemMessageChan <- string(finish)
 		}
 	}
-	return nil
 }
 
-//GetOnlineUsersInChat - return count online users in usersID slice
+// GetOnlineUsersFromSlice - return count online users in usersID slice
 func GetOnlineUsersFromSlice(userIDs *[]int64) int64 {
 	var count int64
 	count = 0
@@ -58,8 +69,8 @@ func GetOnlineUsersFromSlice(userIDs *[]int64) int64 {
 	return count
 }
 
-// SendUserMessage - send user message to sockets
-func SendUserMessage(mID int64, chatID int64, command models.MessageCommand, authorID int64, time int64) {
+// sendUserMessage - send user message to sockets
+func sendUserMessage(mID int64, chatID int64, command models.MessageCommand, authorID int64, time int64) {
 	message, err := userMessageFromPure(mID, chatID, command, authorID, time)
 	if err != nil {
 		log.Println("SendUSerMessage extrenal.go -> ", err.Error())

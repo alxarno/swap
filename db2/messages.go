@@ -134,8 +134,8 @@ func GetMessages(userID int64, chatID int64, tranches bool, lastID int64) (*[]mo
 	return &response, nil
 }
 
-//SendMessage - handle inserting message into db
-func SendMessage(userID int64, chatID int64, content string, docs []int64,
+//AddMessage - handle inserting message into db
+func AddMessage(userID int64, chatID int64, content string, docs []int64,
 	mtype models.MessageType, command models.MessageCommand) (int64, error) {
 	mcontent := models.MessageContent{
 		Command: int(command), Type: int(mtype),

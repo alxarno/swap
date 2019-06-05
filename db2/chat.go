@@ -21,8 +21,8 @@ const (
 	InsertUserInChannelError = "Insert user in channel error: "
 	//UserAlreadyExistInChatError - cannot insert user in chat user already in
 	UserAlreadyExistInChatError = "User already in chat: "
-	//SendMessageError - cannot send message
-	SendMessageError = "Send message error: "
+	//AddMessageError - cannot send message
+	AddMessageError = "Send message error: "
 	//GetChatError - getting chat failed
 	GetChatError = "Getting chat failed: "
 	//UserIsntAuthorError - user havent rights
@@ -126,9 +126,9 @@ func InsertUserInChat(userID int64, chatID int64, invited bool) error {
 		}
 	}
 
-	index, err := SendMessage(userID, chatID, "", []int64{}, models.SystemMessageType, command)
+	index, err := AddMessage(userID, chatID, "", []int64{}, models.SystemMessageType, command)
 	if err != nil {
-		return DBE(SendMessageError, err)
+		return DBE(AddMessageError, err)
 	}
 
 	if SendUserMessageToSocket != nil && invited {
@@ -138,8 +138,8 @@ func InsertUserInChat(userID int64, chatID int64, invited bool) error {
 			userID,
 			chatUser.Start+1)
 	}
-	if UserRequestedToChat != nil && invited {
-		UserRequestedToChat(userID)
+	if UserInsertedToChat != nil && invited {
+		UserInsertedToChat(userID)
 	}
 
 	return nil
@@ -217,10 +217,10 @@ func DeleteUsersInChat(usersIDs []int64, chatID int64, deleteByYourself bool) er
 				chatUser.Ban = false
 				messageCommand = models.MessageCommandUserLeaveChat
 			}
-
-			index, err := SendMessage(v, chatID, "", []int64{}, models.SystemMessageType, messageCommand)
+			// Adding message to DB "user N was deleted/banned"
+			index, err := AddMessage(v, chatID, "", []int64{}, models.SystemMessageType, messageCommand)
 			if err != nil {
-				return DBE(SendMessageError, err)
+				return DBE(AddMessageError, err)
 			}
 
 			deletePoints[dpLen-1][0] = time.Now().UnixNano()/1000000 + 1
@@ -233,7 +233,11 @@ func DeleteUsersInChat(usersIDs []int64, chatID int64, deleteByYourself bool) er
 					fmt.Sprintf("Chat User = %d, Delete Points = %#v", chatUser.ID, deletePoints))
 				continue
 			}
-
+			// Send user system message that he was banned
+			if UserLeaveChat != nil && !deleteByYourself {
+				UserLeaveChat(v)
+			}
+			// Send user message to all online users that user N was deleted/banned
 			if SendUserMessageToSocket != nil {
 				SendUserMessageToSocket(index, chatID,
 					messageCommand,
@@ -244,7 +248,6 @@ func DeleteUsersInChat(usersIDs []int64, chatID int64, deleteByYourself bool) er
 				log.Println(UpdateChatUserError, err)
 				continue
 			}
-			//Send message
 		}
 	}
 	return nil
@@ -305,20 +308,21 @@ func RecoveryUsersInChat(userIDs []int64, chatID int64, recoveryByYourself bool)
 				log.Println(UpdateChatUserError, err)
 				continue
 			}
-
-			index, err := SendMessage(v, chatID, "", []int64{}, models.SystemMessageType, messageCommand)
+			// Adding message to DB about user's return/unban
+			index, err := AddMessage(v, chatID, "", []int64{}, models.SystemMessageType, messageCommand)
 			if err != nil {
-				return DBE(SendMessageError, err)
+				return DBE(AddMessageError, err)
 			}
-
+			// Send message to online users about user's return/unban
 			if SendUserMessageToSocket != nil {
 				SendUserMessageToSocket(index, chatID,
-					// &models.MessageContentToUser{Command: int(messageCommand), Documents: &([]models.File{}), Message: "", Type: int(SystemMessageType)},
 					messageCommand,
 					v, deletePoints[dplen-1][1])
 			}
-
-			//Send message
+			// Send to user system message about unban
+			if UserReturnToChat != nil && !recoveryByYourself {
+				UserReturnToChat(v)
+			}
 		}
 	}
 	return nil
