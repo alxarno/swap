@@ -105,10 +105,8 @@ func GetUserChats(userID int64) (*[]models.UserChatInfo, error) {
 	msgContent := models.MessageContent{}
 	for _, v := range info {
 		if err := query.Where("messages.chat_id = ?", v.ID).Last(&mes).Error; err != nil {
-			// return nil, DBE(GetMessageError, err)
 			msgContent = models.MessageContent{}
 		}
-		// log.Println(mes, v.ID)
 		err := json.Unmarshal([]byte(mes.Content), &msgContent)
 		if err != nil {
 			return nil, DBE(MessageContentDecodeError, err)

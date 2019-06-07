@@ -12,30 +12,14 @@ import (
 type SystemMessage struct {
 	Action  string
 	Payload string
-	E       string
-	N       string
-}
-
-// type Encrypte
-
-func encryptedMsg(msg string) (final models.EncryptedMessage, err error) {
-	if err = json.Unmarshal([]byte(msg), &final); err != nil {
-		return
-	}
-	return
-	//
 }
 
 func systemMsg(msg string) (final SystemMessage, err error) {
 	var userMessageSystem = struct {
 		Type    string `json:"mtype"`
 		Content struct {
-			Type   string `json:"type"`
-			Token  string `json:"token"`
-			PubKey struct {
-				E string `json:"e"`
-				N string `json:"n"`
-			} `json:"key"`
+			Type  string `json:"type"`
+			Token string `json:"token"`
 		} `json:"content"`
 	}{}
 	if err = json.Unmarshal([]byte(msg), &userMessageSystem); err != nil {
@@ -49,8 +33,6 @@ func systemMsg(msg string) (final SystemMessage, err error) {
 		}
 		final.Action = messageActionAuth
 		final.Payload = userMessageSystem.Content.Token
-		final.E = userMessageSystem.Content.PubKey.E
-		final.N = userMessageSystem.Content.PubKey.N
 		return final, nil
 
 	}
@@ -62,7 +44,7 @@ func userMsg(msg string) (*models.NewMessageToUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	message.Time = time.Now().UnixNano() / 1000000
+	message.Time = time.Now().UnixNano() / 1000000 // nanoSec -> miliSec
 	return &message, nil
 
 }

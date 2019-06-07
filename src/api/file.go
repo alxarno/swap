@@ -178,7 +178,7 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, "", failedGetSettings, 3, w)
 		return
 	}
-	timeoff := time.Now().Unix() + (60 * 2)
+	timeoff := time.Now().Unix() + (60 * settings.ServiceSettings.Service.MaxMinutesForFile)
 	secret := sett.Backend.SecretKeyForToken
 	algorithm := jwt.HmacSha256(secret)
 	claims := jwt.NewClaim()

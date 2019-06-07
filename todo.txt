@@ -1,20 +1,12 @@
 TODO:
-  Make codes for action messages (User was invited to chat)
-    Send message about request to chat
-  Send message to websocket, about request to chat
-  + Delete reflection
-  + Make class for errors send
-  + Make errors codes
-
-  + Migrate to GORM
-  + Make comments
-
-  Add Message check for channel
   + Change Error sending in messages
-  Refactor Message Engine and message
+  + Refactor Message Engine and message
   Remake urls to REST Spec(GET,POST,DELETE,PUT)
   Dont recreate DB file in db tests
   Replace anon functions and create handlers for user prof...
+
+  Some error before create config
+  Logs to file
 
   Create bundling
 

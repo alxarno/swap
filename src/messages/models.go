@@ -1,8 +1,6 @@
 package messageengine
 
 import (
-	"crypto/rsa"
-
 	"github.com/alxarno/swap/models"
 )
 
@@ -46,13 +44,10 @@ type systemMessage struct {
 	encode bool
 }
 type userConnection struct {
-	UserID      int64
-	MessageChan chan models.NewMessageToUser
-	// EncryptedChan     chan models.EncryptedMessage
+	UserID            int64
+	MessageChan       chan models.NewMessageToUser
 	SystemMessageChan chan string
 	Auth              bool
-	KeyExchanged      bool
-	PublicKey         *rsa.PublicKey
 }
 
 type answer struct {
@@ -60,5 +55,4 @@ type answer struct {
 	Result      string `json:"result"`
 	Action      string `json:"action"`
 	Error       string `json:"error"`
-	Key         string `json:"key,omniempty"`
 }

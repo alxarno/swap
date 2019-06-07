@@ -8,26 +8,13 @@ import (
 
 //chatCreated - send notifications about chat creation
 func chatCreated(AuthorID int64) {
-	// chatsUsers, err := db.GetChatsUsers(chatID)
-	// if err != nil {
-	// 	log.Println("Error: Chat Created: GetChatUsers: ", err)
-	// 	return
-	// }
-	// var usersOnline []int64
-	// for _, b := range users {
-	// 	if b.Authoriz == true {
-	// 		usersOnline = append(usersOnline, b.UserId)
-	// 	}
-	// }
 
 	var data = make(map[string]interface{})
 	data["action"] = messageActionChatCreated
 	data["type_a"] = messageTypeSystem
 	data["self"] = false
 	finish, _ := json.Marshal(data)
-	// log.Println()
 	for _, v := range users {
-		// log.Println(v.UserID)
 		if v.UserID == AuthorID {
 
 			v.SystemMessageChan <- string(finish)

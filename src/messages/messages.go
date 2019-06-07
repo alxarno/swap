@@ -26,59 +26,6 @@ type messageContentReceive struct {
 	Type      int     `json:"type"`
 }
 
-func newMessage(userQuest *string) (models.NewMessageToUser, error) {
-	var send models.NewMessageToUser
-	var data newMessageFormUser
-	message := []byte(*userQuest)
-	err := json.Unmarshal(message, &data)
-	if err != nil {
-		// Gologer.PError(err.Error())
-		return send, err
-	}
-
-	user, err := api.TestUserToken(data.Token)
-	if err != nil {
-		// Gologer.PError(err.Error())
-		return send, err
-	}
-
-	messageID, err := db.AddMessage(user.ID, data.ChatID,
-		(*data.Content).Message, (*data.Content).Documents,
-		models.UserMessageType, models.MessageCommandNull)
-	if err != nil {
-		return send, err
-	}
-
-	//Get file information
-	var documents []models.File
-
-	for _, v := range data.Content.Documents {
-		doc, err := db.GetFile(v)
-		if err != nil {
-			continue
-		}
-		documents = append(documents, models.File{
-			AuthorID: doc.AuthorID, ChatID: doc.ChatID, ID: doc.ID, Duration: doc.Duration,
-			Name: doc.Name, Path: doc.Path, RatioSize: doc.RatioSize, Size: doc.Size,
-		})
-	}
-
-	var newMess models.MessageContentToUser
-
-	newMess.Message = data.Content.Message
-	newMess.Type = data.Content.Type
-	newMess.Documents = &documents
-
-	send.ID = messageID
-	send.AuthorID = user.ID
-	send.AuthorLogin = user.Login
-	send.AuthorName = user.Name
-	send.ChatID = data.ChatID
-	send.Content = &newMess
-	return send, nil
-
-}
-
 func newMessageAnother(userQuest string) (models.NewMessageToUser, error) {
 	var send models.NewMessageToUser
 	var dataReceive struct {

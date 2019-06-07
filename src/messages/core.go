@@ -29,15 +29,12 @@ package messageengine
 //
 
 import (
-
-	// "crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"log"
 
 	models "github.com/alxarno/swap/models"
 
-	// "github.com/alxarno/swap/src/api"
 	"golang.org/x/net/websocket"
 
 	db "github.com/alxarno/swap/db2"

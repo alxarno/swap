@@ -89,17 +89,3 @@ func SendMessage(msg models.NewMessageToUser) {
 func SendForceMessage(msg models.ForceMsgToUser) {
 	forceSendMessages <- msg
 }
-
-//GetKeyByToken - return public key for user
-// func GetKeyByToken(token string) (*rsa.PublicKey, error) {
-// 	user, err := api.TestUserToken(token)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	for _, uc := range users {
-// 		if uc.UserID == user.ID {
-// 			return uc.PublicKey, nil
-// 		}
-// 	}
-// 	return nil, errors.New("User not found")
-// }

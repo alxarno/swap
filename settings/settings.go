@@ -32,7 +32,8 @@ type settings struct {
 		RsaBits int      `json:"rsa-bits"`
 	} `json:"cert"`
 	Service struct {
-		MaxFileSize int64 `json:"max_file_size_byte"`
+		MaxFileSize       int64 `json:"max_file_size_byte"`
+		MaxMinutesForFile int64 `json:"max_minutes_available_for_files_download"`
 	} `json:"service"`
 	DB struct {
 		DataBaseType string `json:"db_type"`
@@ -70,7 +71,8 @@ func createConfig() (data []byte, err error) {
 			"rsa-bits":2048
 		},
 		"service":{
-			"max_file_size_byte": 104857600
+			"max_file_size_byte": 104857600,
+			"max_minutes_available_for_files_download": 5
 		},
 		"db":{
 			"db_type":"l",

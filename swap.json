@@ -2,7 +2,7 @@
 		"backend":{
 			"test": false,
 			"host": "3030",
-			"secret_key_for_token": "hIV53ed5nY3iEgl9I2Mypg==",
+			"secret_key_for_token": "Cc7UvjfucZfK5pB2AOwoww==",
 			"files_path": "./files/"
 		},
 		"cert":{
@@ -11,7 +11,8 @@
 			"rsa-bits":2048
 		},
 		"service":{
-			"max_file_size_byte": 104857600
+			"max_file_size_byte": 104857600,
+			"max_minutes_available_for_files_download": 5
 		},
 		"db":{
 			"db_type":"l",
