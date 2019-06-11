@@ -39,10 +39,11 @@ type MessageContent struct {
 	Command   int     `json:"command,integer"`
 }
 type User struct {
-	ID    int64  `json:"id"`
-	Name  string `json:"name"`
-	Login string `json:"login"`
-	pass  string
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	Login    string `json:"login"`
+	Language string `json:"language"`
+	pass     string
 }
 
 type NewMessageToUser struct {
@@ -98,7 +99,8 @@ func GetModels() string {
 }
 
 type UserSettings struct {
-	Name string
+	Name     string
+	Language string
 }
 
 type ChatSettings struct {

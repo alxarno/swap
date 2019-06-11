@@ -5,6 +5,7 @@ type User struct {
 	Login    string     `gorm:"size:32"`
 	Name     string     `gorm:"size:100"`
 	Pass     string     `gorm:"size:45"`
+	Language string     `gorm:"size:5;DEFAULT:en"`
 	Chats    []ChatUser `gorm:"PRELOAD:false"`
 	Messages []Message  `gorm:"PRELOAD:false"`
 	Files    []File     `gorm:"PRELOAD:false"`
@@ -72,7 +73,7 @@ type File struct {
 	Path      string
 	RatioSize float64 `gorm:"DEFAULT:0"`
 	Size      int64   `gorm:"DEFAULT:0"`
-	Duration int64 `gorm:"DEFAULT:0"`
+	Duration  int64   `gorm:"DEFAULT:0"`
 }
 
 func (u *File) TableName() string {

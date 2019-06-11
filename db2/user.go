@@ -168,6 +168,7 @@ func SetUserSettigns(userID int64, settings models.UserSettings) error {
 		return DBE(UserNotFound, err)
 	}
 	user.Name = settings.Name
+	user.Language = settings.Language
 	if err := db.Save(&user).Error; err != nil {
 		return DBE(UserUpdateError, err)
 	}

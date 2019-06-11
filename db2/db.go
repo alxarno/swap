@@ -61,22 +61,7 @@ func deleteTestDB() {
 }
 
 func clearTestDB() {
-	// var tablesNames []struct {
-	// 	Name string
-	// }
-	// if err := db.Raw("select name from sqlite_master where type = 'table'").Scan(&tablesNames).Error; err != nil {
-	// 	panic(err)
-	// }
-	// for _, v := range tablesNames {
-	// 	db.Exec(fmt.Sprintf("DELETE * FROM %s", v.Name))
-	// }
 	db.Delete(User{})
-	// db.Delete(Chat{})
-	// db.Delete(ChatUser{})
-	// db.Delete(Message{})
-	// db.Delete(File{})
-	// db.Delete(System{})
-	// db.Delete(Dialog{})
 }
 
 // BeginDB - create connection or/and new DB file

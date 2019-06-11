@@ -3,7 +3,6 @@ TODO:
   + Refactor Message Engine and message
   + Remake urls to REST Spec(GET,POST,DELETE,PUT)
   + Dont recreate DB file in db tests
-  Replace anon functions and create handlers for user prof...
   Add lanuage save
   Some error before create config
   Logs to file

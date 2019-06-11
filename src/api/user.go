@@ -150,9 +150,16 @@ func getMyData(w *http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, "", invalidToken, 1, w)
 		return
 	}
-	data := make(map[string]interface{})
-	data["id"] = user.ID
-	data["name"] = user.Name
+	data := struct {
+		ID       int64  `json:"id"`
+		Name     string `json:"name"`
+		Language string `json:"language"`
+	}{
+		ID:       user.ID,
+		Language: user.Language,
+		Name:     user.Name,
+	}
+
 	finish, _ := json.Marshal(data)
 	fmt.Fprintf((*w), string(finish))
 }
@@ -176,8 +183,9 @@ func getSettings(w *http.ResponseWriter, r *http.Request) {
 func setSettings(w *http.ResponseWriter, r *http.Request) {
 	const ref string = "User set settings API:"
 	var data struct {
-		Token string `json:"token"`
-		Name  string `json:"name"`
+		Token    string `json:"token"`
+		Name     string `json:"name"`
+		Language string `json:"language"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	defer r.Body.Close()
@@ -191,7 +199,7 @@ func setSettings(w *http.ResponseWriter, r *http.Request) {
 		sendAnswerError(ref, err, data.Token, invalidToken, 1, w)
 		return
 	}
-	err = db.SetUserSettigns(user.ID, models.UserSettings{Name: data.Name})
+	err = db.SetUserSettigns(user.ID, models.UserSettings{Name: data.Name, Language: data.Language})
 	if err != nil {
 		sendAnswerError(ref, err, fmt.Sprintf("userID - %d", user.ID), failedSetUserSettings, 2, w)
 		return
