@@ -88,12 +88,13 @@ func CheckFileRights(userID int64, fileID int64) (string, error) {
 	path := []string{}
 	query := db.Model(&Chat{}).
 		Joins("inner join chat_users on chat_users.chat_id = chats.id").
-		Joins("inner join users on users.id = chat_users.user_id").
+		// Joins("inner join users on users.id = chat_users.user_id").
 		Joins("inner join files on files.chat_id = chats.id").
-		Where("chat_users.id IS NOT NULL").
-		Where("chat_users.list_invisible = ?", 0).
+		// Where("chat_users.id IS NOT NULL").
+		Where("chat_users.user_id = ?", userID).
+		Where("chat_users.ban = 0 ").
+		Where("chat_users.list_invisible = 0").
 		// Where("chat_users.delete_last = ?", 0).
-		Where("users.id = ?", userID).
 		Where("files.id = ?", fileID)
 	if err := query.Pluck("files.path", &path).Error; err != nil {
 		return "", DBE(CannotFindFile, err)

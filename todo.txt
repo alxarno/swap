@@ -1,14 +1,12 @@
 TODO:
   + Change Error sending in messages
   + Refactor Message Engine and message
-  Remake urls to REST Spec(GET,POST,DELETE,PUT)
-  Dont recreate DB file in db tests
+  + Remake urls to REST Spec(GET,POST,DELETE,PUT)
+  + Dont recreate DB file in db tests
   Replace anon functions and create handlers for user prof...
-
+  Add lanuage save
   Some error before create config
   Logs to file
-
   Create bundling
-
   Greaceful shootdown
 

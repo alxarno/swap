@@ -17,9 +17,14 @@ const (
 	testSendingMessageFailed = "Sending message failed: "
 )
 
+func init() {
+	createTestDB()
+}
+
 func TestAddMessage(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	// createTestDB()
+	// defer deleteTestDB(t)
+	clearTestDB()
 	user1 := User{Login: "user1", Pass: "1234"}
 	user2 := User{Login: "user2", Pass: "1234"}
 	var err error
@@ -73,8 +78,8 @@ func TestAddMessage(t *testing.T) {
 }
 
 func TestGetMessages(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	return
+	clearTestDB()
 	user := User{Login: "user1", Pass: "1234"}
 	var err error
 	user.ID, err = CreateUser(user.Login, user.Pass, user.Login)
@@ -89,7 +94,7 @@ func TestGetMessages(t *testing.T) {
 	}
 
 	content := models.MessageContent{
-		Command: 0, Documents: []int64{}, Message: "hello", Type: string(UserMessageType)}
+		Command: 0, Documents: []int64{}, Message: "hello", Type: int(models.UserMessageType)}
 
 	jcontent, err := json.Marshal(content)
 	if err != nil {
@@ -137,8 +142,7 @@ func TestGetMessages(t *testing.T) {
 }
 
 func TestSendMessage(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	clearTestDB()
 	user1 := User{Login: "user1", Pass: "1234"}
 	user2 := User{Login: "user2", Pass: "1234"}
 	var err error
@@ -160,7 +164,7 @@ func TestSendMessage(t *testing.T) {
 		t.Error(testCreateChatError, err.Error())
 		return
 	}
-	messageID, err := AddMessage(user1.ID, chatID, "test", []int64{}, UserMessageType, models.MessageCommand(0))
+	messageID, err := AddMessage(user1.ID, chatID, "test", []int64{}, models.UserMessageType, models.MessageCommand(0))
 	if err != nil {
 		t.Error(testSendingMessageFailed, err.Error())
 		return
@@ -185,7 +189,7 @@ func TestSendMessage(t *testing.T) {
 	}
 	/********************************************************/
 
-	messageID, err = AddMessage(user2.ID, chatID, "test", []int64{}, UserMessageType, models.MessageCommandNull)
+	messageID, err = AddMessage(user2.ID, chatID, "test", []int64{}, models.UserMessageType, models.MessageCommandNull)
 	if err == nil {
 		t.Error("User aren't in chat but has sent message to it")
 		return
@@ -197,7 +201,7 @@ func TestSendMessage(t *testing.T) {
 		return
 	}
 
-	messageID, err = AddMessage(user1.ID, chatID, "test", []int64{}, UserMessageType, models.MessageCommand(0))
+	messageID, err = AddMessage(user1.ID, chatID, "test", []int64{}, models.UserMessageType, models.MessageCommand(0))
 	if err == nil {
 		t.Error("User was deleted from chat but sent message to it")
 		return

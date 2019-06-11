@@ -14,9 +14,12 @@ const (
 	testGotWrongFileRights     = "Got wrong file rights: "
 )
 
+func init() {
+	createTestDB()
+}
+
 func TestCreateFile(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	clearTestDB()
 	user1 := User{Login: "user1", Pass: "1234"}
 	user2 := User{Login: "user2", Pass: "1111"}
 	var err error
@@ -62,8 +65,7 @@ func TestCreateFile(t *testing.T) {
 }
 
 func TestDeleteFile(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	clearTestDB()
 	user1 := User{Login: "user1", Pass: "1234"}
 	user2 := User{Login: "user2", Pass: "1111"}
 	var err error
@@ -115,8 +117,7 @@ func TestDeleteFile(t *testing.T) {
 }
 
 func TestCheckFileRights(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	clearTestDB()
 	user1 := User{Login: "user1", Pass: "1234"}
 	user2 := User{Login: "user2", Pass: "1111"}
 	user3 := User{Login: "user3", Pass: "1111"}
@@ -171,7 +172,7 @@ func TestCheckFileRights(t *testing.T) {
 		return
 	}
 
-	err = DeleteUsersInChat([]int64{user2.ID}, chatID, true)
+	err = DeleteUsersInChat([]int64{user2.ID}, chatID, false)
 	if err != nil {
 		t.Error(testDeleteUsersInChatFailed, err.Error())
 		return
@@ -179,7 +180,7 @@ func TestCheckFileRights(t *testing.T) {
 	_, err = CheckFileRights(user2.ID, fileID)
 	if err == nil {
 		t.Error(testGotWrongFileRights,
-			"User2 shouldn't have rights because he was deleted from chat")
+			"User2 shouldn't have rights because he was banned in chat")
 		return
 	}
 

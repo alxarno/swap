@@ -2,7 +2,7 @@ package api
 
 import "net/http"
 
-func Api(key string, var1 string, w http.ResponseWriter, r *http.Request) {
+func Api(key string, var1 string, w *http.ResponseWriter, r *http.Request) {
 	switch key {
 	case "user":
 		userAPI(var1, w, r)

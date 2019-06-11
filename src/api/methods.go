@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/robbert229/jwt"
 	db "github.com/alxarno/swap/db2"
 	"github.com/alxarno/swap/settings"
+	"github.com/robbert229/jwt"
 )
 
 const (
@@ -18,13 +18,13 @@ const (
 	errorResult   = "Error"
 )
 
-func decodeFail(ref string, err error, r *http.Request, w http.ResponseWriter) {
+func decodeFail(ref string, err error, r *http.Request, w *http.ResponseWriter) {
 	var p []byte
 	r.Body.Read(p)
 	sendAnswerError(ref, err, string(p), failedDecodeData, 0, w)
 }
 
-func getToken() (string, error) {
+func getSecret() (string, error) {
 	secret, err := settings.GetSettings()
 	if err != nil {
 		return "", err
@@ -32,7 +32,7 @@ func getToken() (string, error) {
 	return secret.Backend.SecretKeyForToken, nil
 }
 
-func sendAnswerError(reference string, err error, data string, eType int, errCode int, w http.ResponseWriter) {
+func sendAnswerError(reference string, err error, data string, eType int, errCode int, w *http.ResponseWriter) {
 	log.Print(reference, errCode)
 	if err != nil {
 		log.Print(err.Error())
@@ -47,18 +47,18 @@ func sendAnswerError(reference string, err error, data string, eType int, errCod
 	answer["code"] = errCode
 	answer["type"] = eType
 	finish, _ := json.Marshal(answer)
-	fmt.Fprintf(w, string(finish))
+	fmt.Fprintf((*w), string(finish))
 }
 
-func sendAnswerSuccess(w http.ResponseWriter) {
+func sendAnswerSuccess(w *http.ResponseWriter) {
 	var x = make(map[string]string)
 	x["result"] = successResult
 	finish, _ := json.Marshal(x)
-	fmt.Fprintf(w, string(finish))
+	fmt.Fprintf((*w), string(finish))
 }
 
 func generateToken(id int64) (string, error) {
-	secret, err := getToken()
+	secret, err := getSecret()
 	if err != nil {
 		return "", err
 	}
@@ -79,7 +79,7 @@ func getJSON(target interface{}, r *http.Request) error {
 }
 
 func TestUserToken(token string) (*db.User, error) {
-	secret, err := getToken()
+	secret, err := getSecret()
 	if err != nil {
 		return nil, err
 	}
@@ -108,14 +108,11 @@ func TestUserToken(token string) (*db.User, error) {
 }
 
 func getUserByToken(r *http.Request) (*db.User, error) {
-	var data struct {
-		Token string `json:"token"`
+	var token string
+	if token = r.Header.Get("X-Auth-Token"); len(token) == 0 {
+		return nil, errors.New("Token is undefined in X-Auth-Token header")
 	}
-	err := getJSON(&data, r)
-	if err != nil {
-		return nil, err
-	}
-	u, err := TestUserToken(data.Token)
+	u, err := TestUserToken(token)
 	if err != nil {
 		return nil, err
 	}

@@ -18,45 +18,33 @@ const (
 	testGotWrongUserChatsIDs     = "Got wrong users chats IDs: "
 )
 
+func init() {
+
+	createTestDB()
+}
+
 func TestCreateUser(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	clearTestDB()
 	user1 := User{Login: "user1", Pass: "1234"}
 	user2 := User{Login: "user2", Pass: "1111"}
 
 	// First user creation
-	lindex, err := CreateUser(user1.Login, user1.Pass, user1.Login)
+	_, err := CreateUser(user1.Login, user1.Pass, user1.Login)
 	if err != nil {
 		t.Error(testCannotCreateFirstUser, err.Error())
 		return
 	}
-	// First record have 1 ID
-	if lindex != 1 {
-		t.Error(testWrongID)
-		return
-	}
-	_, err = CreateUser(user1.Login, user1.Pass, user1.Login)
-	if err == nil {
-		t.Error(testCreatedUserWithSameLogin)
-		return
-	}
-
-	lindex, err = CreateUser(user2.Login, user2.Pass, user2.Login)
+	_, err = CreateUser(user2.Login, user2.Pass, user2.Login)
 	if err != nil {
 		t.Error(testCannotCreateSecondUser, err.Error())
 		return
 	}
-	// Second record have 2 ID
-	if lindex != 2 {
-		t.Error(testWrongID)
-		return
-	}
-
 }
 
 func TestGetUserByID(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	// createTestDB()
+	// defer deleteTestDB(t)
+	clearTestDB()
 	user := User{Login: "user1", Pass: "1234"}
 	lindex, err := CreateUser(user.Login, user.Pass, user.Login)
 	if err != nil {
@@ -79,8 +67,9 @@ func TestGetUserByID(t *testing.T) {
 }
 
 func TestGetUserByLoginAndPass(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	// createTestDB()
+	// defer deleteTestDB(t)
+	clearTestDB()
 	user := User{Login: "user1", Pass: "1234"}
 	lindex, err := CreateUser(user.Login, user.Pass, user.Login)
 	if err != nil {
@@ -102,8 +91,9 @@ func TestGetUserByLoginAndPass(t *testing.T) {
 }
 
 func TestGetUserChats(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	// createTestDB()
+	// defer deleteTestDB(t)
+	clearTestDB()
 	user := User{Login: "user1", Pass: "1234"}
 	var err error
 	user.ID, err = CreateUser(user.Login, user.Pass, user.Login)
@@ -133,8 +123,9 @@ func TestGetUserChats(t *testing.T) {
 }
 
 func TestGetUsersChatsIDs(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	// createTestDB()
+	// defer deleteTestDB(t)
+	clearTestDB()
 	user := User{Login: "user1", Pass: "1234"}
 	lindex, err := CreateUser(user.Login, user.Pass, user.Login)
 	if err != nil {
@@ -166,8 +157,9 @@ func TestGetUsersChatsIDs(t *testing.T) {
 }
 
 func TestGetUserSettings(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	// createTestDB()
+	// defer deleteTestDB(t)
+	clearTestDB()
 	user := User{Login: "user1", Pass: "1234"}
 	lindex, err := CreateUser(user.Login, user.Pass, user.Login)
 	if err != nil {
@@ -187,8 +179,9 @@ func TestGetUserSettings(t *testing.T) {
 }
 
 func TestSetUserSettings(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	// createTestDB()
+	// defer deleteTestDB(t)
+	clearTestDB()
 	newName := "user2"
 	user := User{Login: "user1", Pass: "1234"}
 	lindex, err := CreateUser(user.Login, user.Pass, user.Login)

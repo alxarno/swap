@@ -20,7 +20,7 @@ var (
 	GetOnlineUsers onlineUsers
 )
 
-func enter(w http.ResponseWriter, r *http.Request) {
+func enter(w *http.ResponseWriter, r *http.Request) {
 	const ref string = "User enter API:"
 	var data struct {
 		Login string `json:"login"`
@@ -49,11 +49,11 @@ func enter(w http.ResponseWriter, r *http.Request) {
 	x["token"] = token
 	x["result"] = successResult
 	finish, _ := json.Marshal(x)
-	fmt.Fprintf(w, string(finish))
+	fmt.Fprintf((*w), string(finish))
 	return
 }
 
-func proveToken(w http.ResponseWriter, r *http.Request) {
+func proveToken(w *http.ResponseWriter, r *http.Request) {
 	const ref string = "User proveToken API:"
 	var userGetToken struct {
 		Token string `json:"token"`
@@ -72,10 +72,10 @@ func proveToken(w http.ResponseWriter, r *http.Request) {
 		x["code"] = 0
 	}
 	finish, _ := json.Marshal(x)
-	fmt.Fprintf(w, string(finish))
+	fmt.Fprintf((*w), string(finish))
 }
 
-func createUser(w http.ResponseWriter, r *http.Request) {
+func createUser(w *http.ResponseWriter, r *http.Request) {
 	const ref string = "User create user API:"
 	var data struct {
 		Login string `json:"login"`
@@ -106,11 +106,11 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	x["token"] = token
 	x["result"] = successResult
 	finish, _ := json.Marshal(x)
-	fmt.Fprintf(w, string(finish))
+	fmt.Fprintf((*w), string(finish))
 	return
 }
 
-func getMyChats(w http.ResponseWriter, r *http.Request) {
+func getMyChats(w *http.ResponseWriter, r *http.Request) {
 	const ref string = "User get chats API:"
 	user, err := getUserByToken(r)
 	if err != nil {
@@ -140,10 +140,10 @@ func getMyChats(w http.ResponseWriter, r *http.Request) {
 		}
 		finish, _ = json.Marshal(*chats)
 	}
-	fmt.Fprintf(w, string(finish))
+	fmt.Fprintf((*w), string(finish))
 }
 
-func getMyData(w http.ResponseWriter, r *http.Request) {
+func getMyData(w *http.ResponseWriter, r *http.Request) {
 	const ref string = "User get data API:"
 	user, err := getUserByToken(r)
 	if err != nil {
@@ -154,10 +154,10 @@ func getMyData(w http.ResponseWriter, r *http.Request) {
 	data["id"] = user.ID
 	data["name"] = user.Name
 	finish, _ := json.Marshal(data)
-	fmt.Fprintf(w, string(finish))
+	fmt.Fprintf((*w), string(finish))
 }
 
-func getSettings(w http.ResponseWriter, r *http.Request) {
+func getSettings(w *http.ResponseWriter, r *http.Request) {
 	const ref string = "User get settings API:"
 	user, err := getUserByToken(r)
 	if err != nil {
@@ -170,10 +170,10 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	finish, _ := json.Marshal(setts)
-	fmt.Fprintf(w, string(finish))
+	fmt.Fprintf((*w), string(finish))
 }
 
-func setSettings(w http.ResponseWriter, r *http.Request) {
+func setSettings(w *http.ResponseWriter, r *http.Request) {
 	const ref string = "User set settings API:"
 	var data struct {
 		Token string `json:"token"`
@@ -199,22 +199,24 @@ func setSettings(w http.ResponseWriter, r *http.Request) {
 	sendAnswerSuccess(w)
 }
 
-func userAPI(var1 string, w http.ResponseWriter, r *http.Request) {
+func userAPI(var1 string, w *http.ResponseWriter, r *http.Request) {
 	switch var1 {
 	case "enter":
 		enter(w, r)
-	case "testToken":
+	case "tokencheck":
 		proveToken(w, r)
 	case "create":
 		createUser(w, r)
-	case "getMyChats":
+	case "chats":
 		getMyChats(w, r)
-	case "myData":
+	case "data":
 		getMyData(w, r)
-	case "getSettings":
-		getSettings(w, r)
-	case "setSettings":
-		setSettings(w, r)
+	case "settings":
+		if r.Method == "GET" {
+			getSettings(w, r)
+		} else {
+			setSettings(w, r)
+		}
 	default:
 		sendAnswerError("User API Router", nil, "", endPointNotFound, 0, w)
 	}

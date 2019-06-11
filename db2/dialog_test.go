@@ -17,9 +17,12 @@ const (
 	testGettingChatFailed       = "Getting chat failed: "
 )
 
+func init() {
+	createTestDB()
+}
+
 func TestGetUsersForCreateDialog(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	clearTestDB()
 	//Creating 3 users
 	user1 := User{Login: "user1", Pass: "1234"}
 	user2 := User{Login: "user2", Pass: "1234"}
@@ -76,8 +79,7 @@ func TestGetUsersForCreateDialog(t *testing.T) {
 }
 
 func TestHaveAlreadyDialog(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	clearTestDB()
 	//Creating 3 users
 	user1 := User{Login: "user1", Pass: "1234"}
 	user2 := User{Login: "user2", Pass: "1234"}
@@ -117,8 +119,7 @@ func TestHaveAlreadyDialog(t *testing.T) {
 }
 
 func TestCreateDialog(t *testing.T) {
-	createTestDB(t)
-	defer deleteTestDB(t)
+	clearTestDB()
 	//Creating 2 users
 	user1 := User{Login: "user1", Pass: "1234"}
 	user2 := User{Login: "user2", Pass: "1234"}

@@ -9,12 +9,11 @@ import (
 	"github.com/alxarno/swap/models"
 )
 
-func getMessages(w http.ResponseWriter, r *http.Request) {
+func getMessages(w *http.ResponseWriter, r *http.Request) {
 	const ref string = "Messages get API:"
 	var data struct {
-		Token  string `json:"token"`
-		LastID int64  `json:"last_index,integer"`
-		ChatID int64  `json:"chat_id,integer"`
+		LastID int64 `json:"last_index,integer"`
+		ChatID int64 `json:"chat_id,integer"`
 	}
 
 	err := getJSON(&data, r)
@@ -22,9 +21,9 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		decodeFail(ref, err, r, w)
 		return
 	}
-	user, err := TestUserToken(data.Token)
+	user, err := getUserByToken(r)
 	if err != nil {
-		sendAnswerError(ref, err, data.Token, invalidToken, 1, w)
+		sendAnswerError(ref, err, r.Header.Get("X-Auth-Token"), invalidToken, 1, w)
 		return
 	}
 
@@ -50,12 +49,12 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	} else {
 		finish, _ = json.Marshal(*mes)
 	}
-	fmt.Fprintf(w, string(finish))
+	fmt.Fprintf((*w), string(finish))
 }
 
-func messagesAPI(var1 string, w http.ResponseWriter, r *http.Request) {
+func messagesAPI(var1 string, w *http.ResponseWriter, r *http.Request) {
 	switch var1 {
-	case "getMessages":
+	case "messages":
 		getMessages(w, r)
 	default:
 		sendAnswerError("Messages API Router", nil, "", endPointNotFound, 0, w)

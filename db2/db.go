@@ -3,7 +3,6 @@ package db2
 import (
 	"fmt"
 	"os"
-	"testing"
 	"time"
 
 	"github.com/alxarno/swap/models"
@@ -39,23 +38,45 @@ var (
 	UserReturnToChat userReturnToChatCallback
 )
 
-func createTestDB(t *testing.T) {
+func createTestDB() {
+	if db != nil {
+		return
+	}
 	var err error
 	testDBPath = fmt.Sprintf("connection_%d.db", time.Now().UnixNano())
 	db, err = gorm.Open("sqlite3", testDBPath)
 	if err != nil {
-		t.Error("Cannot create DB")
+		panic("Cannot create DB")
 	}
 
 	registerModels()
 	db.LogMode(true)
 }
 
-func deleteTestDB(t *testing.T) {
+func deleteTestDB() {
 	db.Close()
 	if err := os.Remove(testDBPath); err != nil {
-		t.Error("Cannot delete DB")
+		panic("Cannot delete DB")
 	}
+}
+
+func clearTestDB() {
+	// var tablesNames []struct {
+	// 	Name string
+	// }
+	// if err := db.Raw("select name from sqlite_master where type = 'table'").Scan(&tablesNames).Error; err != nil {
+	// 	panic(err)
+	// }
+	// for _, v := range tablesNames {
+	// 	db.Exec(fmt.Sprintf("DELETE * FROM %s", v.Name))
+	// }
+	db.Delete(User{})
+	// db.Delete(Chat{})
+	// db.Delete(ChatUser{})
+	// db.Delete(Message{})
+	// db.Delete(File{})
+	// db.Delete(System{})
+	// db.Delete(Dialog{})
 }
 
 // BeginDB - create connection or/and new DB file

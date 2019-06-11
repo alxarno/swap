@@ -1,6 +1,7 @@
 .idea
 public
 security
+*.db
 app.db
 data.db
 swap.db
