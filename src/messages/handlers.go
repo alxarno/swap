@@ -3,6 +3,7 @@ package messageengine
 import (
 	"encoding/json"
 
+	"github.com/alxarno/swap/logger"
 	"github.com/alxarno/swap/src/api"
 )
 
@@ -18,6 +19,7 @@ func authHandler(msg SystemMessage, connect *userConnection) {
 		connect.Auth = true
 		ans = answer{MessageType: messageTypeSystem, Result: messageSuccess, Action: messageActionAuth}
 		userMove(connect.UserID, onlineUserInc)
+		logger.Logger.Printf("WS user %d was authed from %s", connect.UserID, connect.RemoteAddr)
 	}
 	finish, _ := json.Marshal(ans)
 	connect.SystemMessageChan <- string(finish)

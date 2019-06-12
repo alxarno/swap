@@ -10,43 +10,43 @@ import (
 
 const (
 	//GetUserError - cannot get user
-	GetUserError = "Get user error: "
+	GetUserError = "Get user error ->"
 	//InsertChatError - cannot make insert
-	InsertChatError = "Insert chat error: "
+	InsertChatError = "Insert chat error ->"
 	//InsertUserInChatError - cannot insert user in chat
-	InsertUserInChatError = "Insert user in chat error: "
+	InsertUserInChatError = "Insert user in chat error ->"
 	//InsertUserInDialogError - cannot insert user in dialog
-	InsertUserInDialogError = "Insert user in dialog error: "
+	InsertUserInDialogError = "Insert user in dialog error ->"
 	//InsertUserInChannelError - cannot insert user in cahnnel
-	InsertUserInChannelError = "Insert user in channel error: "
+	InsertUserInChannelError = "Insert user in channel error ->"
 	//UserAlreadyExistInChatError - cannot insert user in chat user already in
-	UserAlreadyExistInChatError = "User already in chat: "
+	UserAlreadyExistInChatError = "User already in chat ->"
 	//AddMessageError - cannot send message
-	AddMessageError = "Send message error: "
+	AddMessageError = "Send message error ->"
 	//GetChatError - getting chat failed
-	GetChatError = "Getting chat failed: "
+	GetChatError = "Getting chat failed ->"
 	//UserIsntAuthorError - user havent rights
-	UserIsntAuthorError = "User isnt author: "
+	UserIsntAuthorError = "User isnt author ->"
 	//GetChatUserError - cannot get chat's user
-	GetChatUserError = "Gettings chat user failed: "
+	GetChatUserError = "Gettings chat user failed ->"
 	//GetDeletePointsError - getting delete points failed
-	GetDeletePointsError = "Failed get delete points: "
+	GetDeletePointsError = "Failed get delete points ->"
 	//SetDeletePointsError - settings delete points failed
-	SetDeletePointsError = "Failed set delete points: "
+	SetDeletePointsError = "Failed set delete points ->"
 	//UpdateChatUserError - updating chat user failed
-	UpdateChatUserError = "Failed update chat user: "
+	UpdateChatUserError = "Failed update chat user ->"
 	//UpdateChatError - updating chat failed
-	UpdateChatError = "Failed update chat: "
+	UpdateChatError = "Failed update chat ->"
 	//UserYetDidntDeleteError - user wasn't deleted
-	UserYetDidntDeleteError = "User wasn't delete: "
+	UserYetDidntDeleteError = "User wasn't delete ->"
 	//WrongChatType - got wrong chat's type
-	WrongChatType = "Got wrong chat't type: "
+	WrongChatType = "Got wrong chat't type ->"
 	//GettingUsersChatInfoFailed - getting user's chat info failed
-	GettingUsersChatInfoFailed = "Getting user's chat info failed: "
+	GettingUsersChatInfoFailed = "Getting user's chat info failed ->"
 	//CheckingUserDeletedInChatFailed - checking user deleted in chat failed
-	CheckingUserDeletedInChatFailed = "Checking user deleted in chat failed: "
+	CheckingUserDeletedInChatFailed = "Checking user deleted in chat failed ->"
 	//GetChatsUsersFailed - getting chat's users failed
-	GetChatsUsersFailed = "Getting chat's users failed: "
+	GetChatsUsersFailed = "Getting chat's users failed ->"
 )
 
 // ChatMode - type for decalring chat's modesChatMode

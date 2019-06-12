@@ -14,19 +14,19 @@ const (
 
 const (
 	//MarshalingFailed - marshaling failed
-	MarshalingFailed = "Marshaling failed: "
+	MarshalingFailed = "Marshaling failed ->"
 	//UnmarshalingFailed - unmarshaling failed
-	UnmarshalingFailed = "Unmarshaling failed: "
+	UnmarshalingFailed = "Unmarshaling failed ->"
 	//AddingMessageFailed - inserting message failed
-	AddingMessageFailed = "Adding message failed: "
+	AddingMessageFailed = "Adding message failed ->"
 	//CheckingUserInChatFailed - checking user in chat failed
-	CheckingUserInChatFailed = "Checking user in chat faile: "
+	CheckingUserInChatFailed = "Checking user in chat faile ->"
 	//UserDeletedFromChat - user was deleted from chat
-	UserDeletedFromChat = "User deleted from chat: "
+	UserDeletedFromChat = "User deleted from chat ->"
 	//MessageInsertingFailed - message inserting was failed
-	MessageInsertingFailed = "Message insert error: "
+	MessageInsertingFailed = "Message insert error ->"
 	//GettingFileInfoFailed - cannot get file's info
-	GettingFileInfoFailed = "Getting file's information failed: "
+	GettingFileInfoFailed = "Getting file's information failed ->"
 )
 
 //addMessage - inserting message into table

@@ -28,7 +28,7 @@ func systemMsg(msg string) (final SystemMessage, err error) {
 	if userMessageSystem.Content.Type == messageActionAuth {
 		_, err = api.TestUserToken(userMessageSystem.Content.Token)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("systemMsg -> TestUserToken", err)
 			return
 		}
 		final.Action = messageActionAuth

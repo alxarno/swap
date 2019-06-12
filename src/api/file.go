@@ -10,6 +10,7 @@ import (
 	"time"
 
 	db "github.com/alxarno/swap/db2"
+	logger "github.com/alxarno/swap/logger"
 	"github.com/alxarno/swap/settings"
 	"github.com/robbert229/jwt"
 )
@@ -105,7 +106,7 @@ func uploadFile(w *http.ResponseWriter, r *http.Request) {
 		Result: successResult,
 		FileID: id,
 	}
-
+	logger.Logger.Printf("User %d uploaded file - %s, %d B \n", user.ID, path, handler.Size)
 	finish, _ := json.Marshal(answer)
 	fmt.Fprintf((*w), string(finish))
 }

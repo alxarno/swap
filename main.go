@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"crypto/rand"
 	"crypto/tls"
-	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -13,6 +12,7 @@ import (
 	"path/filepath"
 
 	swapcrypto "github.com/alxarno/swap/crypto"
+	logger "github.com/alxarno/swap/logger"
 
 	db "github.com/alxarno/swap/db2"
 	"github.com/alxarno/swap/models"
@@ -62,34 +62,25 @@ func removeContents(dir string) error {
 // }
 
 func main() {
-	test := flag.Bool("test", false, "a bool")
-	flag.Parse()
 	_, err := settings.GetSettings()
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("Settings -> ", err.Error())
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		return
 	}
-	if *test {
-		settings.SetTestVar(true)
-	} else {
 
-	}
+	logger.Init(settings.ServiceSettings.Backend.FileLogs)
 
-	// if settings.ServiceSettings.Backend.Cert {
 	swapcrypto.InitCert()
-	// }
 
-	// swapcrypto.GenerateKeys()
-	// swapcrypto.Test()
-	err = db.BeginDB()
+	err = db.BeginDB(nil)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("DB -> ", err.Error())
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		return
 	}
 
-	engine.StartCoreMessenger(*test)
+	engine.StartCoreMessenger()
 	engine.ConnectActionsToDB()
 
 	router := newRouter()
@@ -100,26 +91,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	var clearIPs string
 	for _, a := range addrs {
 		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
 				myAddres += ipnet.IP.String()
 				myAddres += ":" + settings.ServiceSettings.Backend.Host + "\t"
-				if *test {
-					clearIPs = ipnet.IP.String() + ":" + settings.ServiceSettings.Backend.Host
-				}
 			}
 		}
 	}
 
-	if *test {
-		os.Stderr.WriteString(clearIPs)
-	} else {
-		printLogo()
-		os.Stderr.WriteString("Swap started on \t" + myAddres + "\n")
-	}
-	// if settings.ServiceSettings.Backend.Cert {
+	printLogo()
+	os.Stderr.WriteString("Swap started on \t" + myAddres + "\n")
+	logger.Logger.Println("Swap started ...")
+
 	tlsconfig := tls.Config{Certificates: []tls.Certificate{*swapcrypto.Cert}}
 	tlsconfig.Rand = rand.Reader
 	server := http.Server{
@@ -128,10 +112,5 @@ func main() {
 		Addr:      ":" + settings.ServiceSettings.Backend.Host,
 	}
 	log.Fatal("ListenAndServeTLS: ", server.ListenAndServeTLS("", ""))
-	// } else {
-	// 	log.Fatal("ListenAndServe: ", http.ListenAndServe(
-	// 		":"+settings.ServiceSettings.Backend.Host,
-	// 		router))
-	// }
 
 }

@@ -10,17 +10,17 @@ import (
 
 const (
 	//DialogAlreadyCreated - dialog was already created
-	DialogAlreadyCreated = "Dialog already created: "
+	DialogAlreadyCreated = "Dialog already created ->"
 	//CreatingChatFailed - chat creating failed
-	CreatingChatFailed = "Chat creating failed: "
+	CreatingChatFailed = "Chat creating failed ->"
 	//InsertingDialogFailed - inserting dialog in db failed
-	InsertingDialogFailed = "Dialog inserting into db failed: "
+	InsertingDialogFailed = "Dialog inserting into db failed ->"
 	//GettingDialogFailed - dialog getting failed
-	GettingDialogFailed = "Dialog getting failed: "
+	GettingDialogFailed = "Dialog getting failed ->"
 	//CheckingDialogExistsFailed - checking dialog exists failed
-	CheckingDialogExistsFailed = "Checking dialog exists failed: "
+	CheckingDialogExistsFailed = "Checking dialog exists failed ->"
 	//UsersDontHaveDialog - users dont have dialog
-	UsersDontHaveDialog = "Users doent have dialog: "
+	UsersDontHaveDialog = "Users doent have dialog ->"
 )
 
 //GetUsersForCreateDialog - return pointer to users slice for probably starting dialog

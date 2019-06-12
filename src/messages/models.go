@@ -45,6 +45,7 @@ type systemMessage struct {
 }
 type userConnection struct {
 	UserID            int64
+	RemoteAddr        string
 	MessageChan       chan models.NewMessageToUser
 	SystemMessageChan chan string
 	Auth              bool

@@ -3,9 +3,9 @@ TODO:
   + Refactor Message Engine and message
   + Remake urls to REST Spec(GET,POST,DELETE,PUT)
   + Dont recreate DB file in db tests
-  Add lanuage save
-  Some error before create config
-  Logs to file
+  + Add lanuage save
+  + Some error before create config
+  + Logs to file
   Create bundling
   Greaceful shootdown
 

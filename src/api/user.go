@@ -34,7 +34,7 @@ func enter(w *http.ResponseWriter, r *http.Request) {
 	user, err := db.GetUserByLoginAndPass(data.Login, data.Pass)
 	if err != nil {
 		sendAnswerError(ref, err,
-			fmt.Sprintf("login - %s, pass -%s", data.Login, strings.Repeat("*", utf8.RuneCountInString(data.Pass))),
+			fmt.Sprintf("login - %s, pass - %s", data.Login, strings.Repeat("*", utf8.RuneCountInString(data.Pass))),
 			failedGetUser, 1, w)
 		return
 	}

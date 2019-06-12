@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	logger "github.com/alxarno/swap/logger"
 	"github.com/alxarno/swap/settings"
 	api "github.com/alxarno/swap/src/api"
 	engine "github.com/alxarno/swap/src/messages"
@@ -14,9 +15,6 @@ import (
 )
 
 func apiRouter(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Auth-Token")
 	if (*r).Method == "OPTIONS" {
 		return
 	}
@@ -82,23 +80,6 @@ func info(w http.ResponseWriter, r *http.Request) {
 	w.Write(final)
 }
 
-// func proveConnect(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Set("Access-Control-Allow-Origin", "*")
-// 	var data proveConnection
-// 	decoder := json.NewDecoder(r.Body)
-// 	err := decoder.Decode(&data)
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	_, err = db.GetUserByLoginAndPass(data.Login, data.Pass)
-// 	if err != nil {
-// 		fmt.Fprintf(w, "Error")
-// 		return
-// 	}
-
-// 	fmt.Fprintf(w, "Connect")
-// }
-
 func downloadFile(w http.ResponseWriter, r *http.Request) {
 	sett, err := settings.GetSettings()
 	if err != nil {
@@ -126,77 +107,45 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 	if int64(iTime) < time.Now().Unix() {
 		w.Write([]byte("Link is unavailable"))
 	}
-	file := settings.FilesDirPath + sPath
+	file := settings.ServiceSettings.Backend.FilesPath + sPath
+	logger.Logger.Printf("%s downloading - %s \n", r.RemoteAddr, sPath)
 	http.ServeFile(w, r, file)
 }
 
-// type customWriter struct {
-// 	w     http.ResponseWriter
-// 	token string
-// }
+func middleware(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return cors(logs(handler))
+}
 
-// func (s customWriter) Write(data []byte) (int, error) {
-// 	key, err := engine.GetKeyByToken(s.token)
-// 	if err != nil {
-// 		return 0, errors.New("Cannot get user by key -> " + err.Error())
-// 	}
-// 	encMessage, err := swapcrypto.EncryptMessage(data, key)
-// 	if err != nil {
-// 		return 0, errors.New("Cannot encrypt data -> " + err.Error())
-// 	}
+func logs(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if (*r).Method != "OPTIONS" {
+			logger.Logger.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		}
+		handler(w, r)
+	}
+}
 
-// 	final, _ := json.Marshal(encMessage)
-// 	return s.w.Write(final)
-// }
-
-// func (s customWriter) Header() http.Header {
-// 	return s.w.Header()
-// }
-
-// func (s customWriter) WriteHeader(statusCode int) {
-// 	s.w.WriteHeader(statusCode)
-// }
-
-// func customEncryption(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		if !settings.ServiceSettings.Backend.Cert {
-// 			token := r.Header.Get("Authorization")
-// 			if token == "" {
-// 				log.Println("Token is undefined -> ", token)
-// 				return
-// 			}
-// 			var encryptedMessage models.EncryptedMessage
-// 			if err := json.NewDecoder(r.Body).Decode(&encryptedMessage); err != nil {
-// 				log.Println("Decode api call failed -> ", err.Error())
-// 				return
-// 			}
-// 			message, err := swapcrypto.DecryptMessage(encryptedMessage.Key, encryptedMessage.IV, encryptedMessage.Data)
-// 			if err != nil {
-// 				log.Println("Decrypt api call failed -> ", err.Error())
-// 				return
-// 			}
-// 			r.Body = ioutil.NopCloser(strings.NewReader(message))
-// 			r.ContentLength = int64(len(message))
-// 			cwriter := customWriter{w, token}
-// 			handler(cwriter, r)
-// 		} else {
-// 			handler(w, r)
-// 		}
-// 	}
-// }
+func cors(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Auth-Token")
+		handler(w, r)
+	}
+}
 
 func newRouter() *mux.Router {
 	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.HandleFunc("/", stand)
+	myRouter.HandleFunc("/", middleware(stand))
 	// myRouter.HandleFunc("/login", stand)
 	// myRouter.HandleFunc("/reg", stand)
-	myRouter.HandleFunc("/info", info)
+	myRouter.HandleFunc("/info", middleware(info))
 	// myRouter.HandleFunc("/messages", stand)
 	// myRouter.HandleFunc("/messages/{key}", stand)
-	myRouter.HandleFunc("/getFile/{link}/{name}", downloadFile)
+	myRouter.HandleFunc("/getFile/{link}/{name}", middleware(downloadFile))
 	myRouter.Handle("/ws", websocket.Handler(engine.ConnectionHandler))
 	// myRouter.HandleFunc("/proveConnect", proveConnect)
-	myRouter.HandleFunc("/api/{key}/{var1}", apiRouter)
+	myRouter.HandleFunc("/api/{key}/{var1}", middleware(apiRouter))
 	// myRouter.HandleFunc("/{key1}", logos)
 	// myRouter.HandleFunc("/{key1}/{key2}", fonts)
 	// myRouter.HandleFunc("/staticingzip/{key2}/{key3}", staticNotGzip)

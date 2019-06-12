@@ -2,6 +2,7 @@ package db2
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -65,20 +66,20 @@ func clearTestDB() {
 }
 
 // BeginDB - create connection or/and new DB file
-func BeginDB() error {
-	sett, err := settings.GetSettings()
-	if err != nil {
-		panic(err)
-	}
+func BeginDB(logger *log.Logger) error {
+	var err error
 	var dbPath = "test.db"
-	if !sett.Backend.Test {
+	if settings.ServiceSettings.DB.SQLite.Path != "" {
 		dbPath = settings.ServiceSettings.DB.SQLite.Path
 	}
 	db, err = gorm.Open("sqlite3", dbPath)
 	if err != nil {
-		panic("Failed connect")
+		panic("Failed connect " + err.Error())
 	}
 	db.LogMode(true)
+	if logger != nil {
+		db.SetLogger(logger)
+	}
 
 	registerModels()
 

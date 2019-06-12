@@ -9,13 +9,13 @@ import (
 
 const (
 	//CannotReadRandomBytes - reading reandom bytes failed
-	CannotReadRandomBytes = "Reading random bytes failed: "
+	CannotReadRandomBytes = "Reading random bytes failed ->"
 	//FileInsertingFailed = inserting file into db failed
-	FileInsertingFailed = "Inserting file into db failed: "
+	FileInsertingFailed = "Inserting file into db failed ->"
 	//CannotFindFile = file not found
-	CannotFindFile = "File not found: "
+	CannotFindFile = "File not found ->"
 	//CannotDeleteFile = file deleting failed
-	CannotDeleteFile = "File deleting failed: "
+	CannotDeleteFile = "File deleting failed ->"
 )
 
 func getRandomString(len int) (string, error) {

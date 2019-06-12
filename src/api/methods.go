@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
+
+	logger "github.com/alxarno/swap/logger"
 
 	db "github.com/alxarno/swap/db2"
 	"github.com/alxarno/swap/settings"
@@ -33,14 +34,14 @@ func getSecret() (string, error) {
 }
 
 func sendAnswerError(reference string, err error, data string, eType int, errCode int, w *http.ResponseWriter) {
-	log.Print(reference, errCode)
+	e := fmt.Sprintf("%s %d", reference, errCode)
 	if err != nil {
-		log.Print(err.Error())
+		e = fmt.Sprintf("%s %s", e, err.Error())
 	}
 	if data != "" {
-		log.Print(data)
+		e = fmt.Sprintf("%s %s", e, data)
 	}
-	log.Println()
+	logger.Logger.Print(e)
 
 	var answer = make(map[string]interface{})
 	answer["result"] = errorResult

@@ -16,15 +16,16 @@ var (
 )
 
 const fileName string = "./swap.json"
-const FilesDirPath string = "./files/"
-const MinFilesDirPath string = FilesDirPath + "min/"
+
+// const FilesDirPath string = "./files/"
+const MinFilesDirPath string = "min/"
 
 type settings struct {
 	Backend struct {
-		Test              bool   `json:"test"`
 		Host              string `json:"host"`
 		SecretKeyForToken string `json:"secret_key_for_token"`
 		FilesPath         string `json:"files_path"`
+		FileLogs          bool   `json:"fileLogs"`
 	} `json:"backend"`
 	Cert struct {
 		Org     string   `json:"org"`
@@ -36,15 +37,10 @@ type settings struct {
 		MaxMinutesForFile int64 `json:"max_minutes_available_for_files_download"`
 	} `json:"service"`
 	DB struct {
-		DataBaseType string `json:"db_type"`
-		SQLite       struct {
+		SQLite struct {
 			Path string `json:"file_path"`
 		} `json:"sqlite"`
 	} `json:"db"`
-}
-
-func SetTestVar(test bool) {
-	ServiceSettings.Backend.Test = test
 }
 
 func createConfig() (data []byte, err error) {
@@ -60,7 +56,7 @@ func createConfig() (data []byte, err error) {
 
 	defaultConfig := fmt.Sprintf(`{
 		"backend":{
-			"test": false,
+			"fileLogs": true,
 			"host": "3030",
 			"secret_key_for_token": "%s",
 			"files_path": "./files/"
@@ -75,7 +71,6 @@ func createConfig() (data []byte, err error) {
 			"max_minutes_available_for_files_download": 5
 		},
 		"db":{
-			"db_type":"l",
 			"sqlite":{
 				"file_path": "swap.db"
 			}
@@ -89,11 +84,6 @@ func createConfig() (data []byte, err error) {
 		return
 	}
 
-	if _, err := os.Stat(FilesDirPath); os.IsNotExist(err) {
-		os.MkdirAll(MinFilesDirPath, os.ModePerm)
-	} else {
-		panic("Folder for docs already exist delete it or move")
-	}
 	b, err := ioutil.ReadFile(fileName)
 	return b, err
 }
@@ -110,12 +100,15 @@ func LoadSettings() error {
 		} else {
 			return errors.New("Strange config problem -> " + err.Error())
 		}
-
 	}
+
 	err = json.Unmarshal(b, &ServiceSettings)
 	if err != nil {
 		fmt.Println("Config unmarshaling error")
 		return err
+	}
+	if _, err := os.Stat(ServiceSettings.Backend.FilesPath + MinFilesDirPath); os.IsNotExist(err) {
+		os.MkdirAll(ServiceSettings.Backend.FilesPath+MinFilesDirPath, os.ModePerm)
 	}
 	return nil
 }

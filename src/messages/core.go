@@ -33,6 +33,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/alxarno/swap/logger"
+
 	models "github.com/alxarno/swap/models"
 
 	"golang.org/x/net/websocket"
@@ -41,7 +43,6 @@ import (
 )
 
 var (
-	debug    bool
 	users    = []*userConnection{}
 	entering = make(chan *userConnection)
 	leaving  = make(chan *userConnection)
@@ -54,9 +55,7 @@ func (s *userConnection) writerUserSys(ws *websocket.Conn) {
 	for sysMsg := range s.SystemMessageChan {
 
 		if err := websocket.Message.Send(ws, string(sysMsg)); err != nil {
-			if debug {
-				log.Println(fmt.Sprintf("%s  %s", writingSystemChannelFailed, err.Error()))
-			}
+			log.Println(fmt.Sprintf("%s  %s", writingSystemChannelFailed, err.Error()))
 			break
 		}
 	}
@@ -67,16 +66,12 @@ func (s *userConnection) writerUser(ws *websocket.Conn) {
 
 		nowMessage, err := json.Marshal(msg)
 		if err != nil {
-			if debug {
-				log.Println(fmt.Sprintf("Writer User -> %s  %s", marshalingMessageFailed, err.Error()))
-			}
+			log.Println(fmt.Sprintf("Writer User -> %s  %s", marshalingMessageFailed, err.Error()))
 			continue
 		}
 
 		if err := websocket.Message.Send(ws, string(nowMessage)); err != nil {
-			if debug {
-				log.Println(fmt.Sprintf("Writer User -> %s  %s", writingMessageChannelFailed, err.Error()))
-			}
+			log.Println(fmt.Sprintf("Writer User -> %s  %s", writingMessageChannelFailed, err.Error()))
 			break
 		}
 	}
@@ -85,9 +80,7 @@ func (s *userConnection) writerUser(ws *websocket.Conn) {
 func decodeNewMessage(msg string, connect *userConnection) {
 	var data = make(map[string]interface{})
 	if err := json.Unmarshal([]byte(msg), &data); err != nil {
-		if debug {
-			log.Println(fmt.Sprintf("Decode New Message -> %s  %s", unmarshalingMessageFailed, err.Error()))
-		}
+		log.Println(fmt.Sprintf("Decode New Message -> %s  %s", unmarshalingMessageFailed, err.Error()))
 		return
 	}
 	switch data[messageTypeField] {
@@ -105,9 +98,7 @@ func decodeNewMessage(msg string, connect *userConnection) {
 	case messageTypeUser:
 		messageToUser, err := userMsg(msg)
 		if err != nil {
-			if debug {
-				log.Println("Decode User Message -> " + err.Error())
-			}
+			log.Println("Decode User Message -> " + err.Error())
 			return
 		}
 		sendMessages <- *messageToUser
@@ -120,11 +111,13 @@ func ConnectionHandler(ws *websocket.Conn) {
 	user := &userConnection{}
 	user.MessageChan = make(chan models.NewMessageToUser)
 	user.SystemMessageChan = make(chan string)
+	user.RemoteAddr = ws.Request().RemoteAddr
 
 	go user.writerUser(ws)
 	go user.writerUserSys(ws)
 
 	entering <- user
+	logger.Logger.Printf("WS user * connected from %s", user.RemoteAddr)
 	for {
 		var reply string
 
@@ -135,6 +128,7 @@ func ConnectionHandler(ws *websocket.Conn) {
 
 	}
 	leaving <- user
+	logger.Logger.Printf("WS user %d disconnected %s", user.UserID, user.RemoteAddr)
 	ws.Close()
 }
 
@@ -163,6 +157,7 @@ func broadcaster() {
 		case cli := <-entering:
 			users = append(users, cli)
 		case cli := <-leaving:
+
 			//delete connection from list online users
 			index := -1
 			for i := 0; i < len(users); i++ {
@@ -180,7 +175,6 @@ func broadcaster() {
 }
 
 //StartCoreMessenger - starting message engine
-func StartCoreMessenger(_debug bool) {
-	debug = _debug
+func StartCoreMessenger() {
 	go broadcaster()
 }

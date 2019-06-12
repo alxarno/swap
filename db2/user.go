@@ -11,21 +11,21 @@ import (
 
 const (
 	//UserInsertError - User insertion into DB failed
-	UserInsertError = "User insert error -> "
+	UserInsertError = "User insert error ->"
 	//UserUpdateError - User updation into DB failed
-	UserUpdateError = "User updating failed -> "
+	UserUpdateError = "User updating failed ->"
 	//UserWithThisLoginAlreadyExists - User with this login already exists in DB
-	UserWithThisLoginAlreadyExists = "User with this login already exists -> "
+	UserWithThisLoginAlreadyExists = "User with this login already exists ->"
 	//GetChatInfoError - Getting chat's info failed
-	GetChatInfoError = "Getting chat info failed -> "
+	GetChatInfoError = "Getting chat info failed ->"
 	//UserNotFound - User with this data doesnt exist
-	UserNotFound = "User not found -> "
+	UserNotFound = "User not found ->"
 	//PasswordEncodingFailed - Password encoding failed
-	PasswordEncodingFailed = "Pass encoding failed -> "
+	PasswordEncodingFailed = "Pass encoding failed ->"
 	//GetMessageError - getting message failed
-	GetMessageError = "Getting message failed -> "
+	GetMessageError = "Getting message failed ->"
 	//MessageContentDecodeError - decoding message was failed
-	MessageContentDecodeError = "Message's content decoding failed -> "
+	MessageContentDecodeError = "Message's content decoding failed ->"
 )
 
 func encodePass(pass string) (string, error) {
