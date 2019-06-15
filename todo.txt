@@ -6,6 +6,7 @@ TODO:
   + Add lanuage save
   + Some error before create config
   + Logs to file
+  ~ Change route architecture
   Create bundling
   Greaceful shootdown
 

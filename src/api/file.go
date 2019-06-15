@@ -32,6 +32,13 @@ type fileInfoBuff struct {
 	name      string
 }
 
+func registerFileEndpoints(r *Router) {
+	r.Route("/upload", uploadFile, "PUT")
+	r.Route("/{id:[0-9]+}", getFile, "GET")
+	r.Route("/{id:[0-9]+}/delete", deleteFile, "DELETE")
+	r.Route("/{id:[0-9]+}/link", getDisposableFileLink, "GET")
+}
+
 func rebuildFileDataTypes(buff fileInfoBuff) (fileInfo, error) {
 	var res fileInfo
 
@@ -55,7 +62,7 @@ func rebuildFileDataTypes(buff fileInfoBuff) (fileInfo, error) {
 	return res, nil
 }
 
-func uploadFile(w *http.ResponseWriter, r *http.Request) {
+func uploadFile(w http.ResponseWriter, r *http.Request) {
 	const ref string = "File upload API:"
 	err := r.ParseMultipartForm(settings.ServiceSettings.Service.MaxFileSize)
 	if err != nil {
@@ -69,7 +76,7 @@ func uploadFile(w *http.ResponseWriter, r *http.Request) {
 	buff.fileType = r.FormValue("type")
 	buff.duration = r.FormValue("duration")
 
-	user, err := getUserByToken(r)
+	user, err := UserByHeader(r)
 	if err != nil {
 		sendAnswerError(ref, err, r.Header.Get("X-Auth-Token"), invalidToken, 1, w)
 		return
@@ -108,29 +115,20 @@ func uploadFile(w *http.ResponseWriter, r *http.Request) {
 	}
 	logger.Logger.Printf("User %d uploaded file - %s, %d B \n", user.ID, path, handler.Size)
 	finish, _ := json.Marshal(answer)
-	fmt.Fprintf((*w), string(finish))
+	fmt.Fprintf(w, string(finish))
 }
 
-func deleteFile(w *http.ResponseWriter, r *http.Request) {
+func deleteFile(w http.ResponseWriter, r *http.Request) {
 	const ref string = "File delete API:"
-	var data struct {
-		FileID int64 `json:"file_id,integer"`
-	}
-	decoder := json.NewDecoder(r.Body)
-	defer r.Body.Close()
-	err := decoder.Decode(&data)
-	if err != nil {
-		decodeFail(ref, err, r, w)
-		return
-	}
-	user, err := getUserByToken(r)
+	fileID := pageNumber(r, 2)
+	user, err := UserByHeader(r)
 	if err != nil {
 		sendAnswerError(ref, err, r.Header.Get("X-Auth-Token"), invalidToken, 1, w)
 		return
 	}
-	path, err := db.DeleteFile(data.FileID, user.ID)
+	path, err := db.DeleteFile(fileID, user.ID)
 	if err != nil {
-		sendAnswerError(ref, err, fmt.Sprintf("userID - %d, fileID - %d", user.ID, data.FileID), failedDeleteFileDB, 2, w)
+		sendAnswerError(ref, err, fmt.Sprintf("userID - %d, fileID - %d", user.ID, fileID), failedDeleteFileDB, 2, w)
 		return
 	}
 
@@ -152,30 +150,20 @@ func deleteFile(w *http.ResponseWriter, r *http.Request) {
 		Result: successResult,
 	}
 	finish, _ := json.Marshal(answer)
-	fmt.Fprintf((*w), string(finish))
+	fmt.Fprintf(w, string(finish))
 }
 
-func getDisposableFileLink(w *http.ResponseWriter, r *http.Request) {
+func getDisposableFileLink(w http.ResponseWriter, r *http.Request) {
 	const ref string = "File disposable link API:"
-	var data struct {
-		FileID int64 `json:"file_id,integer"`
-	}
-
-	decoder := json.NewDecoder(r.Body)
-	defer r.Body.Close()
-	err := decoder.Decode(&data)
+	fileID := pageNumber(r, 2)
+	user, err := UserByHeader(r)
 	if err != nil {
-		decodeFail(ref, err, r, w)
+		sendAnswerError(ref, err, getToken(r), invalidToken, 1, w)
 		return
 	}
-	user, err := getUserByToken(r)
+	path, err := db.CheckFileRights(user.ID, fileID)
 	if err != nil {
-		sendAnswerError(ref, err, r.Header.Get("X-Auth-Token"), invalidToken, 1, w)
-		return
-	}
-	path, err := db.CheckFileRights(user.ID, data.FileID)
-	if err != nil {
-		sendAnswerError(ref, err, fmt.Sprintf("userID - %d, fileID - %d", user.ID, data.FileID), haventRightsForAction, 2, w)
+		sendAnswerError(ref, err, fmt.Sprintf("userID - %d, fileID - %d", user.ID, fileID), haventRightsForAction, 2, w)
 		return
 	}
 	sett, err := settings.GetSettings()
@@ -207,36 +195,26 @@ func getDisposableFileLink(w *http.ResponseWriter, r *http.Request) {
 	}
 
 	finish, _ := json.Marshal(answer)
-	fmt.Fprintf((*w), string(finish))
+	fmt.Fprintf(w, string(finish))
 
 }
 
-func getFile(w *http.ResponseWriter, r *http.Request) {
+func getFile(w http.ResponseWriter, r *http.Request) {
 	const ref string = "File get file API:"
-	var data struct {
-		FileID int64 `json:"file_id,integer"`
-		Min    bool  `json:"min"`
-	}
-
-	decoder := json.NewDecoder(r.Body)
-	defer r.Body.Close()
-	err := decoder.Decode(&data)
+	min := (r.URL.Query().Get("min") == "")
+	fileID := pageNumber(r, 1)
+	user, err := UserByHeader(r)
 	if err != nil {
-		decodeFail(ref, err, r, w)
+		sendAnswerError(ref, err, getToken(r), invalidToken, 1, w)
 		return
 	}
-	user, err := getUserByToken(r)
+	path, err := db.CheckFileRights(user.ID, fileID)
 	if err != nil {
-		sendAnswerError(ref, err, r.Header.Get("X-Auth-Token"), invalidToken, 1, w)
-		return
-	}
-	path, err := db.CheckFileRights(user.ID, data.FileID)
-	if err != nil {
-		sendAnswerError(ref, err, fmt.Sprintf("userID - %d, chatID - %d", user.ID, data.FileID), haventRightsForAction, 2, w)
+		sendAnswerError(ref, err, fmt.Sprintf("userID - %d, chatID - %d", user.ID, fileID), haventRightsForAction, 2, w)
 		return
 	}
 	file := settings.ServiceSettings.Backend.FilesPath + path
-	if data.Min {
+	if min {
 		file = settings.ServiceSettings.Backend.FilesPath + "min/" + path
 	}
 
@@ -251,21 +229,6 @@ func getFile(w *http.ResponseWriter, r *http.Request) {
 		// 	}
 		// }
 	}
-	http.ServeFile((*w), r, file)
+	http.ServeFile(w, r, file)
 	return
-}
-
-func fileAPI(var1 string, w *http.ResponseWriter, r *http.Request) {
-	switch var1 {
-	case "upload":
-		uploadFile(w, r)
-	case "delete":
-		deleteFile(w, r)
-	case "get":
-		getFile(w, r)
-	case "link":
-		getDisposableFileLink(w, r)
-	default:
-		sendAnswerError("File API Router", nil, "", endPointNotFound, 0, w)
-	}
 }

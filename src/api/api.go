@@ -1,16 +1,9 @@
 package api
 
-import "net/http"
-
-func Api(key string, var1 string, w *http.ResponseWriter, r *http.Request) {
-	switch key {
-	case "user":
-		userAPI(var1, w, r)
-	case "chat":
-		chatAPI(var1, w, r)
-	case "file":
-		fileAPI(var1, w, r)
-	case "messages":
-		messagesAPI(var1, w, r)
-	}
+// RegisterEndpoints - registr endpoints
+func RegisterEndpoints(r *Router) {
+	registerUserEndpoints(r.Subroute("/user"))
+	registerChatEndpoints(r.Subroute("/chat"))
+	registerFileEndpoints(r.Subroute("/file"))
+	registerMessagesEndpoints(r.Subroute("/messages"))
 }

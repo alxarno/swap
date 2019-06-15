@@ -78,7 +78,6 @@ func TestAddMessage(t *testing.T) {
 }
 
 func TestGetMessages(t *testing.T) {
-	return
 	clearTestDB()
 	user := User{Login: "user1", Pass: "1234"}
 	var err error

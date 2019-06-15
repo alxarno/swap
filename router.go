@@ -5,22 +5,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/alxarno/swap/src/api"
+
 	logger "github.com/alxarno/swap/logger"
 	"github.com/alxarno/swap/settings"
-	api "github.com/alxarno/swap/src/api"
 	engine "github.com/alxarno/swap/src/messages"
 	"github.com/gorilla/mux"
 	"github.com/robbert229/jwt"
 	"golang.org/x/net/websocket"
 )
 
-func apiRouter(w http.ResponseWriter, r *http.Request) {
-	if (*r).Method == "OPTIONS" {
-		return
-	}
-	vars := mux.Vars(r)
-	api.Api(vars["key"], vars["var1"], &w, r)
-}
+type route func(pattern string, handler func(w http.ResponseWriter, r *http.Request), methods ...string)
+type subroute func(pattern string) *api.Router
 
 func stand(w http.ResponseWriter, r *http.Request) {
 	file := "./frontend/index.html"
@@ -145,11 +141,39 @@ func newRouter() *mux.Router {
 	myRouter.HandleFunc("/getFile/{link}/{name}", middleware(downloadFile))
 	myRouter.Handle("/ws", websocket.Handler(engine.ConnectionHandler))
 	// myRouter.HandleFunc("/proveConnect", proveConnect)
-	myRouter.HandleFunc("/api/{key}/{var1}", middleware(apiRouter))
+	api.RegisterEndpoints(newSubRoute(myRouter)("/api"))
 	// myRouter.HandleFunc("/{key1}", logos)
 	// myRouter.HandleFunc("/{key1}/{key2}", fonts)
 	// myRouter.HandleFunc("/staticingzip/{key2}/{key3}", staticNotGzip)
 	// myRouter.HandleFunc("/{key1}/{key2}/{key3}", static)
 
 	return myRouter
+}
+
+func newRoute(router *mux.Router) route {
+	return func(pattern string, handler func(w http.ResponseWriter, r *http.Request), methods ...string) {
+		r := (*router).HandleFunc(pattern, handler)
+		if len(methods) > 1 {
+			r.MatcherFunc(func(r *http.Request, rm *mux.RouteMatch) bool {
+				for _, v := range methods {
+					if v == r.Method {
+						return true
+					}
+				}
+				return false
+			})
+		} else {
+			r.Methods(methods[0])
+		}
+	}
+}
+
+func newSubRoute(router *mux.Router) subroute {
+	return func(pattern string) *api.Router {
+		r := (*router).PathPrefix(pattern).Subrouter()
+		return &api.Router{
+			Route:    newRoute(r),
+			Subroute: newSubRoute(r),
+		}
+	}
 }
