@@ -2,26 +2,25 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
+	"path"
+	"path/filepath"
 	"time"
 
-	db "github.com/swap-messenger/Backend/db"
-	"github.com/swap-messenger/Backend/settings"
-	api "github.com/swap-messenger/Backend/src/api"
-	engine "github.com/swap-messenger/Backend/src/message_engine"
+	"github.com/alxarno/swap/src/api"
+
+	logger "github.com/alxarno/swap/logger"
+	"github.com/alxarno/swap/settings"
+	engine "github.com/alxarno/swap/src/messages"
+	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
 	"github.com/robbert229/jwt"
 	"golang.org/x/net/websocket"
-	// "google.golang.org/genproto/protobuf/api"
 )
 
-func apiRouter(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	vars := mux.Vars(r)
-	api.Api(vars["key"], vars["var1"], w, r)
-}
+type route func(string, func(http.ResponseWriter, *http.Request), ...string)
+type subroute func(string) *api.Router
+type middlewareFunc func(http.Handler) http.Handler
 
 func stand(w http.ResponseWriter, r *http.Request) {
 	file := "./frontend/index.html"
@@ -67,21 +66,18 @@ func fonts(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func proveConnect(w http.ResponseWriter, r *http.Request) {
+func info(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	var data *ProveConnection
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&data)
-	if err != nil {
-		log.Println(err)
-	}
-	_, err = db.GetUser("login", map[string]interface{}{"login": data.Login, "pass": data.Pass})
-	if err != nil {
-		fmt.Fprintf(w, "Error")
-		return
+	var answer = struct {
+		Cert        bool  `json:"cert"`
+		MaxFileSize int64 `json:"maxFileSize"`
+	}{
+		Cert:        true,
+		MaxFileSize: settings.ServiceSettings.Service.MaxFileSize,
 	}
 
-	fmt.Fprintf(w, "Connect")
+	final, _ := json.Marshal(answer)
+	w.Write(final)
 }
 
 func downloadFile(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +89,6 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 	secret := sett.Backend.SecretKeyForToken
 	vars := mux.Vars(r)
 	algorithm := jwt.HmacSha256(secret)
-	// Gologer.PInfo(vars["link"])
 
 	claims, err := algorithm.Decode(vars["link"])
 	if err != nil {
@@ -112,26 +107,89 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 	if int64(iTime) < time.Now().Unix() {
 		w.Write([]byte("Link is unavailable"))
 	}
-	// Gologer.PInfo(sPath)
-	file := "./public/files/" + sPath
+	file := settings.ServiceSettings.Backend.FilesPath + sPath
+	logger.Logger.Printf("%s downloading - %s \n", r.RemoteAddr, sPath)
 	http.ServeFile(w, r, file)
 }
 
+func logginMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.Logger.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func AdditionalHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if filepath.Ext(path.Base(r.URL.Path)) == ".js" {
+			w.Header().Add("Content-Type", "application/javascript")
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func _CORSMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Auth-Token")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func newRouter() *mux.Router {
+	box := packr.NewBox("./ui")
 	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.HandleFunc("/", stand)
-	myRouter.HandleFunc("/login", stand)
-	myRouter.HandleFunc("/reg", stand)
-	myRouter.HandleFunc("/messages", stand)
-	myRouter.HandleFunc("/messages/{key}", stand)
+	myRouter.Handle("/", http.FileServer(box))
+	myRouter.HandleFunc("/info", info)
 	myRouter.HandleFunc("/getFile/{link}/{name}", downloadFile)
-	myRouter.Handle("/ws", websocket.Handler(engine.SocketListener))
-	myRouter.HandleFunc("/proveConnect", proveConnect)
-	myRouter.HandleFunc("/api/{key}/{var1}", apiRouter)
-	myRouter.HandleFunc("/{key1}", logos)
-	myRouter.HandleFunc("/{key1}/{key2}", fonts)
-	myRouter.HandleFunc("/staticingzip/{key2}/{key3}", staticNotGzip)
-	myRouter.HandleFunc("/{key1}/{key2}/{key3}", static)
+	myRouter.Handle("/ws", websocket.Handler(engine.ConnectionHandler))
+	api.RegisterEndpoints(newSubRoute(myRouter)("/api"))
+
+	myRouter.Handle("/{key1}", http.FileServer(box))
+	myRouter.Handle("/{key1}/{key2}", http.FileServer(box))
+
+	myRouter.Use(logginMiddleware)
+	if settings.ServiceSettings.Service.CORS {
+		myRouter.Use(_CORSMiddleware)
+	}
+	myRouter.Use(AdditionalHeaders)
 
 	return myRouter
+}
+
+func newRoute(router *mux.Router) route {
+	return func(pattern string, handler func(w http.ResponseWriter, r *http.Request), methods ...string) {
+		r := (*router).HandleFunc(pattern, handler)
+		if len(methods) > 1 {
+			r.MatcherFunc(func(r *http.Request, rm *mux.RouteMatch) bool {
+				// For Cross Domain requests need additional OPTIONS request
+				if settings.ServiceSettings.Service.CORS && r.Method == http.MethodOptions {
+					return true
+				}
+				for _, v := range methods {
+					if v == r.Method {
+						return true
+					}
+				}
+				return false
+			})
+		} else {
+			if settings.ServiceSettings.Service.CORS {
+				r.Methods(methods[0], "OPTIONS")
+			} else {
+				r.Methods(methods[0])
+			}
+		}
+	}
+}
+
+func newSubRoute(router *mux.Router) subroute {
+	return func(pattern string) *api.Router {
+		r := (*router).PathPrefix(pattern).Subrouter()
+		return &api.Router{
+			Route:    newRoute(r),
+			Subroute: newSubRoute(r),
+		}
+	}
 }

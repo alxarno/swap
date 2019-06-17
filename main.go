@@ -2,7 +2,8 @@ package main
 
 import (
 	"bufio"
-	"flag"
+	"crypto/rand"
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net"
@@ -10,25 +11,26 @@ import (
 	"os"
 	"path/filepath"
 
-	db "github.com/swap-messenger/Backend/db"
-	"github.com/swap-messenger/Backend/models"
-	"github.com/swap-messenger/Backend/settings"
+	swapcrypto "github.com/alxarno/swap/crypto"
+	logger "github.com/alxarno/swap/logger"
 
-	engine "github.com/swap-messenger/Backend/src/message_engine"
-	// "github.com/AlexeyArno/Gologer"
+	db "github.com/alxarno/swap/db2"
+	"github.com/alxarno/swap/models"
+	"github.com/alxarno/swap/settings"
+	engine "github.com/alxarno/swap/src/messages"
 )
 
-type ProveConnection struct {
+type proveConnection struct {
 	Login string
 	Pass  string
 }
 
-type RequestGetMessage struct {
-	Author  string
-	Chat_Id float64
+type requestGetMessage struct {
+	Author string
+	ChatID int64
 }
 
-type ErrorAnswer struct {
+type errorAnswer struct {
 	Result string
 	Type   string
 }
@@ -60,31 +62,26 @@ func removeContents(dir string) error {
 // }
 
 func main() {
-	test := flag.Bool("test", false, "a bool")
-	flag.Parse()
 	_, err := settings.GetSettings()
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("Settings -> ", err.Error())
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		return
 	}
-	if *test {
-		settings.SetTestVar(true)
-	} else {
 
-	}
+	logger.Init(settings.ServiceSettings.Backend.FileLogs)
 
-	engine.ConnectActionsToDB()
-	err = db.BeginDB()
+	swapcrypto.InitCert()
+
+	err = db.BeginDB(nil)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("DB -> ", err.Error())
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		return
 	}
-
-	//go broadcaster()
 
 	engine.StartCoreMessenger()
+	engine.ConnectActionsToDB()
 
 	router := newRouter()
 	myAddres := ""
@@ -94,38 +91,26 @@ func main() {
 		os.Exit(1)
 	}
 
-	var clearIPs string
 	for _, a := range addrs {
 		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
 				myAddres += ipnet.IP.String()
 				myAddres += ":" + settings.ServiceSettings.Backend.Host + "\t"
-				if *test {
-					clearIPs = ipnet.IP.String() + ":" + settings.ServiceSettings.Backend.Host
-				}
 			}
 		}
 	}
 
-	// log.Println(models.MESSAGE_COMMAND_USER_CREATED_CHAT)
+	printLogo()
+	os.Stderr.WriteString("Swap started on \t" + myAddres + "\n")
+	logger.Logger.Println("Swap started ...")
 
-	if *test {
-		os.Stderr.WriteString(clearIPs)
-	} else {
-		printLogo()
-		os.Stderr.WriteString("Swap started on \t" + myAddres + "\n")
+	tlsconfig := tls.Config{Certificates: []tls.Certificate{*swapcrypto.Cert}}
+	tlsconfig.Rand = rand.Reader
+	server := http.Server{
+		TLSConfig: &tlsconfig,
+		Handler:   router,
+		Addr:      ":" + settings.ServiceSettings.Backend.Host,
 	}
-
-	if settings.ServiceSettings.Backend.Encryption {
-		log.Fatal("ListenAndServeTLS: ", http.ListenAndServeTLS(
-			":"+settings.ServiceSettings.Backend.Host,
-			settings.ServiceSettings.Backend.CertFile,
-			settings.ServiceSettings.Backend.KeyFile,
-			router))
-	} else {
-		log.Fatal("ListenAndServe: ", http.ListenAndServe(
-			":"+settings.ServiceSettings.Backend.Host,
-			router))
-	}
+	log.Fatal("ListenAndServeTLS: ", server.ListenAndServeTLS("", ""))
 
 }

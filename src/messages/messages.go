@@ -1,190 +1,99 @@
-package messages
+package messageengine
 
 import (
 	"encoding/json"
 
-	// "github.com/AlexeyArno/Gologer"
-	"github.com/swap-messenger/Backend/db"
-	"github.com/swap-messenger/Backend/models"
-	"github.com/swap-messenger/Backend/src/api"
+	db "github.com/alxarno/swap/db2"
+	"github.com/alxarno/swap/models"
+	"github.com/alxarno/swap/src/api"
 )
 
-type NewMessageFormUser struct {
-	ChatId  int64                  `json:"Chat_Id"`
+type newMessageFormUser struct {
+	ChatID  int64                  `json:"Chat_Id"`
 	Content *models.MessageContent `json:"Content"`
 	Token   string                 `json:"Token"`
 }
 
-type NewMessageReceive struct {
-	ChatId  int64                  `json:"Chat_Id"`
-	Content *MessageContentReceive `json:"Content"`
-	Token   string                 `json:"Token"`
+type newMessageReceive struct {
+	ChatID  int64                  `json:"chatID"`
+	Content *messageContentReceive `json:"content"`
+	Token   string                 `json:"token"`
 }
 
-type MessageContentReceive struct {
-	Message   string    `json:"content"`
-	Documents []float64 `json:"documents"`
-	Type      string    `json:"type"`
+type messageContentReceive struct {
+	Message   string  `json:"content"`
+	Documents []int64 `json:"documents"`
+	Type      int     `json:"type"`
 }
 
-func NewMessage(userQuest *string) (models.NewMessageToUser, error) {
-	var send models.NewMessageToUser
-	var data NewMessageFormUser
-	message := []byte(*userQuest)
-	err := json.Unmarshal(message, &data)
-	if err != nil {
-		// Gologer.PError(err.Error())
-		return send, err
-	}
-	//if data.chatId == nil {
-	//	return send, errors.New("chatId is missing or null!")
-	//}
-	//if data.Token == nil {
-	//	return send, errors.New("Token is missing or null!")
-	//}
-	//if data.Content  == nil {
-	//	return send, errors.New("Content is missing or null!")
-	//}
-	//if data.Content.Message  == nil {
-	//	return send, errors.New("Content.Message is missing or null!")
-	//}
-	//if data.Content.Documents  == nil {
-	//	return send, errors.New("Content.Documents is missing or null!")
-	//}
-	//if data.Content.Type  == nil {
-	//	return send, errors.New("Content.Type is missing or null!")
-	//}
-	//token := *data.Token
-	user, err := api.TestUserToken(data.Token)
-	if err != nil {
-		// Gologer.PError(err.Error())
-		return send, err
-	}
-	content, err := json.Marshal(*data.Content)
-	if err != nil {
-		// Gologer.PError(err.Error())
-		return send, err
-	}
-	messageId, err := db.SendMessage(user.Id, data.ChatId, string(content), 0, 0)
-	if err != nil {
-		// Gologer.PError(err.Error())
-		return send, err
-	}
-	//newContent,err := methods.ProcessMessageFromUserToUser( data.Content)
-	//if err != nil{
-	//	return  send,err
-	//}
-	//fmt.Println(newContent)
-
-	//Get file information
-	var documents []map[string]interface{}
-
-	for _, v := range data.Content.Documents {
-		doc, err := db.GetFileInformation(v)
-		if err != nil {
-			continue
-		}
-		documents = append(documents, doc)
-	}
-
-	var newMess models.MessageContentToUser
-
-	newMess.Message = data.Content.Message
-	newMess.Type = data.Content.Type
-	newMess.Documents = documents
-
-	send.ID = messageId
-	send.AuthorId = user.Id
-	send.AuthorName = user.Name
-	send.ChatId = data.ChatId
-	send.Content = &newMess
-	return send, nil
-
-}
-
-func NewMessageAnother(userQuest *string) (models.NewMessageToUser, error) {
-	// log.Println(*userQuest)
+func newMessageAnother(userQuest string) (models.NewMessageToUser, error) {
 	var send models.NewMessageToUser
 	var dataReceive struct {
-		Type    string
-		Content NewMessageReceive
+		Type    string            `json:"mtype"`
+		Content newMessageReceive `json:"content"`
 	}
 
-	message := []byte(*userQuest)
+	message := []byte(userQuest)
 	err := json.Unmarshal(message, &dataReceive)
 	if err != nil {
 		return send, err
 	}
 
-	//if data.Content.chatId == nil {
-	//	return send, errors.New("chatId is missing or null!")
-	//}
-	//if data.Content.Token == nil {
-	//	return send, errors.New("Token is missing or null!")
-	//}
-	//if data.Content.Content  == nil {
-	//	return send, errors.New("Content is missing or null!")
-	//}
-	//if data.Content.Content.Message  == nil {
-	//	return send, errors.New("Content.Message is missing or null!")
-	//}
-	//if data.Content.Content.Documents  == nil {
-	//	return send, errors.New("Content.Documents is missing or null!")
-	//}
-	//if data.Content.Content.Type  == nil {
-	//	return send, errors.New("Content.Type is missing or null!")
-	//}
-	//token := *data.Content.Token
 	user, err := api.TestUserToken(dataReceive.Content.Token)
 	if err != nil {
-		// Gologer.PError(err.Error())
 		return send, err
 	}
 
-	// Gologer.PInfo(strconv.FormatInt(user.Id, 10))
-	//content,err:= json.Marshal(*data.Content.Content);if err!=nil{
-	//	//Gologer.PError(err.Error())
-	//	return  send,err
-	//}
-	messageCon, err := json.Marshal(dataReceive.Content.Content)
+	messageID, err := db.AddMessage(user.ID, dataReceive.Content.ChatID,
+		dataReceive.Content.Content.Message, dataReceive.Content.Content.Documents,
+		models.UserMessageType, models.MessageCommandNull)
 	if err != nil {
-		// Gologer.PError(err.Error())
 		return send, err
 	}
-	mId, err := db.SendClearMessage(user.Id, dataReceive.Content.ChatId, string(messageCon))
-	if err != nil {
-		//Gologer.PError(err.Error())
-		return send, err
-	}
-	//newContent,err := methods.ProcessMessageFromUserToUser( data.Content.Content)
-	//if err != nil{
-	//	fmt.Println(err.Error())
-	//	return  send,err
-	//}
-	//fmt.Println(newContent)
-	var documents []map[string]interface{}
+
+	var documents []models.File
 
 	for _, v := range dataReceive.Content.Content.Documents {
-		doc, err := db.GetFileInformation(int64(v))
+		doc, err := db.GetFile(v)
 		if err != nil {
 			continue
 		}
-		documents = append(documents, doc)
+		documents = append(documents, models.File{
+			AuthorID: doc.AuthorID, ChatID: doc.ChatID,
+			Duration: doc.Duration,
+			ID:       doc.ID, Name: doc.Name, Path: doc.Path,
+			RatioSize: doc.RatioSize, Size: doc.Size,
+		})
 	}
 
 	var newMess models.MessageContentToUser
 
 	newMess.Message = dataReceive.Content.Content.Message
 	newMess.Type = dataReceive.Content.Content.Type
-	newMess.Documents = documents
+	newMess.Documents = &documents
 
-	send.ID = mId
-	send.AuthorId = user.Id
+	send.ID = messageID
+	send.AuthorID = user.ID
+	send.AuthorLogin = user.Login
 	send.AuthorName = user.Name
-	send.ChatId = dataReceive.Content.ChatId
+	send.ChatID = dataReceive.Content.ChatID
 	send.Content = &newMess
+	send.Type = messageTypeUser
 	return send, nil
-
 }
 
-//func NewMessagev2(msg *string)
+func userMessageFromPure(mID int64, chatID int64, command models.MessageCommand, authorID int64, time int64) (message models.NewMessageToUser, err error) {
+	user, err := db.GetUserByID(authorID)
+	if err != nil {
+		return
+	}
+	message.AuthorID = user.ID
+	message.AuthorLogin = user.Login
+	message.AuthorName = user.Name
+	message.ChatID = chatID
+	message.ID = mID
+	message.Time = time
+	message.Type = messageTypeUser
+	message.Content = &models.MessageContentToUser{Command: int(command), Documents: &([]models.File{}), Message: "", Type: int(models.SystemMessageType)}
+	return
+}

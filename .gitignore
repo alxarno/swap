@@ -1,16 +1,24 @@
-# See http://help.github.com/ignore-files/ for more about ignoring files.
-
-# dependencies
 .idea
 public
 security
+*.db
 app.db
 data.db
 swap.db
 test.db
+/files
 integration_tests/venv
 /integration_tests/venv
 integration_tests/src/.idea
 integration_tests\venv
 \integration_tests\venv
 tmp
+swap.crt
+swap.key
+*.crt
+*.key
+swap.json
+ui/
+prod/
+build/
+releases/

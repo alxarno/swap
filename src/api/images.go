@@ -1,18 +1,16 @@
 package api
 
 import (
-	//"github.com/nfnt/resize"
-	"log"
-	"os"
-	"strings"
-	//"fmt"
 	"errors"
 	"image"
 	"image/jpeg"
 	"image/png"
-	//"github.com/disintegration/imaging"
+	"log"
+	"os"
+	"strings"
+
 	"github.com/disintegration/imaging"
-	"github.com/swap-messenger/Backend/settings"
+	"github.com/alxarno/swap/settings"
 )
 
 func compressionImage(iType string, ratio float64, path string) error {

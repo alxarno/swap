@@ -1,10 +1,12 @@
 TODO:
-  Make codes for action messages (User was invited to chat)
-    Send message about request to chat
-  Send message to websocket, about request to chat
-  + Delete reflection
-  Make class for errors send
-  Make errors codes
-  Make comments
+  + Change Error sending in messages
+  + Refactor Message Engine and message
+  + Remake urls to REST Spec(GET,POST,DELETE,PUT)
+  + Dont recreate DB file in db tests
+  + Add lanuage save
+  + Some error before create config
+  + Logs to file
+  + Change route architecture
+  Create bundling
   Greaceful shootdown
 

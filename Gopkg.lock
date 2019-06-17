@@ -2,28 +2,52 @@
 
 
 [[projects]]
-  name = "github.com/astaxie/beego"
-  packages = ["orm"]
-  revision = "1b6edafc96ad27b6515fafeccd7339dda3e997b1"
-  version = "v1.11.1"
-
-[[projects]]
   name = "github.com/disintegration/imaging"
   packages = ["."]
-  revision = "0bd5694c78c9c3d9a3cd06a706a8f3c59296a9ac"
-  version = "v1.5.0"
+  revision = "5362c131d56305ce787e79a5b94ffc956df00d62"
+  version = "v1.6.0"
 
 [[projects]]
-  name = "github.com/gorilla/context"
+  name = "github.com/gobuffalo/envy"
   packages = ["."]
-  revision = "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
-  version = "v1.1.1"
+  revision = "043cb4b8af871b49563291e32c66bb84378a60ac"
+  version = "v1.7.0"
+
+[[projects]]
+  name = "github.com/gobuffalo/packd"
+  packages = ["."]
+  revision = "9d6116a72e8e57fc75d9b5d6be07ed31bcd673d0"
+  version = "v0.2.0"
+
+[[projects]]
+  name = "github.com/gobuffalo/packr"
+  packages = ["."]
+  revision = "a7085697a89c0c37a038939a172299ef8bf4bba8"
+  version = "v2.4.0"
 
 [[projects]]
   name = "github.com/gorilla/mux"
   packages = ["."]
-  revision = "e3702bed27f0d39777b0b37b664b6280e8ef8fbf"
-  version = "v1.6.2"
+  revision = "ed099d42384823742bba0bf9a72b53b55c9e2e38"
+  version = "v1.7.2"
+
+[[projects]]
+  name = "github.com/jinzhu/gorm"
+  packages = ["."]
+  revision = "b7156195f7f3415f97c20abbd6aff894b847fee8"
+  version = "v1.9.8"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/jinzhu/inflection"
+  packages = ["."]
+  revision = "04140366298a54a039076d798123ffa108fff46c"
+
+[[projects]]
+  name = "github.com/joho/godotenv"
+  packages = ["."]
+  revision = "23d116af351c84513e1946b527c88823e476be13"
+  version = "v1.3.0"
 
 [[projects]]
   name = "github.com/mattn/go-sqlite3"
@@ -44,6 +68,16 @@
   version = "v2.0.0"
 
 [[projects]]
+  name = "github.com/rogpeppe/go-internal"
+  packages = [
+    "modfile",
+    "module",
+    "semver"
+  ]
+  revision = "438578804ca6f31be148c27683afc419ce47c06e"
+  version = "v1.3.0"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/image"
   packages = [
@@ -51,17 +85,17 @@
     "tiff",
     "tiff/lzw"
   ]
-  revision = "183bebdce1b249c42a7cf6772817e8c2e873b966"
+  revision = "f03afa92d3ffad9e5ff762aa549908afe674f01e"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["websocket"]
-  revision = "ed066c81e75eba56dd9bd2139ade88125b855585"
+  revision = "f3200d17e092c607f615320ecaad13d87ad9a2b3"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "961e80809942c3a0fb5f9aed4c906a5e6714a96ae5605340207d23baa37a5e32"
+  inputs-digest = "7a3eb17fd6d4762ff53d6ef855c51131ab07391138fcd289cd17ca2975eca008"
   solver-name = "gps-cdcl"
   solver-version = 1

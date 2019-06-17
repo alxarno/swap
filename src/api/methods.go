@@ -4,22 +4,42 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
+	logger "github.com/alxarno/swap/logger"
+
+	db "github.com/alxarno/swap/db2"
+	"github.com/alxarno/swap/settings"
 	"github.com/robbert229/jwt"
-	"github.com/swap-messenger/Backend/db"
-	"github.com/swap-messenger/Backend/settings"
-	//"strconv"
 )
 
 const (
-	SUCCESS_ANSWER = "Success"
-	ERROR_ANSWER   = "Error"
+	successResult = "Success"
+	errorResult   = "Error"
 )
 
-func getToken() (string, error) {
+func pageNumber(r *http.Request, level int) int64 {
+	s := strings.Split(r.URL.Path, "/")
+	if level > len(s)-1 {
+		return 0
+	}
+	//  0    1   2  3
+	// api/chat/1/users
+	// 1 = a[len - 2]
+	number, _ := strconv.ParseInt(s[len(s)-level], 10, 64)
+	return number
+}
+
+func decodeFail(ref string, err error, r *http.Request, w http.ResponseWriter) {
+	var p []byte
+	r.Body.Read(p)
+	sendAnswerError(ref, err, string(p), failedDecodeData, 0, w)
+}
+
+func getSecret() (string, error) {
 	secret, err := settings.GetSettings()
 	if err != nil {
 		return "", err
@@ -27,18 +47,18 @@ func getToken() (string, error) {
 	return secret.Backend.SecretKeyForToken, nil
 }
 
-func sendAnswerError(reference string, err error, data interface{}, eType int, errCode int, w http.ResponseWriter) {
-	log.Print(reference, errCode)
+func sendAnswerError(reference string, err error, data string, eType int, errCode int, w http.ResponseWriter) {
+	e := fmt.Sprintf("%s %d", reference, errCode)
 	if err != nil {
-		log.Print(err.Error())
+		e = fmt.Sprintf("%s %s", e, err.Error())
 	}
-	if data != nil {
-		log.Print(data)
+	if data != "" {
+		e = fmt.Sprintf("%s %s", e, data)
 	}
-	log.Println()
+	logger.Logger.Print(e)
 
 	var answer = make(map[string]interface{})
-	answer["result"] = ERROR_ANSWER
+	answer["result"] = errorResult
 	answer["code"] = errCode
 	answer["type"] = eType
 	finish, _ := json.Marshal(answer)
@@ -47,13 +67,13 @@ func sendAnswerError(reference string, err error, data interface{}, eType int, e
 
 func sendAnswerSuccess(w http.ResponseWriter) {
 	var x = make(map[string]string)
-	x["result"] = SUCCESS_ANSWER
+	x["result"] = successResult
 	finish, _ := json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
 }
 
 func generateToken(id int64) (string, error) {
-	secret, err := getToken()
+	secret, err := getSecret()
 	if err != nil {
 		return "", err
 	}
@@ -68,13 +88,13 @@ func generateToken(id int64) (string, error) {
 	return token, nil
 }
 
-func getJson(target interface{}, r *http.Request) error {
+func getJSON(target interface{}, r *http.Request) error {
 	defer r.Body.Close()
 	return json.NewDecoder(r.Body).Decode(target)
 }
 
 func TestUserToken(token string) (*db.User, error) {
-	secret, err := getToken()
+	secret, err := getSecret()
 	if err != nil {
 		return nil, err
 	}
@@ -93,70 +113,40 @@ func TestUserToken(token string) (*db.User, error) {
 	}
 
 	if int64(tokenTime.(float64)) > time.Now().Unix() {
-		//u:=db.User{Id: id.(int64)}
-		u, err := db.GetUser("id", map[string]interface{}{"id": int64(id.(float64))})
+		u, err := db.GetUserByID(int64(id.(float64)))
 		if err != nil {
 			return nil, err
 		}
 		return u, nil
 	}
-	//fmt.Println(int64(tokenTime.(float64)))
-	//fmt.Println(time.Now().Unix())
 	return nil, errors.New("token time is done")
 }
 
-func getUserByToken(r *http.Request) (*db.User, error) {
-	var data struct {
-		Token string `json:"token"`
+func getToken(r *http.Request) string {
+	return r.Header.Get("X-Auth-Token")
+}
+
+func UserByHeader(r *http.Request) (*db.User, error) {
+	var token string
+	if token = getToken(r); len(token) == 0 {
+		return nil, errors.New("Token is undefined in X-Auth-Token header")
 	}
-	err := getJson(&data, r)
-	if err != nil {
-		return nil, err
-	}
-	u, err := TestUserToken(data.Token)
+	u, err := TestUserToken(token)
 	if err != nil {
 		return nil, err
 	}
 	return u, nil
 }
 
-//This function need for transform receive body of already unmarshal json (strings, and float64) to
-// (strings, and int64), because json support only float64 values and write every
-//time small convert code is laziness...
-// func TypeChanger(receiver interface{}, sender interface{}) {
-// 	for i := 0; i < reflect.TypeOf(receiver).NumField(); i++ {
-// 		switch reflect.ValueOf(receiver).FieldByIndex([]int{i}).Kind() {
-// 		case reflect.Float64:
-// 			rField := reflect.ValueOf(sender).Elem().FieldByIndex([]int{i})
-// 			v := int64(reflect.ValueOf(receiver).FieldByIndex([]int{i}).Float())
-// 			if rField.IsValid() {
-// 				rField.SetInt(v)
-
-// 			}
-// 		case reflect.String:
-// 			rField := reflect.ValueOf(sender).Elem().FieldByIndex([]int{i})
-// 			v := reflect.ValueOf(receiver).FieldByIndex([]int{i}).String()
-// 			if rField.IsValid() {
-// 				rField.SetString(v)
-// 			}
-// 		case reflect.Bool:
-// 			rField := reflect.ValueOf(sender).Elem().FieldByIndex([]int{i})
-// 			v := reflect.ValueOf(receiver).FieldByIndex([]int{i}).Bool()
-// 			if rField.IsValid() {
-// 				rField.SetBool(v)
-// 			}
-// 		case reflect.Slice:
-// 			rField := reflect.ValueOf(sender).Elem().FieldByIndex([]int{i})
-// 			v := reflect.ValueOf(receiver).FieldByIndex([]int{i})
-// 			slice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(int64(0))), v.Len(), v.Len())
-// 			rField.Set(slice)
-// 			for i := 0; i < v.Len(); i++ {
-// 				if rField.IsValid() {
-// 					rField.Index(i).SetInt(int64(v.Index(i).Float()))
-// 				}
-// 			}
-// 		default:
-
-// 		}
-// 	}
-// }
+func UserByCookie(r *http.Request) (*db.User, error) {
+	var token *http.Cookie
+	var err error
+	if token, err = r.Cookie("token"); err != nil {
+		return nil, errors.New("Token is undefined in cookies")
+	}
+	u, err := TestUserToken(token.Value)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}

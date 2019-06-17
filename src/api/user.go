@@ -4,189 +4,214 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
+	"unicode/utf8"
 
-	"github.com/swap-messenger/Backend/db"
-	// "github.com/AlexeyArno/Gologer"
+	"github.com/alxarno/swap/logger"
+
+	"github.com/alxarno/swap/models"
+
+	db "github.com/alxarno/swap/db2"
 )
 
+type onlineUsers = func(users *[]int64) int64
+
+var (
+	// GetOnlineUsers - external function in 'messages'  for getting online users count
+	GetOnlineUsers onlineUsers
+)
+
+func registerUserEndpoints(r *Router) {
+	r.Route("/enter", enter, "POST")
+	r.Route("/tokencheck", proveToken, "GET")
+	r.Route("/create", createUser, "POST")
+	r.Route("/chats", userChats, "GET")
+	r.Route("/data", userData, "GET")
+	r.Route("/settings", setSettings, "POST")
+}
+
 func enter(w http.ResponseWriter, r *http.Request) {
+	const ref string = "User enter API:"
 	var data struct {
 		Login string `json:"login"`
 		Pass  string `json:"pass"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
-		sendAnswerError("Wrong data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
-	user, err := db.GetUser("login", map[string]interface{}{"login": data.Login, "pass": data.Pass})
+	user, err := db.GetUserByLoginAndPass(data.Login, data.Pass)
 	if err != nil {
-		// Gologer.PError(err.Error())
-		sendAnswerError("User not found", 0, w)
+		sendAnswerError(ref, err,
+			fmt.Sprintf("login - %s, pass - %s", data.Login, strings.Repeat("*", utf8.RuneCountInString(data.Pass))),
+			failedGetUser, 1, w)
 		return
 	}
 
 	//if user.CheckPass(data.Pass){
-	token, err := generateToken(user.Id)
+	token, err := generateToken(user.ID)
 	if err != nil {
-		sendAnswerError("Failed token generator", 0, w)
+		sendAnswerError(ref, err, fmt.Sprintf("userID - %d", user.ID), failedGenerateToken, 2, w)
 		return
 	}
 	var x = make(map[string]string)
 	x["token"] = token
-	x["result"] = "Success"
+	x["result"] = successResult
 	finish, _ := json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
 	return
-	//}else{
-	//	sendAnswerError("Pass is invalid", 0, w)
-	//	return
-	//}
 }
 
 func proveToken(w http.ResponseWriter, r *http.Request) {
-	var userGetToken struct {
-		Token string `json:"token"`
+	const ref string = "User proveToken API:"
+	var x = struct {
+		Result string `json:"result"`
+		Code   int64  `json:"code"`
+	}{
+		Code:   0,
+		Result: successResult,
 	}
-	err := getJson(&userGetToken, r)
+	_, err := UserByHeader(r)
 	if err != nil {
-		sendAnswerError("Failed decode token", 0, w)
-		return
-	}
-	var x = make(map[string]interface{})
-	_, err = TestUserToken(userGetToken.Token)
-	if err == nil {
-		x["result"] = "Success"
-	} else {
-		x["result"] = "Error"
-		x["code"] = 0
+		x.Result = errorResult
 	}
 	finish, _ := json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) {
+	const ref string = "User create user API:"
 	var data struct {
 		Login string `json:"login"`
 		Pass  string `json:"pass"`
 	}
-	err := getJson(&data, r)
+	err := getJSON(&data, r)
 	if err != nil {
-		sendAnswerError("Failed decode data", 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
+
+	passPrint := strings.Repeat("*", utf8.RuneCountInString(data.Pass))
 	if data.Login == "" || data.Pass == "" {
-		sendAnswerError("Haven't all fields (Login,Pass)", 1, w)
+		sendAnswerError(ref, err, fmt.Sprintf("login - %s, pass - %s", data.Login, passPrint), someEmptyFields, 1, w)
 		return
 	}
 	id, err := db.CreateUser(data.Login, data.Pass, data.Login)
 	if err != nil {
-		// Gologer.PError(err.Error())
-		sendAnswerError("Failed create user", 2, w)
+		sendAnswerError(ref, err, fmt.Sprintf("login - %s, pass - %s", data.Login, passPrint), failedCreateUser, 2, w)
 		return
 	}
 	token, err := generateToken(id)
 	if err != nil {
-		sendAnswerError("Failed token generator", 3, w)
+		sendAnswerError(ref, err, fmt.Sprintf("userID - %d", id), failedGenerateToken, 3, w)
 		return
 	}
-	var x = make(map[string]string)
-	x["token"] = token
-	x["result"] = "Success"
+	var x = struct {
+		Result string `json:"result"`
+		Token  string `json:"token"`
+	}{
+		Token:  token,
+		Result: successResult,
+	}
 	finish, _ := json.Marshal(x)
 	fmt.Fprintf(w, string(finish))
 	return
 }
 
-func getMyChats(w http.ResponseWriter, r *http.Request) {
-	user, err := getUserByToken(r)
+func userChats(w http.ResponseWriter, r *http.Request) {
+	const ref string = "User get chats API:"
+	user, err := UserByHeader(r)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err, "", invalidToken, 1, w)
 		return
 	}
-	chats, err := db.GetUserChats(user.Id)
+	chats, err := db.GetUserChats(user.ID)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err, fmt.Sprintf("userID - %d", user.ID), failedGetUserChats, 2, w)
 		return
 	}
 	var finish []byte
 	if chats == nil {
 		finish = []byte("[]")
 	} else {
-		finish, _ = json.Marshal(chats)
+		if GetOnlineUsers != nil {
+			for i, v := range *chats {
+				chatUsers, err := db.GetChatsUsers(v.ID)
+				if err != nil {
+					logger.Logger.Println(fmt.Sprintf("%s Cant get chat users -> %s", ref, err))
+					continue
+				}
+
+				v.Online = GetOnlineUsers(chatUsers)
+				(*chats)[i] = v
+			}
+		}
+		finish, _ = json.Marshal(*chats)
 	}
 	fmt.Fprintf(w, string(finish))
 }
 
-func getMyData(w http.ResponseWriter, r *http.Request) {
-	user, err := getUserByToken(r)
+func userData(w http.ResponseWriter, r *http.Request) {
+	const ref string = "User get data API:"
+	user, err := UserByHeader(r)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err, "", invalidToken, 1, w)
 		return
 	}
-	data := make(map[string]interface{})
-	data["id"] = user.Id
+	data := struct {
+		ID       int64  `json:"id"`
+		Name     string `json:"name"`
+		Language string `json:"language"`
+	}{
+		ID:       user.ID,
+		Language: user.Language,
+		Name:     user.Name,
+	}
+
 	finish, _ := json.Marshal(data)
 	fmt.Fprintf(w, string(finish))
 }
 
-func getSettings(w http.ResponseWriter, r *http.Request) {
-	user, err := getUserByToken(r)
-	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
-		return
-	}
-	setts, err := db.GetUserSettings(user.Id)
-	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
-		return
-	}
-	finish, _ := json.Marshal(setts)
-	fmt.Fprintf(w, string(finish))
-}
+// func getSettings(w http.ResponseWriter, r *http.Request) {
+// 	const ref string = "User get settings API:"
+// 	user, err := UserByHeader(r)
+// 	if err != nil {
+// 		sendAnswerError(ref, err, "", invalidToken, 1, w)
+// 		return
+// 	}
+// 	setts, err := db.GetUserSettings(user.ID)
+// 	if err != nil {
+// 		sendAnswerError(ref, err, fmt.Sprintf("userID - %d", user.ID), failedGetSettings, 2, w)
+// 		return
+// 	}
+// 	finish, _ := json.Marshal(setts)
+// 	fmt.Fprintf(w, string(finish))
+// }
 
 func setSettings(w http.ResponseWriter, r *http.Request) {
+	const ref string = "User set settings API:"
 	var data struct {
-		Token string
-		Name  string
+		Token    string `json:"token"`
+		Name     string `json:"name"`
+		Language string `json:"language"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	defer r.Body.Close()
 	err := decoder.Decode(&data)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		decodeFail(ref, err, r, w)
 		return
 	}
 	user, err := TestUserToken(data.Token)
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err, data.Token, invalidToken, 1, w)
 		return
 	}
-	err = db.SetUserSettings(user.Id, data.Name)
+	err = db.SetUserSettigns(user.ID, models.UserSettings{Name: data.Name, Language: data.Language})
 	if err != nil {
-		sendAnswerError(err.Error(), 0, w)
+		sendAnswerError(ref, err, fmt.Sprintf("userID - %d", user.ID), failedSetUserSettings, 2, w)
 		return
 	}
 	sendAnswerSuccess(w)
-}
-
-func UserApi(var1 string, w http.ResponseWriter, r *http.Request) {
-	switch var1 {
-	case "enter":
-		enter(w, r)
-	case "testToken":
-		proveToken(w, r)
-	case "create":
-		createUser(w, r)
-	case "getMyChats":
-		getMyChats(w, r)
-	case "myData":
-		getMyData(w, r)
-	case "getSettings":
-		getSettings(w, r)
-	case "setSettings":
-		setSettings(w, r)
-	default:
-		sendAnswerError("Not found", 0, w)
-	}
 }

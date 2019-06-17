@@ -1,15 +1,31 @@
 package models
 
-const (
-	MESSAGE_COMMAND_USER_INSERTED_TO_CHAT = iota + 1
-	MESSAGE_COMMAND_USER_CREATED_CHAT
-	MESSAGE_COMMAND_USER_INSERTED_TO_CHANNEL
-	MESSAGE_COMMAND_USER_CREATED_CHANNEL
-)
+type MessageCommand int
 
 const (
-	MESSAGE_ACTION_ONLINE_USER        = "online_user"
-	MESSAGE_ACTION_USER_CHAT_INSERTED = "user_inserted"
-	MESSAGE_ACTION_CHAT_CREATED       = "chat_created"
-	MESSAGE_ACTION_TYPE_SYSTEM        = "system"
+	MessageCommandNull                  MessageCommand = iota
+	MessageCommandUserInsertedToChat                   // 1
+	MessageCommandUserCreatedChat                      // 2
+	MessageCommandUserInsertedToChannel                // 3
+	MessageCommandUserCreatedChannel                   // 4
+	MessageCommandUserInsertedToDialog                 // 5
+	MessageCommandUserCreatedDialog                    // 6
+	MessageCommandUserLeaveChat                        // 7
+	MessageCommandUserReturnsToChat                    // 8
+	MessageCommandUserWasBanned                        // 9
+	MessageCommandUserWasUnbanned                      // 10
 )
+
+// const
+
+//MessageType - type for message type's aliases
+type MessageType int
+
+const (
+	//SystemMessageType - system message alias
+	SystemMessageType MessageType = 1
+	//UserMessageType - user message alias
+	UserMessageType MessageType = 0
+)
+
+// const User

@@ -1,26 +1,58 @@
 package api
 
-// Common
 const (
-	FAILED_DECODE_DATA = iota + 1
+	// Common
+	failedDecodeData      = iota + 1
+	failedGetSettings     //2
+	haventRightsForAction //3
+	failedEncodeData      //5
+	endPointNotFound      //6
+	invalidToken          //6
 )
 
 // Chat API
 const (
-	SHORT_CHAT_NAME = iota + 2
-	INVALID_TOKEN
-	CREATED_CHAT
-	CREATED_CHANNEL
-	USER_CHAT_CHECK_FAILED
-	USER_IS_DELETED_FROM_CHAT
-	FAILED_GET_USER_INFO
-	FAILED_GET_USERS_FOR_ADD
-	HAVENT_RIGHTS_FOR_ACTION
-	FAILED_DELETE_USERS
-	FAILED_RECOVERY_USERS
-	FAILED_GET_CHAT_SETTINGS
-	FAILED_ENCODE_DATA
-	FAILED_SET_NAME_CHAT
-	FAILED_DELETE_FROM_LIST
-	END_POINT_NOT_FOUND
+	createdCahnnel           = iota + 1
+	userChatCheckFailed      //2
+	userIsDeletedFromChat    //3
+	failedGetUserInfo        //4
+	failedGetUsersForAdd     //5
+	failedDeleteUsers        //6
+	failedRecoveryUsers      //7
+	failedGetChatSettings    //8
+	shortChatName            //9
+	failedSetChatSettings    //10
+	failedDeleteFromList     //11
+	createdChat              //12
+	failedGetUsersForDialog  //13
+	onlyYourselfForLeaveChat //14
+	failedGetChatUsers       //15
+)
+
+//File API
+const (
+	failedDecodeFromData   = iota + 1
+	failedGetDataFromForm  //2
+	failedRebuildDataTypes //3
+	failedCreatFile        //4
+	failedOpenFile         //5
+	failedDeleteFileDB     //6
+	failedDeleteFileOS     //7
+	fileDoesntExist        //8
+)
+
+//Messages API
+const (
+	failedGetAdditionalMessages = iota + 1
+	failedGetMessages
+)
+
+//User API
+const (
+	failedGetUser         = iota + 1
+	failedGenerateToken   //2
+	someEmptyFields       //3
+	failedCreateUser      //4
+	failedGetUserChats    //5
+	failedSetUserSettings //6
 )

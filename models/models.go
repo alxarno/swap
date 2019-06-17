@@ -1,21 +1,21 @@
 package models
 
 type Chat struct {
-	ID                      float64
+	ID                      int64
 	Name                    string
-	Addr_users              []string
-	MessageBlockId          float64
+	AddrUsers               []string
+	MessageBlockID          int64
 	LastSender, LastMessage string
 }
 type MessageBlock struct {
-	chatId   int64
+	ChatID   int64
 	Messages []Message
 }
 type Message struct {
-	Addr_author string
-	Content     string
-	Type        string
-	Chat_Id     float64
+	AddrAuthor string
+	Content    string
+	Type       string
+	ChatID     float64
 }
 type UserChatInfo struct {
 	ID   int64  `json:"id"`
@@ -23,32 +23,35 @@ type UserChatInfo struct {
 	Type int    `json:"type"`
 	//Addr_users []string
 	LastSender string `json:"last_sender"`
-	Admin_id   int64  `json:"admin_id"`
+	AdminID    int64  `json:"admin_id"`
 	//Moders_ids []float64 `json:"moderators_ids"`
 	LastMessage     *MessageContent `json:"last_message"`
 	LastMessageTime int64           `json:"last_message_time"`
 	View            int             `json:"view"`
-	Delete          bool            `json:"delete"`
+	Deleted         bool            `json:"deleted"`
+	Banned          bool            `json:"banned"`
 	Online          int64           `json:"online"`
 }
 type MessageContent struct {
 	Message   string  `json:"content"`
 	Documents []int64 `json:"documents"`
-	Type      string  `json:"type"`
+	Type      int     `json:"type"`
 	Command   int     `json:"command,integer"`
 }
 type User struct {
-	ID    float64
-	Name  string
-	Login string
-	Pass  string
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	Login    string `json:"login"`
+	Language string `json:"language"`
+	pass     string
 }
 
 type NewMessageToUser struct {
+	Type        string                `json:"mtype"`
 	ID          int64                 `json:"id"`
-	ChatId      int64                 `json:"chat_id"`
+	ChatID      int64                 `json:"chat_id"`
 	Content     *MessageContentToUser `json:"message"`
-	AuthorId    int64                 `json:"author_id"`
+	AuthorID    int64                 `json:"author_id"`
 	AuthorName  string                `json:"author_name"`
 	AuthorLogin string                `json:"author_login"`
 	Time        int64                 `json:"time"`
@@ -63,10 +66,21 @@ type CreateDHData struct {
 }
 
 type MessageContentToUser struct {
-	Message   string                   `json:"content"`
-	Documents []map[string]interface{} `json:"documents"`
-	Type      string                   `json:"type"`
-	Command   int                      `json:"command,integer"`
+	Message   string  `json:"content"`
+	Documents *[]File `json:"documents"`
+	Type      int     `json:"type"`
+	Command   int     `json:"command,integer"`
+}
+
+type File struct {
+	ID        int64   `json:"id"`
+	AuthorID  int64   `json:"author_id"`
+	ChatID    int64   `json:"chat_id"`
+	Name      string  `json:"name"`
+	Path      string  `json:"path"`
+	RatioSize float64 `json:"ratio"`
+	Size      int64   `json:"size"`
+	Duration  int64   `json:"duration"`
 }
 
 //type MessageContent struct{
@@ -76,10 +90,42 @@ type MessageContentToUser struct {
 //}
 
 type ForceMsgToUser struct {
-	UserId int64
+	UserID int64
 	Msg    NewMessageToUser
 }
 
 func GetModels() string {
 	return "Info"
+}
+
+type UserSettings struct {
+	Name     string
+	Language string
+}
+
+type ChatSettings struct {
+	Name string `json:"name"`
+}
+
+type FolkChatsInfo struct {
+	ID         int64  `json:"id"`
+	Login      string `json:"login"`
+	Name       string `json:"name"`
+	DeleteLast int64  `json:"delete_last"`
+	Ban        bool   `json:"ban"`
+}
+
+type EncryptedMessage struct {
+	Type string `json:"mtype"`
+	Data string `json:"data"`
+	IV   string `json:"iv"`
+	Key  string `json:"key"`
+}
+
+type MiddleWareMessage struct {
+	ID       int64
+	chatID   int64
+	command  MessageCommand
+	authorID int64
+	time     int64
 }
