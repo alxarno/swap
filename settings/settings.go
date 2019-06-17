@@ -35,6 +35,7 @@ type settings struct {
 	Service struct {
 		MaxFileSize       int64 `json:"max_file_size_byte"`
 		MaxMinutesForFile int64 `json:"max_minutes_available_for_files_download"`
+		CORS              bool  `json:"cors"`
 	} `json:"service"`
 	DB struct {
 		SQLite struct {
@@ -68,7 +69,8 @@ func createConfig() (data []byte, err error) {
 		},
 		"service":{
 			"max_file_size_byte": 104857600,
-			"max_minutes_available_for_files_download": 5
+			"max_minutes_available_for_files_download": 5,
+			"cors": false
 		},
 		"db":{
 			"sqlite":{

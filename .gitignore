@@ -18,3 +18,7 @@ swap.key
 *.crt
 *.key
 swap.json
+ui/
+prod/
+build/
+releases/

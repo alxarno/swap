@@ -103,6 +103,7 @@ func GetMessages(userID int64, chatID int64, tranches bool, lastID int64) (*[]mo
 	}
 
 	for _, v := range templates {
+		// log.Println(v.Content)
 		content := models.MessageContent{}
 		if err := json.Unmarshal([]byte(v.Content), &content); err != nil {
 			return nil, DBE(UnmarshalingFailed, err)
@@ -110,6 +111,7 @@ func GetMessages(userID int64, chatID int64, tranches bool, lastID int64) (*[]mo
 		docs := []models.File{}
 		for _, d := range content.Documents {
 			doc, err := GetFile(d)
+			// log.Print(doc, d)
 			if err != nil {
 				return nil, DBE(GettingFileInfoFailed, err)
 			}

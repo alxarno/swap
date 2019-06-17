@@ -51,7 +51,7 @@ func createTestDB() {
 	}
 
 	registerModels()
-	db.LogMode(true)
+	// db.LogMode(true)
 }
 
 func deleteTestDB() {
@@ -76,7 +76,7 @@ func BeginDB(logger *log.Logger) error {
 	if err != nil {
 		panic("Failed connect " + err.Error())
 	}
-	db.LogMode(true)
+	db.LogMode(false)
 	if logger != nil {
 		db.SetLogger(logger)
 	}

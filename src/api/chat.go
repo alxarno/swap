@@ -13,7 +13,7 @@ import (
 func registerChatEndpoints(r *Router) {
 	r.Route("/create", create, "POST")
 	r.Route("/{id:[0-9]+}/users", getUsers, "GET")
-	r.Route("/{id:[0-9]+}/ivite", invite, "POST", "GET")
+	r.Route("/{id:[0-9]+}/invite", invite, "POST", "GET")
 	r.Route("/{id:[0-9]+}/leave", leaveChat, "POST")
 	r.Route("/{id:[0-9]+}/return", turnBackToChat, "POST")
 	r.Route("/{id:[0-9]+}/block", blockUsers, "POST")
@@ -131,6 +131,9 @@ func invite(w http.ResponseWriter, r *http.Request) {
 		break
 	case http.MethodPost:
 		addUsers(w, r)
+		break
+	case http.MethodOptions:
+		fmt.Fprintf(w, "")
 		break
 	default:
 		w.WriteHeader(404)

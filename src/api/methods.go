@@ -137,3 +137,16 @@ func UserByHeader(r *http.Request) (*db.User, error) {
 	}
 	return u, nil
 }
+
+func UserByCookie(r *http.Request) (*db.User, error) {
+	var token *http.Cookie
+	var err error
+	if token, err = r.Cookie("token"); err != nil {
+		return nil, errors.New("Token is undefined in cookies")
+	}
+	u, err := TestUserToken(token.Value)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}

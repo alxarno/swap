@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/alxarno/swap/src/api"
@@ -10,13 +12,15 @@ import (
 	logger "github.com/alxarno/swap/logger"
 	"github.com/alxarno/swap/settings"
 	engine "github.com/alxarno/swap/src/messages"
+	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
 	"github.com/robbert229/jwt"
 	"golang.org/x/net/websocket"
 )
 
-type route func(pattern string, handler func(w http.ResponseWriter, r *http.Request), methods ...string)
-type subroute func(pattern string) *api.Router
+type route func(string, func(http.ResponseWriter, *http.Request), ...string)
+type subroute func(string) *api.Router
+type middlewareFunc func(http.Handler) http.Handler
 
 func stand(w http.ResponseWriter, r *http.Request) {
 	file := "./frontend/index.html"
@@ -108,44 +112,48 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, file)
 }
 
-func middleware(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
-	return cors(logs(handler))
+func logginMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger.Logger.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		next.ServeHTTP(w, r)
+	})
 }
 
-func logs(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if (*r).Method != "OPTIONS" {
-			logger.Logger.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+func AdditionalHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if filepath.Ext(path.Base(r.URL.Path)) == ".js" {
+			w.Header().Add("Content-Type", "application/javascript")
 		}
-		handler(w, r)
-	}
+		next.ServeHTTP(w, r)
+	})
 }
 
-func cors(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func _CORSMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Auth-Token")
-		handler(w, r)
-	}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func newRouter() *mux.Router {
+	box := packr.NewBox("./ui")
 	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.HandleFunc("/", middleware(stand))
-	// myRouter.HandleFunc("/login", stand)
-	// myRouter.HandleFunc("/reg", stand)
-	myRouter.HandleFunc("/info", middleware(info))
-	// myRouter.HandleFunc("/messages", stand)
-	// myRouter.HandleFunc("/messages/{key}", stand)
-	myRouter.HandleFunc("/getFile/{link}/{name}", middleware(downloadFile))
+	myRouter.Handle("/", http.FileServer(box))
+	myRouter.HandleFunc("/info", info)
+	myRouter.HandleFunc("/getFile/{link}/{name}", downloadFile)
 	myRouter.Handle("/ws", websocket.Handler(engine.ConnectionHandler))
-	// myRouter.HandleFunc("/proveConnect", proveConnect)
 	api.RegisterEndpoints(newSubRoute(myRouter)("/api"))
-	// myRouter.HandleFunc("/{key1}", logos)
-	// myRouter.HandleFunc("/{key1}/{key2}", fonts)
-	// myRouter.HandleFunc("/staticingzip/{key2}/{key3}", staticNotGzip)
-	// myRouter.HandleFunc("/{key1}/{key2}/{key3}", static)
+
+	myRouter.Handle("/{key1}", http.FileServer(box))
+	myRouter.Handle("/{key1}/{key2}", http.FileServer(box))
+
+	myRouter.Use(logginMiddleware)
+	if settings.ServiceSettings.Service.CORS {
+		myRouter.Use(_CORSMiddleware)
+	}
+	myRouter.Use(AdditionalHeaders)
 
 	return myRouter
 }
@@ -155,6 +163,10 @@ func newRoute(router *mux.Router) route {
 		r := (*router).HandleFunc(pattern, handler)
 		if len(methods) > 1 {
 			r.MatcherFunc(func(r *http.Request, rm *mux.RouteMatch) bool {
+				// For Cross Domain requests need additional OPTIONS request
+				if settings.ServiceSettings.Service.CORS && r.Method == http.MethodOptions {
+					return true
+				}
 				for _, v := range methods {
 					if v == r.Method {
 						return true
@@ -163,7 +175,11 @@ func newRoute(router *mux.Router) route {
 				return false
 			})
 		} else {
-			r.Methods(methods[0])
+			if settings.ServiceSettings.Service.CORS {
+				r.Methods(methods[0], "OPTIONS")
+			} else {
+				r.Methods(methods[0])
+			}
 		}
 	}
 }

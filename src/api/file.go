@@ -33,7 +33,7 @@ type fileInfoBuff struct {
 }
 
 func registerFileEndpoints(r *Router) {
-	r.Route("/upload", uploadFile, "PUT")
+	r.Route("/upload", uploadFile, "POST")
 	r.Route("/{id:[0-9]+}", getFile, "GET")
 	r.Route("/{id:[0-9]+}/delete", deleteFile, "DELETE")
 	r.Route("/{id:[0-9]+}/link", getDisposableFileLink, "GET")
@@ -201,12 +201,15 @@ func getDisposableFileLink(w http.ResponseWriter, r *http.Request) {
 
 func getFile(w http.ResponseWriter, r *http.Request) {
 	const ref string = "File get file API:"
+	var user *db.User
 	min := (r.URL.Query().Get("min") == "")
 	fileID := pageNumber(r, 1)
 	user, err := UserByHeader(r)
 	if err != nil {
-		sendAnswerError(ref, err, getToken(r), invalidToken, 1, w)
-		return
+		if user, err = UserByCookie(r); err != nil {
+			sendAnswerError(ref, err, getToken(r), invalidToken, 1, w)
+			return
+		}
 	}
 	path, err := db.CheckFileRights(user.ID, fileID)
 	if err != nil {

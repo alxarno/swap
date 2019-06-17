@@ -1,9 +1,8 @@
 {
 		"backend":{
-			"test": false,
 			"fileLogs": true,
 			"host": "3030",
-			"secret_key_for_token": "MV9JQJGt4K9wNwTSqaMN+g==",
+			"secret_key_for_token": "oGILj71Q0ze7ClzMvvDEPQ==",
 			"files_path": "./files/"
 		},
 		"cert":{
@@ -13,7 +12,8 @@
 		},
 		"service":{
 			"max_file_size_byte": 104857600,
-			"max_minutes_available_for_files_download": 5
+			"max_minutes_available_for_files_download": 5,
+			"cors": true
 		},
 		"db":{
 			"sqlite":{

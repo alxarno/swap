@@ -8,6 +8,24 @@
   version = "v1.6.0"
 
 [[projects]]
+  name = "github.com/gobuffalo/envy"
+  packages = ["."]
+  revision = "043cb4b8af871b49563291e32c66bb84378a60ac"
+  version = "v1.7.0"
+
+[[projects]]
+  name = "github.com/gobuffalo/packd"
+  packages = ["."]
+  revision = "9d6116a72e8e57fc75d9b5d6be07ed31bcd673d0"
+  version = "v0.2.0"
+
+[[projects]]
+  name = "github.com/gobuffalo/packr"
+  packages = ["."]
+  revision = "a7085697a89c0c37a038939a172299ef8bf4bba8"
+  version = "v2.4.0"
+
+[[projects]]
   name = "github.com/gorilla/mux"
   packages = ["."]
   revision = "ed099d42384823742bba0bf9a72b53b55c9e2e38"
@@ -24,6 +42,12 @@
   name = "github.com/jinzhu/inflection"
   packages = ["."]
   revision = "04140366298a54a039076d798123ffa108fff46c"
+
+[[projects]]
+  name = "github.com/joho/godotenv"
+  packages = ["."]
+  revision = "23d116af351c84513e1946b527c88823e476be13"
+  version = "v1.3.0"
 
 [[projects]]
   name = "github.com/mattn/go-sqlite3"
@@ -44,6 +68,16 @@
   version = "v2.0.0"
 
 [[projects]]
+  name = "github.com/rogpeppe/go-internal"
+  packages = [
+    "modfile",
+    "module",
+    "semver"
+  ]
+  revision = "438578804ca6f31be148c27683afc419ce47c06e"
+  version = "v1.3.0"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/image"
   packages = [
@@ -62,6 +96,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "63f445285d6245a9ad019692c804c828b16f1fc7c1e817e8c8c6e1732b0f8cf1"
+  inputs-digest = "7a3eb17fd6d4762ff53d6ef855c51131ab07391138fcd289cd17ca2975eca008"
   solver-name = "gps-cdcl"
   solver-version = 1
