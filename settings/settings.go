@@ -57,29 +57,29 @@ func createConfig() (data []byte, err error) {
 	}
 
 	defaultConfig := fmt.Sprintf(`{
-		"backend":{
-			"fileLogs": true,
-			"host": "80",
-			"sslhost": "443",
-			"secret_key_for_token": "%s",
-			"files_path": "./files/"
-		},
-		"cert":{
-			"org": "Example Co",
-			"hosts": ["192.168.1.38","localhost","127.0.0.1"],
-			"rsa-bits":2048
-		},
-		"service":{
-			"max_file_size_byte": 104857600,
-			"max_minutes_available_for_files_download": 5,
-			"cors": false
-		},
-		"db":{
-			"sqlite":{
-				"file_path": "swap.db"
-			}
+	"backend":{
+		"fileLogs": true,
+		"host": "80",
+		"sslhost": "443",
+		"secret_key_for_token": "%s",
+		"files_path": "./files/"
+	},
+	"cert":{
+		"org": "Example Co",
+		"hosts": ["192.168.1.38","localhost","127.0.0.1"],
+		"rsa-bits":2048
+	},
+	"service":{
+		"max_file_size_byte": 104857600,
+		"max_minutes_available_for_files_download": 5,
+		"cors": false
+	},
+	"db":{
+		"sqlite":{
+			"file_path": "swap.db"
 		}
-	}`, base64.StdEncoding.EncodeToString(randBytes))
+	}
+}`, base64.StdEncoding.EncodeToString(randBytes))
 
 	_, err = f.Write([]byte(defaultConfig))
 	f.Close()

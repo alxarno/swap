@@ -14,27 +14,26 @@ import (
 	logger "github.com/alxarno/swap/logger"
 
 	db "github.com/alxarno/swap/db2"
-	"github.com/alxarno/swap/models"
 	"github.com/alxarno/swap/settings"
 	engine "github.com/alxarno/swap/src/messages"
 )
 
-type proveConnection struct {
-	Login string
-	Pass  string
-}
+// type proveConnection struct {
+// 	Login string
+// 	Pass  string
+// }
 
-type requestGetMessage struct {
-	Author string
-	ChatID int64
-}
+// type requestGetMessage struct {
+// 	Author string
+// 	ChatID int64
+// }
 
-type errorAnswer struct {
-	Result string
-	Type   string
-}
+// type errorAnswer struct {
+// 	Result string
+// 	Type   string
+// }
 
-type client chan<- models.NewMessageToUser
+// type client chan<- models.NewMessageToUser
 
 func removeContents(dir string) error {
 	d, err := os.Open(dir)
