@@ -23,6 +23,7 @@ const MinFilesDirPath string = "min/"
 type settings struct {
 	Backend struct {
 		Host              string `json:"host"`
+		SSLHost           string `json:"sslhost"`
 		SecretKeyForToken string `json:"secret_key_for_token"`
 		FilesPath         string `json:"files_path"`
 		FileLogs          bool   `json:"fileLogs"`
@@ -58,7 +59,8 @@ func createConfig() (data []byte, err error) {
 	defaultConfig := fmt.Sprintf(`{
 		"backend":{
 			"fileLogs": true,
-			"host": "3030",
+			"host": "80",
+			"sslhost": "443",
 			"secret_key_for_token": "%s",
 			"files_path": "./files/"
 		},

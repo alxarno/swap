@@ -11,60 +11,13 @@ import (
 
 	logger "github.com/alxarno/swap/logger"
 	"github.com/alxarno/swap/settings"
-	engine "github.com/alxarno/swap/src/messages"
-	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
 	"github.com/robbert229/jwt"
-	"golang.org/x/net/websocket"
 )
 
 type route func(string, func(http.ResponseWriter, *http.Request), ...string)
 type subroute func(string) *api.Router
 type middlewareFunc func(http.Handler) http.Handler
-
-func stand(w http.ResponseWriter, r *http.Request) {
-	file := "./frontend/index.html"
-	http.ServeFile(w, r, file)
-	return
-}
-
-func static(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	if vars["key3"] != "main.css" {
-		w.Header().Set("Content-Encoding", "gzip")
-		w.Header().Set("Vary", "accept-encoding")
-		file := "./frontend/" + vars["key1"] + "/" + vars["key2"] + "/" + vars["key3"] + ".gz"
-		http.ServeFile(w, r, file)
-		return
-	} else {
-		file := "./frontend/" + vars["key1"] + "/" + vars["key2"] + "/" + vars["key3"]
-		http.ServeFile(w, r, file)
-		return
-	}
-
-}
-
-func staticNotGzip(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	file := "./frontend/static/" + vars["key2"] + "/" + vars["key3"]
-	http.ServeFile(w, r, file)
-	return
-
-}
-
-func logos(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	file := "./frontend/" + vars["key1"]
-	http.ServeFile(w, r, file)
-	return
-}
-
-func fonts(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	file := "./frontend/" + vars["key1"] + "/" + vars["key2"]
-	http.ServeFile(w, r, file)
-	return
-}
 
 func info(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -114,7 +67,13 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 
 func logginMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger.Logger.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		if settings.ServiceSettings.Service.CORS {
+			if r.Method != http.MethodOptions {
+				logger.Logger.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+			}
+		} else {
+			logger.Logger.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		}
 		next.ServeHTTP(w, r)
 	})
 }
@@ -135,27 +94,6 @@ func _CORSMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Auth-Token")
 		next.ServeHTTP(w, r)
 	})
-}
-
-func newRouter() *mux.Router {
-	box := packr.NewBox("./ui")
-	myRouter := mux.NewRouter().StrictSlash(true)
-	myRouter.Handle("/", http.FileServer(box))
-	myRouter.HandleFunc("/info", info)
-	myRouter.HandleFunc("/getFile/{link}/{name}", downloadFile)
-	myRouter.Handle("/ws", websocket.Handler(engine.ConnectionHandler))
-	api.RegisterEndpoints(newSubRoute(myRouter)("/api"))
-
-	myRouter.Handle("/{key1}", http.FileServer(box))
-	myRouter.Handle("/{key1}/{key2}", http.FileServer(box))
-
-	myRouter.Use(logginMiddleware)
-	if settings.ServiceSettings.Service.CORS {
-		myRouter.Use(_CORSMiddleware)
-	}
-	myRouter.Use(AdditionalHeaders)
-
-	return myRouter
 }
 
 func newRoute(router *mux.Router) route {
