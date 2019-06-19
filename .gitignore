@@ -17,6 +17,7 @@ swap.crt
 swap.key
 *.crt
 *.key
+*.json
 swap.json
 ui/
 prod/

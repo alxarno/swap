@@ -1,1 +1,1 @@
-go run main.go
+go run main.go logo.go router.go router_without_ui.go

@@ -31,7 +31,6 @@ package messageengine
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/alxarno/swap/logger"
 
@@ -55,7 +54,7 @@ func (s *userConnection) writerUserSys(ws *websocket.Conn) {
 	for sysMsg := range s.SystemMessageChan {
 
 		if err := websocket.Message.Send(ws, string(sysMsg)); err != nil {
-			log.Println(fmt.Sprintf("%s  %s", writingSystemChannelFailed, err.Error()))
+			// log.Println(fmt.Sprintf("%s  %s", writingSystemChannelFailed, err.Error()))
 			break
 		}
 	}
@@ -66,12 +65,12 @@ func (s *userConnection) writerUser(ws *websocket.Conn) {
 
 		nowMessage, err := json.Marshal(msg)
 		if err != nil {
-			log.Println(fmt.Sprintf("Writer User -> %s  %s", marshalingMessageFailed, err.Error()))
+			logger.Logger.Println(fmt.Sprintf("Writer User -> %s  %s", marshalingMessageFailed, err.Error()))
 			continue
 		}
 
 		if err := websocket.Message.Send(ws, string(nowMessage)); err != nil {
-			log.Println(fmt.Sprintf("Writer User -> %s  %s", writingMessageChannelFailed, err.Error()))
+			// log.Println(fmt.Sprintf("Writer User -> %s  %s", writingMessageChannelFailed, err.Error()))
 			break
 		}
 	}
@@ -80,14 +79,14 @@ func (s *userConnection) writerUser(ws *websocket.Conn) {
 func decodeNewMessage(msg string, connect *userConnection) {
 	var data = make(map[string]interface{})
 	if err := json.Unmarshal([]byte(msg), &data); err != nil {
-		log.Println(fmt.Sprintf("Decode New Message -> %s  %s", unmarshalingMessageFailed, err.Error()))
+		logger.Logger.Println(fmt.Sprintf("Decode New Message -> %s  %s %s", unmarshalingMessageFailed, err.Error(), msg))
 		return
 	}
 	switch data[messageTypeField] {
 	case messageTypeSystem:
 		sMessage, err := systemMsg(msg)
 		if err != nil {
-			log.Println(fmt.Sprintf("Decode Sytem Message -> %s  %s", unmarshalingMessageFailed, err.Error()))
+			logger.Logger.Println(fmt.Sprintf("Decode Sytem Message -> %s  %s %s", unmarshalingMessageFailed, err.Error(), msg))
 			return
 		}
 		if sMessage.Action == messageActionAuth {
@@ -98,7 +97,7 @@ func decodeNewMessage(msg string, connect *userConnection) {
 	case messageTypeUser:
 		messageToUser, err := userMsg(msg)
 		if err != nil {
-			log.Println("Decode User Message -> " + err.Error())
+			logger.Logger.Println("Decode User Message -> " + err.Error() + msg)
 			return
 		}
 		sendMessages <- *messageToUser
@@ -140,7 +139,6 @@ func broadcaster() {
 			if err != nil {
 				continue
 			}
-			// log.Println(chatsUsers)
 			for _, user := range users {
 				for _, v := range *chatsUsers {
 					if v == user.UserID {
