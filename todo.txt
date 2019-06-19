@@ -7,6 +7,6 @@ TODO:
   + Some error before create config
   + Logs to file
   + Change route architecture
-  Create bundling
-  Greaceful shootdown
+  + Create bundling
+  + Greaceful shootdown
 
